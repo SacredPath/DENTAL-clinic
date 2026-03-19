@@ -335,6 +335,12 @@ body.receptionist-mode .nav-item[data-page="revenue"]{display:none;}
 body.receptionist-mode #page-invoices,
 body.receptionist-mode #page-hmo,
 body.receptionist-mode #page-revenue{display:none !important;}
+/* Hard-hide money elements in receptionist mode — JS backstop */
+body.receptionist-mode #s-rev-card,
+body.receptionist-mode #s-hmo-card,
+body.receptionist-mode #dash-rev-row,
+body.receptionist-mode #bk-fee,
+body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
 .hamburger{display:none;background:none;border:none;cursor:pointer;color:var(--text);font-size:20px;padding:4px 6px;border-radius:var(--radius-sm);line-height:1;flex-shrink:0;}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;backdrop-filter:blur(2px);}
@@ -2600,9 +2606,21 @@ function applyRoleMode() {
   const invTab = document.getElementById('pd-inv-tab-btn');
   if (invTab) invTab.style.display = isReceptionist ? 'none' : '';
 
-  // If currently on a restricted page, redirect to dashboard
+  // If on a restricted page, bounce to dashboard
   if (isReceptionist && DENTIST_ONLY_PAGES.some(p => document.getElementById(`page-${p}`)?.classList.contains('active'))) {
     go('dashboard');
+    return; // go() calls renderDash already
+  }
+
+  // Always re-render whatever page is currently active so role changes take effect immediately
+  const activePage = document.querySelector('.page.active');
+  if (activePage) {
+    const pageId = activePage.id.replace('page-', '');
+    const fn = {dashboard:renderDash, appointments:renderAppts, patients:renderPatients,
+                reminders:renderReminders, recall:renderRecall, invoices:renderInvoices,
+                hmo:renderHMO, revenue:renderRevenue, odontogram:renderOdontoPage,
+                perio:renderPerioPage, inventory:renderInventory, lab:renderLab, settings:renderSettings};
+    if (fn[pageId]) fn[pageId]();
   }
 }
 function lockApp() {
