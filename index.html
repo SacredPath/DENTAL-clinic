@@ -1234,7 +1234,7 @@ var feeSchedule={
 var appointments=[
   {id:'A001',patientId:'P001',date:today(),time:'09:00',chair:'Chair 1',treatment:'Cleaning / Scaling',payType:'cash',hmoId:'',fee:20000,status:'upcoming',notes:''},
   {id:'A002',patientId:'P002',date:today(),time:'09:00',chair:'Chair 2',treatment:'Follow-up',payType:'hmo',hmoId:'H001',fee:3000,status:'upcoming',notes:''},
-  {id:'A003',patientId:'P003',date:today(),time:'10:30',chair:'Chair 1',treatment:'Filling',payType:'transfer',hmoId:'',fee:25000,status:'attended',notes:''},
+  {id:'A003',patientId:'P003',date:today(),time:'10:30',chair:'Chair 1',treatment:'Filling',payType:'transfer',hmoId:'',fee:25000,status:'upcoming',notes:''},
   {id:'A004',patientId:'P004',date:today(),time:'11:00',chair:'Chair 2',treatment:'Root Canal',payType:'hmo',hmoId:'H002',fee:90000,status:'upcoming',notes:'Session 2'},
   {id:'A005',patientId:'P005',date:tomorrow(),time:'09:00',chair:'Chair 1',treatment:'Consultation',payType:'cash',hmoId:'',fee:5000,status:'upcoming',notes:''},
   {id:'A006',patientId:'P001',date:tomorrow(),time:'11:00',chair:'Chair 1',treatment:'Consultation',payType:'cash',hmoId:'',fee:5000,status:'upcoming',notes:''},
@@ -1295,6 +1295,38 @@ function loadStorage(){
     const l=localStorage.getItem('df3_lab');if(l)labJobs=JSON.parse(l);
     const f=localStorage.getItem('df3_fees');if(f)feeSchedule=JSON.parse(f);
     const rc=localStorage.getItem('df3_receiptC');if(rc)receiptC=parseInt(rc);
+
+    // ── DATA MIGRATION ──
+    // Strip the old hardcoded mock invoice (RCP-101 for A003/P003) that
+    // shipped in earlier versions. Real invoices only exist when the dentist
+    // explicitly marks an appointment as attended.
+    const MOCK_IDS = ['R101'];
+    const MOCK_RECEIPT_NUMS = ['RCP-101'];
+    const before = invoices.length;
+    invoices = invoices.filter(i =>
+      !MOCK_IDS.includes(i.id) && !MOCK_RECEIPT_NUMS.includes(i.receiptNum)
+    );
+    // Also fix any stored A003 that was incorrectly marked 'attended' by old
+    // seed data — reset it to 'upcoming' so it doesn't ghost a receipt.
+    const a003 = appointments.find(a => a.id === 'A003');
+    if (a003 && a003.status === 'attended') {
+      a003.status = 'upcoming';
+      // Remove any visit entry on P003 that came from A003
+      const p003 = patients.find(p => p.id === 'P003');
+      if (p003) {
+        p003.visits = p003.visits.filter(v =>
+          !(v.treatment === 'Filling' && v.date === a003.date && v.note === '')
+        );
+      }
+    }
+    // Persist cleaned data if anything changed
+    if (invoices.length !== before || a003) {
+      try {
+        localStorage.setItem('df3_invoices', JSON.stringify(invoices));
+        localStorage.setItem('df3_appts', JSON.stringify(appointments));
+        localStorage.setItem('df3_pts', JSON.stringify(patients));
+      } catch(e) {}
+    }
   }catch(e){}
 }
 
