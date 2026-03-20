@@ -5,23 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentaFlow — Clinic Management</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230d0f14'/><path d='M32 10c-5.5 0-10 2.8-12 7-1.5 3-1.8 6.5-1.2 10l2.5 16c.4 2.5 2.5 4 4.5 3.5 1.5-.4 2.5-1.8 2.8-3.5l1.4-8h4l1.4 8c.3 1.7 1.3 3.1 2.8 3.5 2 .5 4.1-1 4.5-3.5l2.5-16c.6-3.5.3-7-1.2-10-2-4.2-6.5-7-12-7z' fill='%2300d4a0'/><circle cx='26' cy='22' r='2.5' fill='%230d0f14'/><circle cx='38' cy='22' r='2.5' fill='%230d0f14'/></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
+/* System font stack — fully offline, zero external requests */
+:root{
+  --font-sans:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+  --font-display:'Syne','Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+}
 :root{--bg:#0d0f14;--surface:#141720;--surface2:#1c2030;--surface3:#242840;--border:#2a2f45;--accent:#00d4a0;--accent2:#7c6af7;--yellow:#f0a500;--red:#f04a4a;--blue:#4a9ff0;--text:#e8eaf2;--text2:#8b91aa;--text3:#555d7a;--radius:12px;--radius-sm:8px;}
 *{margin:0;padding:0;box-sizing:border-box;}
 
 /* ROOT LAYOUT — flex row, full viewport height, no overflow lock */
 html{height:100%;}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100%;display:flex;overflow:hidden;/* overflow:hidden on body is fine — children manage their own scroll */}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:100%;display:flex;overflow:hidden;/* overflow:hidden on body is fine — children manage their own scroll */}
 
 /* SIDEBAR — sticky column that scrolls internally */
-.sidebar{width:224px;height:100vh;position:sticky;top:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;overflow-x:hidden;z-index:10;transition:width .22s cubic-bezier(.4,0,.2,1);}
+.sidebar{
+  width:224px;height:100vh;position:sticky;top:0;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;
+  overflow-y:auto;overflow-x:hidden;z-index:10;
+  transition:width .22s cubic-bezier(.4,0,.2,1);
+}
+/* DESKTOP collapsed — icon rail */
 .sidebar.collapsed{width:56px;}
 .logo{padding:14px 14px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px;}
 .logo-text{overflow:hidden;transition:opacity .15s,width .22s;white-space:nowrap;}
 .sidebar.collapsed .logo-text{opacity:0;width:0;pointer-events:none;}
-.logo-mark{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accent);}
+.logo-mark{font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--accent);}
 .logo-sub{font-size:10px;color:var(--text3);margin-top:1px;text-transform:uppercase;letter-spacing:.5px;}
 .logo-tooth{font-size:20px;flex-shrink:0;line-height:1;}
 .collapse-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:4px;border-radius:var(--radius-sm);transition:all .12s;flex-shrink:0;line-height:1;}
@@ -35,13 +45,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
 .nav-label{overflow:hidden;transition:opacity .15s,width .22s;white-space:nowrap;}
 .sidebar.collapsed .nav-label{opacity:0;width:0;}
-/* Tooltip on collapsed icons */
+/* Tooltip on collapsed icons — desktop only */
 .sidebar.collapsed .nav-item::after{content:attr(data-label);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--surface3);color:var(--text);font-size:12px;font-weight:500;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3);}
 .sidebar.collapsed .nav-item:hover::after{opacity:1;}
 .sidebar-foot{padding:10px;border-top:1px solid var(--border);overflow:hidden;}
 .clinic-badge{background:var(--surface2);border-radius:var(--radius-sm);padding:9px 11px;transition:opacity .15s;}
 .sidebar.collapsed .clinic-badge{opacity:0;pointer-events:none;height:0;padding:0;margin:0;}
-.clinic-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;}
+.clinic-name{font-family:var(--font-display);font-size:13px;font-weight:700;}
 .clinic-sub{font-size:11px;color:var(--text3);margin-top:1px;}
 .offline-pill{display:none;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.25);border-radius:var(--radius-sm);padding:5px 9px;font-size:11px;color:var(--yellow);margin-top:7px;text-align:center;transition:opacity .15s;}
 .offline-pill.show{display:block;}
@@ -50,14 +60,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 /* MAIN — fills remaining width, scrolls vertically, topbar sticks inside it */
 .main{flex:1;min-width:0;height:100vh;overflow-y:auto;overflow-x:hidden;}
 .topbar{position:sticky;top:0;background:rgba(13,15,20,.95);border-bottom:1px solid var(--border);padding:12px 26px;display:flex;align-items:center;justify-content:space-between;z-index:5;backdrop-filter:blur(10px);flex-wrap:wrap;gap:8px;}
-.page-title{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;}
+.page-title{font-family:var(--font-display);font-weight:700;font-size:17px;}
 .topbar-right{display:flex;align-items:center;gap:8px;}
 .date-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:12px;color:var(--text2);}
 .sync-pill{font-size:11px;padding:5px 10px;border-radius:20px;background:rgba(0,212,160,.1);border:1px solid rgba(0,212,160,.2);color:var(--accent);cursor:pointer;}
 .sync-pill.off{background:rgba(240,165,0,.1);border-color:rgba(240,165,0,.3);color:var(--yellow);}
 
 /* BUTTONS */
-.btn{padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .12s;font-family:'DM Sans',sans-serif;}
+.btn{padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .12s;font-family:var(--font-sans);}
 .btn-primary{background:var(--accent);color:#0d0f14;font-weight:600;}
 .btn-primary:hover{background:#00efb4;transform:translateY(-1px);}
 .btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
@@ -81,7 +91,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .stat-card.c-purple::before{background:var(--accent2);}
 .stat-card.c-red::before{background:var(--red);}
 .stat-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:600;}
-.stat-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin:5px 0 2px;line-height:1;}
+.stat-val{font-family:var(--font-display);font-size:26px;font-weight:800;margin:5px 0 2px;line-height:1;}
 .stat-card.c-green .stat-val{color:var(--accent);}
 .stat-card.c-yellow .stat-val{color:var(--yellow);}
 .stat-card.c-blue .stat-val{color:var(--blue);}
@@ -91,14 +101,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 
 /* CHAIR VIEW */
 .chair-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
-.chair-tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text3);transition:all .12s;font-family:'DM Sans',sans-serif;}
+.chair-tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text3);transition:all .12s;font-family:var(--font-sans);}
 .chair-tab.active{color:#0d0f14;}
 .chair-slot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;}
 .slot-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px;cursor:pointer;transition:all .12s;}
 .slot-card:hover{border-color:var(--accent);transform:translateY(-1px);}
 .slot-card.booked{border-color:rgba(0,212,160,.3);background:rgba(0,212,160,.04);}
 .slot-card.hmo{border-color:rgba(124,106,247,.4);background:rgba(124,106,247,.05);}
-.slot-time{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:3px;}
+.slot-time{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--text2);margin-bottom:3px;}
 .slot-card.booked .slot-time,.slot-card.hmo .slot-time{color:var(--accent);}
 .slot-patient{font-size:12px;font-weight:500;}
 .slot-treatment{font-size:11px;color:var(--text3);margin-top:1px;}
@@ -109,8 +119,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 /* UTIL BAR */
 .util-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
 .util-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-.util-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;}
-.util-pct{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent);}
+.util-title{font-family:var(--font-display);font-weight:700;font-size:13px;}
+.util-pct{font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--accent);}
 .util-bar-bg{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;margin-bottom:5px;}
 .util-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),#4af5d4);border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1);}
 .util-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);}
@@ -119,16 +129,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);hei
 .rev-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-bottom:16px;}
 .rev-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px;}
 .rev-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;}
-.rev-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--accent);}
+.rev-val{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--accent);}
 .rev-sub{font-size:11px;color:var(--text3);margin-top:2px;}
 
 /* SECTION HEADER */
 .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.sec-title{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+.sec-title{font-family:var(--font-display);font-weight:700;font-size:14px;}
 
 /* TABLES */
 .appt-filters,.filter-row{display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap;}
-.f-btn{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all .12s;font-family:'DM Sans',sans-serif;}
+.f-btn{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all .12s;font-family:var(--font-sans);}
 .f-btn:hover,.f-btn.active{background:var(--surface3);color:var(--text);border-color:var(--accent);}
 .tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 table{width:100%;border-collapse:collapse;}
@@ -153,15 +163,15 @@ td{padding:9px 12px;font-size:13px;}
 
 /* PATIENTS */
 .srch-bar{display:flex;gap:8px;margin-bottom:12px;}
-.srch-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .12s;}
+.srch-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;transition:border-color .12s;}
 .srch-input:focus{border-color:var(--accent);}
 .srch-input::placeholder{color:var(--text3);}
 .pt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
 .pt-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:all .12s;}
 .pt-card:hover{border-color:var(--accent2);transform:translateY(-1px);}
 .pt-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
-.pt-avatar{width:34px;height:34px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accent2);}
-.pt-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:2px;}
+.pt-avatar{width:34px;height:34px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:12px;color:var(--accent2);}
+.pt-name{font-family:var(--font-display);font-weight:700;font-size:14px;margin-bottom:2px;}
 .pt-meta{font-size:11px;color:var(--text2);margin-bottom:8px;}
 .pt-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
 .pt-rl{color:var(--text3);}
@@ -172,22 +182,22 @@ td{padding:9px 12px;font-size:13px;}
 /* REMINDERS */
 .rem-list{display:flex;flex-direction:column;gap:10px;}
 .rem-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;gap:12px;}
-.rem-av{width:38px;height:38px;border-radius:50%;background:rgba(0,212,160,.1);border:1px solid rgba(0,212,160,.2);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--accent);flex-shrink:0;}
+.rem-av{width:38px;height:38px;border-radius:50%;background:rgba(0,212,160,.1);border:1px solid rgba(0,212,160,.2);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--accent);flex-shrink:0;}
 .rem-body{flex:1;}
 .rem-name{font-weight:600;font-size:14px;margin-bottom:1px;}
 .rem-det{font-size:11px;color:var(--text3);margin-bottom:7px;}
 .msg-preview{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;font-size:12px;color:var(--text2);line-height:1.6;}
-.copy-btn{margin-top:6px;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(0,212,160,.1);border:1px solid rgba(0,212,160,.2);border-radius:var(--radius-sm);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;font-family:'DM Sans',sans-serif;}
+.copy-btn{margin-top:6px;display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:rgba(0,212,160,.1);border:1px solid rgba(0,212,160,.2);border-radius:var(--radius-sm);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;font-family:var(--font-sans);}
 .copy-btn:hover{background:rgba(0,212,160,.2);}
 .copy-btn.copied{background:rgba(0,212,160,.25);}
 
 /* SETTINGS */
 .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .s-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
-.s-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:12px;}
+.s-title{font-family:var(--font-display);font-weight:700;font-size:13px;margin-bottom:12px;}
 .field{margin-bottom:10px;}
 .field label{display:block;font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;}
-.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;transition:border-color .12s;}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;transition:border-color .12s;}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
 .field select option{background:var(--surface2);}
 
@@ -195,24 +205,24 @@ td{padding:9px 12px;font-size:13px;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;overflow-y:auto;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;width:460px;max-width:100%;max-height:calc(100vh - 32px);overflow-y:auto;position:relative;margin:auto;}
-.modal-title{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;margin-bottom:15px;}
+.modal-title{font-family:var(--font-display);font-weight:800;font-size:16px;margin-bottom:15px;}
 .modal-actions{display:flex;gap:8px;margin-top:15px;justify-content:flex-end;}
 .warn-banner{background:rgba(240,74,74,.1);border:1px solid rgba(240,74,74,.3);border-radius:var(--radius-sm);padding:8px 11px;font-size:12px;color:var(--red);display:none;margin-bottom:10px;align-items:center;gap:7px;}
 .warn-banner.show{display:flex;}
 
 /* INVOICE / RECEIPT */
-.invoice-preview{background:#fff;color:#1a1a2e;border-radius:var(--radius);font-family:'DM Sans',sans-serif;overflow:hidden;}
+.invoice-preview{background:#fff;color:#1a1a2e;border-radius:var(--radius);font-family:var(--font-sans);overflow:hidden;}
 .inv-letterhead{background:linear-gradient(135deg,#0d0f14 0%,#141720 100%);padding:20px 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
-.inv-clinic-name{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#00d4a0;letter-spacing:-.3px;}
+.inv-clinic-name{font-family:var(--font-display);font-weight:800;font-size:20px;color:#00d4a0;letter-spacing:-.3px;}
 .inv-clinic-details{font-size:11px;color:#8b91aa;margin-top:4px;line-height:1.7;}
 .inv-receipt-meta{text-align:right;flex-shrink:0;}
 .inv-receipt-label{font-size:9px;color:#555d7a;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;}
-.inv-receipt-num{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff;}
+.inv-receipt-num{font-family:var(--font-display);font-weight:800;font-size:18px;color:#fff;}
 .inv-receipt-date{font-size:11px;color:#8b91aa;margin-top:3px;}
 .inv-body{padding:20px 24px;}
 .inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #e8eaef;}
 .inv-party-label{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;font-weight:600;}
-.inv-party-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:#0d0f14;margin-bottom:2px;}
+.inv-party-name{font-family:var(--font-display);font-weight:700;font-size:14px;color:#0d0f14;margin-bottom:2px;}
 .inv-party-detail{font-size:11px;color:#666;line-height:1.6;}
 .inv-party-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:4px;}
 .inv-hmo-ptbadge{background:#ede9fe;color:#6d28d9;}
@@ -229,15 +239,15 @@ td{padding:9px 12px;font-size:13px;}
 .inv-totals{background:#f8f9fc;border-radius:8px;padding:11px 14px;margin-bottom:12px;}
 .inv-total-row{display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:4px;}
 .inv-total-row:last-child{margin-bottom:0;padding-top:7px;border-top:2px solid #e8eaef;}
-.inv-total-row.grand{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#0d0f14;}
+.inv-total-row.grand{font-family:var(--font-display);font-weight:800;font-size:16px;color:#0d0f14;}
 .inv-total-row.grand .amt{color:#00d4a0;}
 .inv-status-row{text-align:center;margin-bottom:12px;}
-.inv-paid-stamp{display:inline-block;border:3px solid #00d4a0;color:#00d4a0;font-family:'Syne',sans-serif;font-weight:800;font-size:16px;padding:4px 18px;border-radius:8px;transform:rotate(-8deg);letter-spacing:2px;}
-.inv-hmo-pending-stamp{display:inline-block;border:2px dashed #7c6af7;color:#7c6af7;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;padding:4px 12px;border-radius:8px;letter-spacing:1px;}
+.inv-paid-stamp{display:inline-block;border:3px solid #00d4a0;color:#00d4a0;font-family:var(--font-display);font-weight:800;font-size:16px;padding:4px 18px;border-radius:8px;transform:rotate(-8deg);letter-spacing:2px;}
+.inv-hmo-pending-stamp{display:inline-block;border:2px dashed #7c6af7;color:#7c6af7;font-family:var(--font-display);font-weight:700;font-size:12px;padding:4px 12px;border-radius:8px;letter-spacing:1px;}
 .inv-allergy-alert{background:#fff8f0;border:1px solid #fde8c8;border-radius:8px;padding:9px 12px;font-size:11px;color:#92400e;margin-bottom:10px;display:flex;align-items:flex-start;gap:7px;}
 .inv-next-visit{background:#e8fdf7;border:1px solid #a7f3d0;border-radius:8px;padding:9px 12px;font-size:12px;color:#065f46;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
 .inv-footer-strip{background:#f8f9fc;border-top:1px solid #e8eaef;padding:11px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;}
-.inv-footer-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:#00d4a0;}
+.inv-footer-brand{font-family:var(--font-display);font-weight:700;font-size:12px;color:#00d4a0;}
 .inv-footer-contact{font-size:10px;color:#999;}
 
 /* MISC */
@@ -247,7 +257,7 @@ td{padding:9px 12px;font-size:13px;}
 .empty-state{text-align:center;padding:44px;color:var(--text3);}
 .empty-icon{font-size:32px;margin-bottom:10px;}
 .tab-row{display:flex;gap:5px;margin-bottom:12px;}
-.tab-btn{padding:5px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text2);transition:all .12s;font-family:'DM Sans',sans-serif;}
+.tab-btn{padding:5px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text2);transition:all .12s;font-family:var(--font-sans);}
 .tab-btn.active{background:var(--surface2);color:var(--text);border-color:var(--accent);}
 .visit-entry{background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-bottom:6px;font-size:12px;}
 .v-date{font-weight:600;color:var(--accent);margin-bottom:2px;}
@@ -255,13 +265,13 @@ td{padding:9px 12px;font-size:13px;}
 .toast.show{transform:translateY(0);opacity:1;}
 .offline-panel{background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.2);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;display:none;}
 .offline-panel.show{display:block;}
-.offline-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--yellow);margin-bottom:3px;}
+.offline-title{font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--yellow);margin-bottom:3px;}
 .offline-text{font-size:12px;color:var(--text2);line-height:1.6;}
 
 /* ODONTOGRAM */
 .odonto-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
 .odonto-tools{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;}
-.odonto-tool{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text3);transition:all .12s;font-family:'DM Sans',sans-serif;}
+.odonto-tool{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text3);transition:all .12s;font-family:var(--font-sans);}
 .odonto-tool.active{border-color:transparent;color:#0d0f14;}
 .odonto-tool[data-code="healthy"].active{background:var(--text2);}
 .odonto-tool[data-code="decay"].active{background:var(--red);}
@@ -287,41 +297,41 @@ td{padding:9px 12px;font-size:13px;}
 .ptbl{border-collapse:collapse;min-width:700px;width:100%;}
 .ptbl th{background:var(--surface2);padding:5px 6px;font-size:9px;color:var(--text3);text-transform:uppercase;font-weight:600;border:1px solid var(--border);text-align:center;}
 .ptbl td{border:1px solid var(--border);padding:3px;text-align:center;vertical-align:middle;}
-.perio-input{width:32px;background:var(--surface2);border:1px solid transparent;border-radius:3px;padding:2px;font-size:11px;color:var(--text);text-align:center;font-family:'DM Sans',sans-serif;outline:none;}
+.perio-input{width:32px;background:var(--surface2);border:1px solid transparent;border-radius:3px;padding:2px;font-size:11px;color:var(--text);text-align:center;font-family:var(--font-sans);outline:none;}
 .perio-input:focus{border-color:var(--accent);background:var(--surface3);}
 .perio-input.deep{background:rgba(240,74,74,.18);color:var(--red);font-weight:700;}
 .p-row-lbl{font-size:9px;color:var(--text3);font-weight:600;padding:4px 8px;background:var(--surface2);text-align:left;white-space:nowrap;}
-.t-hdr{font-family:'Syne',sans-serif;font-weight:700;font-size:10px;color:var(--accent);}
+.t-hdr{font-family:var(--font-display);font-weight:700;font-size:10px;color:var(--accent);}
 
 /* INVENTORY */
 .inv-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
 .inv-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;}
-.inv-sv{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+.inv-sv{font-family:var(--font-display);font-size:20px;font-weight:800;}
 .inv-sl{font-size:10px;color:var(--text3);margin-top:1px;}
 
 /* FEE SCHEDULE */
 .fee-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;}
 .fee-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;display:flex;align-items:center;justify-content:space-between;}
 .fee-name{font-size:13px;font-weight:500;}
-.fee-price{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--accent);}
-.fee-input{width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;text-align:right;}
+.fee-price{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--accent);}
+.fee-input{width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;text-align:right;}
 .fee-input:focus{border-color:var(--accent);}
 
 /* ============ PIN LOCK SCREEN ============ */
 .pin-screen{position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px;}
 .pin-screen.hidden{display:none;}
-.pin-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:var(--accent);margin-bottom:6px;}
+.pin-logo{font-family:var(--font-display);font-weight:800;font-size:26px;color:var(--accent);margin-bottom:6px;}
 .pin-sub{font-size:12px;color:var(--text3);margin-bottom:32px;text-transform:uppercase;letter-spacing:1px;}
 .pin-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 32px;width:320px;max-width:92vw;text-align:center;}
 .pin-role-tabs{display:flex;gap:6px;margin-bottom:22px;}
-.pin-role-tab{flex:1;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:none;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:all .12s;}
+.pin-role-tab{flex:1;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:none;color:var(--text2);cursor:pointer;font-family:var(--font-sans);font-size:13px;font-weight:500;transition:all .12s;}
 .pin-role-tab.active{background:rgba(0,212,160,.12);border-color:var(--accent);color:var(--accent);}
 .pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:20px;}
 .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .15s;}
 .pin-dot.filled{background:var(--accent);border-color:var(--accent);}
 .pin-dot.error{background:var(--red);border-color:var(--red);}
 .pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.pin-key{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:18px;font-weight:600;cursor:pointer;font-family:'Syne',sans-serif;color:var(--text);transition:all .1s;}
+.pin-key{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:18px;font-weight:600;cursor:pointer;font-family:var(--font-display);color:var(--text);transition:all .1s;}
 .pin-key:hover{background:var(--surface3);border-color:var(--accent);}
 .pin-key:active{transform:scale(.93);}
 .pin-key.del{font-size:14px;color:var(--text3);}
@@ -345,7 +355,8 @@ body.receptionist-mode #dash-rev-row,
 body.receptionist-mode #bk-fee,
 body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
-.hamburger{display:none;background:none;border:none;cursor:pointer;color:var(--text);font-size:20px;padding:4px 6px;border-radius:var(--radius-sm);line-height:1;flex-shrink:0;}
+.hamburger{display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;padding:5px 7px;border-radius:var(--radius-sm);line-height:1;flex-shrink:0;transition:background .12s,color .12s;}
+.hamburger:hover{background:var(--surface2);color:var(--text);}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;backdrop-filter:blur(2px);}
 .sidebar-overlay.show{display:block;}
 
@@ -360,7 +371,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 .ob-step-dot.active{background:var(--accent2);}
 .ob-body{padding:20px 24px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .ob-icon{font-size:40px;margin-bottom:14px;display:block;}
-.ob-title{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:8px;}
+.ob-title{font-family:var(--font-display);font-weight:800;font-size:20px;margin-bottom:8px;}
 .ob-desc{font-size:14px;color:var(--text2);line-height:1.7;}
 .ob-features{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
 .ob-feat{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);}
@@ -390,8 +401,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 @media (max-width:768px){
   /* body/html still locked; .main is the scroll container */
   html,body{height:100%;overflow:hidden;}
-  .hamburger{display:flex;align-items:center;justify-content:center;}
 
+  /* Sidebar becomes off-canvas drawer — slides in/out on mobile */
   .sidebar{
     position:fixed;top:0;left:0;
     height:100%;width:260px !important;
@@ -400,16 +411,19 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     transition:transform .22s cubic-bezier(.4,0,.2,1);
     overflow-y:auto;-webkit-overflow-scrolling:touch;
   }
-  .sidebar.mobile-open{transform:translateX(0);}
-  .sidebar.collapsed{width:260px !important;transform:translateX(-100%);}
-  .sidebar.collapsed.mobile-open{transform:translateX(0);}
+  /* Open = fully visible regardless of collapsed state */
+  .sidebar.mobile-open{transform:translateX(0) !important;}
+  /* When open, always show full labels (collapsed width doesn't apply) */
+  .sidebar.mobile-open.collapsed{width:260px !important;}
+  .sidebar.mobile-open .logo-text,
+  .sidebar.mobile-open .nav-label{opacity:1 !important;width:auto !important;pointer-events:auto !important;}
+  .sidebar.mobile-open .nav-sec{opacity:1 !important;height:auto !important;padding:9px 12px 3px !important;pointer-events:auto !important;}
+  .sidebar.mobile-open .clinic-badge{opacity:1 !important;pointer-events:auto !important;height:auto !important;padding:9px 11px !important;margin:0 !important;}
+  .sidebar.mobile-open .offline-pill.show{opacity:1 !important;pointer-events:auto !important;}
+  /* No tooltip on mobile */
+  .sidebar .nav-item::after{display:none !important;}
+  /* Hide ◀ collapse arrow inside sidebar on mobile — hamburger in topbar is enough */
   .collapse-btn{display:none;}
-  /* Always show full labels in mobile drawer */
-  .sidebar.collapsed .logo-text,
-  .sidebar.collapsed .nav-label{opacity:1;width:auto;pointer-events:auto;}
-  .sidebar.collapsed .nav-sec{opacity:1;height:auto;padding:9px 12px 3px;pointer-events:auto;}
-  .sidebar.collapsed .clinic-badge{opacity:1;pointer-events:auto;height:auto;padding:9px 11px;margin:0;}
-  .sidebar.collapsed .offline-pill{opacity:1;pointer-events:auto;}
 
   .main{width:100%;height:100vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
   .topbar{padding:10px 14px;}
@@ -534,7 +548,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 <main class="main">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:10px;">
-      <button class="hamburger" id="hamburger" onclick="toggleMobileSidebar()" title="Menu">☰</button>
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
       <div class="page-title" id="page-title">Dashboard</div>
     </div>
     <div class="topbar-right">
@@ -548,7 +562,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
         </button>
         <div id="notif-panel" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:360px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:200;max-height:480px;overflow-y:auto;">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)">
-            <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px">🔔 Notifications</div>
+            <div style="font-family:var(--font-display);font-weight:700;font-size:14px">🔔 Notifications</div>
             <div style="display:flex;gap:6px">
               <button class="btn btn-ghost btn-sm" onclick="markAllRead()" style="font-size:11px">Mark all read</button>
               <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()">✕</button>
@@ -651,14 +665,21 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
   <!-- ============ INVOICES ============ -->
   <div class="page" id="page-invoices">
-    <div class="appt-filters">
+    <div class="appt-filters" style="flex-wrap:wrap;gap:8px;">
       <button class="f-btn active" onclick="filterInv('all',this)">All</button>
       <button class="f-btn" onclick="filterInv('cash',this)">Cash</button>
       <button class="f-btn" onclick="filterInv('hmo',this)">HMO</button>
       <button class="f-btn" onclick="filterInv('unpaid',this)">Unpaid</button>
-      <div style="flex:1"></div>
-      <div style="font-size:12px;color:var(--text3);padding:5px 0">Click any row to view / print receipt</div>
+      <div style="flex:1;min-width:140px;">
+        <input class="srch-input" type="text" id="inv-pt-search" placeholder="🔍 Filter by patient name..." oninput="renderInvoices()" style="width:100%;font-size:12px;padding:6px 10px;">
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="date" id="inv-date-from" onchange="renderInvoices()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+        <span style="font-size:11px;color:var(--text3)">to</span>
+        <input type="date" id="inv-date-to" onchange="renderInvoices()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+      </div>
     </div>
+    <div id="inv-summary-bar" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;display:flex;gap:20px;flex-wrap:wrap;font-size:12px;"></div>
     <div class="tbl-wrap">
       <table><thead><tr><th>Receipt #</th><th>Date</th><th>Patient</th><th>Treatment</th><th>Amount (₦)</th><th>Pay Type</th><th>HMO</th><th>Status</th><th>Action</th></tr></thead>
       <tbody id="inv-tbody"></tbody></table>
@@ -717,7 +738,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
       <div style="font-size:13px;color:var(--text2)">Select patient → pick condition → click tooth.</div>
       <div style="display:flex;gap:7px;">
-        <select id="odonto-sel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="loadOdonto()"><option value="">— Select Patient —</option></select>
+        <select id="odonto-sel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="loadOdonto()"><option value="">— Select Patient —</option></select>
         <button class="btn btn-primary btn-sm" onclick="saveOdonto()">Save</button>
       </div>
     </div>
@@ -755,16 +776,16 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
       <div style="font-size:13px;color:var(--text2)">Pocket depths in mm. Red = ≥4mm. BOP = bleeding on probing.</div>
       <div style="display:flex;gap:7px;">
-        <select id="perio-sel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="loadPerio()"><option value="">— Select Patient —</option></select>
+        <select id="perio-sel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="loadPerio()"><option value="">— Select Patient —</option></select>
         <button class="btn btn-primary btn-sm" onclick="savePerio()">Save</button>
       </div>
     </div>
     <div class="perio-wrap" id="perio-main" style="display:none">
       <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:flex-start;">
         <div style="display:flex;gap:8px;">
-          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:6px 12px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;" id="perio-avg">—</div><div style="font-size:10px;color:var(--text3)">Avg Depth (mm)</div></div>
-          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:6px 12px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--red)" id="perio-bop">—</div><div style="font-size:10px;color:var(--text3)">BOP Sites</div></div>
-          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:6px 12px;text-align:center;"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--red)" id="perio-deep">—</div><div style="font-size:10px;color:var(--text3)">Deep ≥4mm</div></div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:6px 12px;text-align:center;"><div style="font-family:var(--font-display);font-weight:800;font-size:16px;" id="perio-avg">—</div><div style="font-size:10px;color:var(--text3)">Avg Depth (mm)</div></div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:6px 12px;text-align:center;"><div style="font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--red)" id="perio-bop">—</div><div style="font-size:10px;color:var(--text3)">BOP Sites</div></div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:6px 12px;text-align:center;"><div style="font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--red)" id="perio-deep">—</div><div style="font-size:10px;color:var(--text3)">Deep ≥4mm</div></div>
         </div>
         <div style="margin-left:auto;font-size:11px;color:var(--text3);padding-top:10px" id="perio-saved-lbl">Not saved</div>
       </div>
@@ -868,14 +889,14 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Date</label><input type="date" id="bk-date"></div>
       <div class="field"><label>Chair</label>
-        <select id="bk-chair" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="checkDbl()"></select>
+        <select id="bk-chair" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="checkDbl()"></select>
       </div>
     </div>
     <div class="field"><label>Time Slot</label>
-      <select id="bk-time" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="checkDbl()"><option value="">— Select time —</option></select>
+      <select id="bk-time" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="checkDbl()"><option value="">— Select time —</option></select>
     </div>
     <div class="field"><label>Patient</label>
-      <select id="bk-patient" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="onPtSel()"><option value="new">+ New Patient</option></select>
+      <select id="bk-patient" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="onPtSel()"><option value="new">+ New Patient</option></select>
     </div>
     <div id="new-pt-fields" style="display:none">
       <div class="field"><label>Full Name</label><input type="text" id="bk-name" placeholder="e.g. Chukwuemeka Nwosu"></div>
@@ -883,30 +904,30 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field"><label>Age</label><input type="number" id="bk-age" placeholder="35"></div>
         <div class="field"><label>Pay Type</label>
-          <select id="bk-new-paytype" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+          <select id="bk-new-paytype" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
             <option value="cash">Cash</option><option value="hmo">HMO</option><option value="transfer">Bank Transfer</option>
           </select>
         </div>
       </div>
       <div class="field" id="bk-new-hmo-field" style="display:none"><label>HMO Provider</label>
-        <select id="bk-new-hmo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;"></select>
+        <select id="bk-new-hmo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;"></select>
       </div>
     </div>
     <div class="field"><label>Treatment</label>
-      <select id="bk-treatment" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="autoFillFee()">
+      <select id="bk-treatment" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="autoFillFee()">
         <option>Consultation</option><option>Cleaning / Scaling</option><option>Extraction</option><option>Filling</option><option>Root Canal</option><option>Crown / Bridge</option><option>Whitening</option><option>X-Ray</option><option>Follow-up</option>
       </select>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Fee (₦) — auto-filled</label><input type="number" id="bk-fee" placeholder="0"></div>
       <div class="field"><label>Payment Type</label>
-        <select id="bk-paytype" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="onPaytypeChange()">
+        <select id="bk-paytype" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="onPaytypeChange()">
           <option value="cash">Cash</option><option value="hmo">HMO</option><option value="transfer">Bank Transfer</option>
         </select>
       </div>
     </div>
     <div class="field" id="bk-hmo-field" style="display:none"><label>HMO Provider</label>
-      <select id="bk-hmo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;"></select>
+      <select id="bk-hmo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;"></select>
     </div>
     <div class="field"><label>Notes</label><input type="text" id="bk-notes" placeholder="Optional notes..."></div>
     <div class="modal-actions">
@@ -921,7 +942,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
   <div class="modal" style="width:540px">
     <div class="modal-title">👤 New Patient Registration</div>
 
-    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Personal Details</div>
+    <div style="font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Personal Details</div>
     <div class="field"><label>Full Name</label><input type="text" id="ap-name" placeholder="e.g. Kemi Adeyemi"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Phone</label><input type="text" id="ap-phone" placeholder="0803 987 6543"></div>
@@ -929,7 +950,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Gender</label>
-        <select id="ap-gender" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+        <select id="ap-gender" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
           <option>Female</option><option>Male</option><option>Other</option>
         </select>
       </div>
@@ -942,18 +963,18 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Pay Type</label>
-        <select id="ap-paytype" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onchange="toggleApHmo()">
+        <select id="ap-paytype" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="toggleApHmo()">
           <option value="cash">Cash</option><option value="hmo">HMO</option><option value="transfer">Bank Transfer</option>
         </select>
       </div>
       <div class="field"><label>Next Recommended Visit</label><input type="date" id="ap-next"></div>
     </div>
     <div class="field" id="ap-hmo-field" style="display:none"><label>HMO Provider</label>
-      <select id="ap-hmo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;"></select>
+      <select id="ap-hmo" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;"></select>
     </div>
 
     <div style="border-top:1px solid var(--border);margin:16px 0 12px"></div>
-    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">🏥 Medical History</div>
+    <div style="font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">🏥 Medical History</div>
 
     <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Do you have or have you ever had any of the following?</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px" id="ap-conditions-grid">
@@ -971,7 +992,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Blood Group</label>
-        <select id="ap-blood" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+        <select id="ap-blood" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
           <option value="">Unknown</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
         </select>
       </div>
@@ -981,11 +1002,11 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     </div>
 
     <div style="border-top:1px solid var(--border);margin:16px 0 12px"></div>
-    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">🦷 Dental History</div>
+    <div style="font-family:var(--font-display);font-weight:700;font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">🦷 Dental History</div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Last dental visit</label>
-        <select id="ap-last-visit" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+        <select id="ap-last-visit" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
           <option>Less than 6 months ago</option><option>6–12 months ago</option><option>1–2 years ago</option><option>Over 2 years ago</option><option>Never visited a dentist</option>
         </select>
       </div>
@@ -1082,7 +1103,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
   <div class="modal">
     <div class="modal-title">🔬 New Lab Job</div>
     <div class="field"><label>Patient</label>
-      <select id="lab-pt" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;"></select>
+      <select id="lab-pt" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;"></select>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Treatment / Work Type</label><input type="text" id="lab-treatment" placeholder="e.g. Full Crown #26"></div>
@@ -1108,7 +1129,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div class="field"><label>Item Name</label><input type="text" id="ii-name" placeholder="e.g. Composite Resin A2"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <div class="field"><label>Category</label>
-        <select id="ii-cat" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;">
+        <select id="ii-cat" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
           <option>Restorative</option><option>Surgical / Extraction</option><option>Preventive</option><option>Impression</option><option>Endodontic</option><option>PPE</option><option>Anaesthetic</option><option>Prosthetics</option><option>Other</option>
         </select>
       </div>
@@ -1149,7 +1170,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 <!-- SPOTLIGHT RING -->
 <div class="ob-spotlight" id="ob-spotlight"></div>
 <!-- HELP BUTTON (persistent) -->
-<button id="how-to-btn" onclick="startOnboarding()" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:7px 16px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;z-index:50;display:flex;align-items:center;gap:6px;transition:all .12s;box-shadow:0 4px 16px rgba(0,0,0,.3);" onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+<button id="how-to-btn" onclick="startOnboarding()" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:7px 16px;font-size:12px;font-family:var(--font-sans);cursor:pointer;z-index:50;display:flex;align-items:center;gap:6px;transition:all .12s;box-shadow:0 4px 16px rgba(0,0,0,.3);" onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
   💡 <span>How to use DentaFlow</span>
 </button>
 
@@ -1181,7 +1202,9 @@ var invCatFilter='All';
 var currentInvId=null,currentApptFilter='all',selPtForDetail=null;
 var currentOdontoPt=null,currentPerioPt=null,activeTool='healthy';
 var invFilterStr='all',revFilter='month';
-var pidC=6,aidC=8,iidC=11,lidC=1,invC=5,receiptC=101;
+var pidC=6,aidC=8,iidC=11,lidC=1,invC=5;
+// receiptC loaded from storage — never reset so numbers are always unique
+var receiptC=1001;
 var currentInvoiceId=null;
 
 var hmoProviders=[
@@ -1218,9 +1241,7 @@ var appointments=[
   {id:'A007',patientId:'P002',date:tomorrow(),time:'13:30',chair:'Chair 2',treatment:'Follow-up',payType:'hmo',hmoId:'H001',fee:3000,status:'upcoming',notes:''},
 ];
 
-var invoices=[
-  {id:'R101',apptId:'A003',patientId:'P003',date:today(),treatment:'Filling',amount:25000,payType:'transfer',hmoId:'',copay:0,paid:true,receiptNum:'RCP-101'},
-];
+var invoices=[];
 
 var labJobs=[
   {id:'L001',patientId:'P002',treatment:'Full Crown #26',labName:'PhCity Dental Lab',sentDate:dOff(-5),dueDate:dOff(2),fee:45000,status:'pending',notes:'Shade A2'},
@@ -1257,6 +1278,7 @@ function persist(){
     localStorage.setItem('df3_lab',JSON.stringify(labJobs));
     localStorage.setItem('df3_fees',JSON.stringify(feeSchedule));
     localStorage.setItem('df3_saved',new Date().toLocaleString('en-NG'));
+    localStorage.setItem('df3_receiptC', receiptC);
     if(isOffline)pendingChanges++;
   }catch(e){}
 }
@@ -1272,6 +1294,7 @@ function loadStorage(){
     const iv=localStorage.getItem('df3_invoices');if(iv)invoices=JSON.parse(iv);
     const l=localStorage.getItem('df3_lab');if(l)labJobs=JSON.parse(l);
     const f=localStorage.getItem('df3_fees');if(f)feeSchedule=JSON.parse(f);
+    const rc=localStorage.getItem('df3_receiptC');if(rc)receiptC=parseInt(rc);
   }catch(e){}
 }
 
@@ -1420,7 +1443,7 @@ function renderAppts(){
       <td>${a.treatment}</td>
       <td style="font-size:11px;color:var(--text3)">${fmtDate(a.date)}</td>
       <td><span class="pill ${ptc}">${a.payType==='hmo'?'HMO':a.payType==='transfer'?'Transfer':'Cash'}</span>${hmo?`<div style="font-size:10px;color:var(--accent2)">${hmo.name}</div>`:''}</td>
-      ${isDentist?`<td style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent)">${fmtMoney(a.fee)}</td>`:''}
+      ${isDentist?`<td style="font-family:var(--font-display);font-weight:700;color:var(--accent)">${fmtMoney(a.fee)}</td>`:''}
       <td><span class="pill ${pc}">${a.status}</span></td>
       <td><div style="display:flex;gap:3px">${a.status==='upcoming'?`<button class="btn btn-ghost btn-sm" onclick="markAttended('${a.id}')">✓</button><button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">✕</button>`:''}</div></td>
     </tr>`;
@@ -1554,7 +1577,25 @@ function openPtDetail(id){
   const up=appointments.filter(a=>a.patientId===id&&a.status==='upcoming'&&a.date>=today());
   document.getElementById('pd-upcoming').innerHTML=up.length?up.map(a=>`<div class="visit-entry"><div class="v-date">${fmtDate(a.date)} · ${fmtTime(a.time)} · ${a.chair}</div><div>${a.treatment} — ${fmtMoney(a.fee)}</div></div>`).join(''):`<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center">No upcoming</div>`;
   const ptInv=invoices.filter(i=>i.patientId===id).sort((a,b)=>b.date.localeCompare(a.date));
-  document.getElementById('pd-invoices').innerHTML=ptInv.length?ptInv.map(i=>`<div class="visit-entry"><div class="v-date">${i.receiptNum} · ${fmtDate(i.date)}</div><div>${i.treatment} — <strong>${fmtMoney(i.amount)}</strong> <span class="pill ${i.paid?'pill-att':'pill-up'}">${i.paid?'Paid':'HMO Pending'}</span></div></div>`).join(''):`<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center">No invoices</div>`;
+  const invEl=document.getElementById('pd-invoices');
+  if(!ptInv.length){
+    invEl.innerHTML=`<div style="color:var(--text3);font-size:12px;padding:16px;text-align:center">No receipts yet for this patient</div>`;
+  } else {
+    invEl.innerHTML=ptInv.map(i=>`
+      <div class="visit-entry" style="cursor:pointer" onclick="closeModal('pt-detail-modal');viewInvoiceById('${i.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="v-date" style="margin-bottom:2px">${i.receiptNum} · ${fmtDate(i.date)}</div>
+          <span class="pill ${i.paid?'pill-att':'pill-up'}" style="font-size:10px">${i.paid?'Paid':'HMO Pending'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:12px;color:var(--text)">${i.treatment}</div>
+          <strong style="color:var(--accent);font-family:'Syne',sans-serif">${fmtMoney(i.amount)}</strong>
+        </div>
+      </div>`).join('') +
+      `<div style="margin-top:8px;text-align:right">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('pt-detail-modal');goToPatientInvoices('${id}')">View all receipts →</button>
+      </div>`;
+  }
   // Medical history
   const mh=p.medHistory;
   const mhEl=document.getElementById('pd-medhistory');
@@ -1635,28 +1676,95 @@ function copyAllRecall(){
 
 // ==================== INVOICES ====================
 function filterInv(f,el){invFilterStr=f;document.querySelectorAll('#page-invoices .f-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderInvoices();}
+
 function renderInvoices(){
-  let list=[...invoices].sort((a,b)=>b.date.localeCompare(a.date));
-  if(invFilterStr==='cash')list=list.filter(i=>i.payType!=='hmo');
-  else if(invFilterStr==='hmo')list=list.filter(i=>i.payType==='hmo');
-  else if(invFilterStr==='unpaid')list=list.filter(i=>!i.paid);
+  let list=[...invoices].sort((a,b)=>b.date.localeCompare(a.date)||b.receiptNum.localeCompare(a.receiptNum));
+
+  // Type filter
+  if(invFilterStr==='cash') list=list.filter(i=>i.payType!=='hmo');
+  else if(invFilterStr==='hmo') list=list.filter(i=>i.payType==='hmo');
+  else if(invFilterStr==='unpaid') list=list.filter(i=>!i.paid);
+
+  // Patient name search
+  const ptQ=(document.getElementById('inv-pt-search')?.value||'').toLowerCase().trim();
+  if(ptQ){
+    list=list.filter(i=>{
+      const pt=getPt(i.patientId);
+      return pt && (pt.name.toLowerCase().includes(ptQ)||pt.phone.includes(ptQ));
+    });
+  }
+
+  // Date range filter
+  const fromDate=document.getElementById('inv-date-from')?.value;
+  const toDate=document.getElementById('inv-date-to')?.value;
+  if(fromDate) list=list.filter(i=>i.date>=fromDate);
+  if(toDate)   list=list.filter(i=>i.date<=toDate);
+
+  // Summary bar
+  const summaryBar=document.getElementById('inv-summary-bar');
+  if(list.length>0){
+    const totalAmt=list.reduce((s,i)=>s+(i.amount||0),0);
+    const paidAmt=list.filter(i=>i.paid).reduce((s,i)=>s+(i.amount||0),0);
+    const pendingAmt=list.filter(i=>!i.paid).reduce((s,i)=>s+(i.amount||0),0);
+    const hmoCount=list.filter(i=>i.payType==='hmo').length;
+    summaryBar.style.display='flex';
+    summaryBar.innerHTML=`
+      <span><strong style="color:var(--text)">${list.length}</strong> <span style="color:var(--text3)">receipts</span></span>
+      <span style="color:var(--border)">|</span>
+      <span><strong style="color:var(--accent)">${fmtMoney(totalAmt)}</strong> <span style="color:var(--text3)">total</span></span>
+      <span style="color:var(--border)">|</span>
+      <span><strong style="color:var(--accent)">${fmtMoney(paidAmt)}</strong> <span style="color:var(--text3)">collected</span></span>
+      ${pendingAmt>0?`<span style="color:var(--border)">|</span><span><strong style="color:var(--yellow)">${fmtMoney(pendingAmt)}</strong> <span style="color:var(--text3)">HMO pending</span></span>`:''}
+      ${hmoCount>0?`<span style="color:var(--border)">|</span><span><strong style="color:var(--accent2)">${hmoCount}</strong> <span style="color:var(--text3)">HMO visits</span></span>`:''}
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)">Click any row to view receipt</span>`;
+  } else {
+    summaryBar.style.display='none';
+  }
+
   const tb=document.getElementById('inv-tbody');
-  if(!list.length){tb.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text3)">No invoices yet. Mark appointments as attended to generate receipts.</td></tr>`;return;}
+  if(!list.length){
+    tb.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text3)">
+      ${invoices.length===0
+        ? 'No receipts yet — mark an appointment as attended (✓) to generate the first receipt.'
+        : 'No receipts match your filters.'}
+    </td></tr>`;
+    return;
+  }
+
   tb.innerHTML=list.map(i=>{
     const pt=getPt(i.patientId),hmo=i.hmoId?getHMO(i.hmoId):null;
+    const ptc=i.payType==='hmo'?'pill-hmo':i.payType==='transfer'?'pill-pending':'pill-cash';
     return`<tr style="cursor:pointer" onclick="viewInvoice('${i.id}')">
-      <td><strong style="color:var(--accent)">${i.receiptNum}</strong></td>
+      <td><strong style="color:var(--accent);font-family:'Syne',sans-serif">${i.receiptNum}</strong></td>
       <td style="font-size:11px;color:var(--text3)">${fmtDate(i.date)}</td>
-      <td>${pt?pt.name:'—'}</td>
+      <td>
+        <div style="font-weight:500">${pt?pt.name:'—'}</div>
+        ${pt?`<div style="font-size:10px;color:var(--text3)">${pt.phone}</div>`:''}
+      </td>
       <td>${i.treatment}</td>
       <td style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent)">${fmtMoney(i.amount)}</td>
-      <td><span class="pill ${i.payType==='hmo'?'pill-hmo':i.payType==='transfer'?'pill-pending':'pill-cash'}">${i.payType==='hmo'?'HMO':i.payType==='transfer'?'Transfer':'Cash'}</span></td>
+      <td><span class="pill ${ptc}">${i.payType==='hmo'?'HMO':i.payType==='transfer'?'Transfer':'Cash'}</span></td>
       <td style="font-size:11px;color:var(--accent2)">${hmo?hmo.name:'—'}</td>
       <td><span class="pill ${i.paid?'pill-att':'pill-up'}">${i.paid?'Paid':'HMO Pending'}</span></td>
       <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();viewInvoice('${i.id}')">View</button></td>
     </tr>`;
   }).join('');
 }
+// Open receipt modal directly by ID (used from patient detail)
+function viewInvoiceById(id){
+  go('invoices');
+  setTimeout(()=>viewInvoice(id), 50);
+}
+// Navigate to invoices page pre-filtered by patient name
+function goToPatientInvoices(patientId){
+  const pt=getPt(patientId);
+  go('invoices');
+  setTimeout(()=>{
+    const el=document.getElementById('inv-pt-search');
+    if(el&&pt){el.value=pt.name;renderInvoices();}
+  },50);
+}
+
 function viewInvoice(id){
   const inv=invoices.find(i=>i.id===id);if(!inv)return;
   const pt=getPt(inv.patientId);
@@ -1882,7 +1990,7 @@ function renderHMO(){
   document.getElementById('hmo-providers-tbody').innerHTML=hmoProviders.map(h=>{
     const enrolled=patients.filter(p=>p.hmoId===h.id).length;
     const mClaims=invoices.filter(i=>i.hmoId===h.id&&i.date>=mStart).length;
-    return`<tr><td><strong>${h.name}</strong></td><td style="font-size:11px;color:var(--text3)">${h.plan}</td><td style="font-family:'Syne',sans-serif;font-weight:700">${enrolled}</td><td style="color:var(--accent)">${h.capitation?fmtMoney(h.capitation):'-'}</td><td>${mClaims}</td><td><span class="pill pill-att">${h.status}</span></td></tr>`;
+    return`<tr><td><strong>${h.name}</strong></td><td style="font-size:11px;color:var(--text3)">${h.plan}</td><td style="font-family:var(--font-display);font-weight:700">${enrolled}</td><td style="color:var(--accent)">${h.capitation?fmtMoney(h.capitation):'-'}</td><td>${mClaims}</td><td><span class="pill pill-att">${h.status}</span></td></tr>`;
   }).join('');
   // Visit log
   const hmoVisits=appointments.filter(a=>a.payType==='hmo'&&a.status==='attended').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
@@ -1932,7 +2040,7 @@ function renderRevenue(){
   const byTreatment={};
   attended.forEach(a=>{if(!byTreatment[a.treatment])byTreatment[a.treatment]={visits:0,total:0,hmo:0,cash:0};byTreatment[a.treatment].visits++;byTreatment[a.treatment].total+=(a.fee||0);if(a.payType==='hmo')byTreatment[a.treatment].hmo+=(a.fee||0);else byTreatment[a.treatment].cash+=(a.fee||0);});
   const sorted=Object.entries(byTreatment).sort((a,b)=>b[1].total-a[1].total);
-  document.getElementById('rev-by-treatment').innerHTML=sorted.length?sorted.map(([t,v])=>`<tr><td><strong>${t}</strong></td><td style="color:var(--text3)">${v.visits}</td><td style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent)">${fmtMoney(v.total)}</td><td style="color:var(--accent2)">${fmtMoney(v.hmo)}</td><td style="color:var(--accent)">${fmtMoney(v.cash)}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">No attended appointments in this period</td></tr>`;
+  document.getElementById('rev-by-treatment').innerHTML=sorted.length?sorted.map(([t,v])=>`<tr><td><strong>${t}</strong></td><td style="color:var(--text3)">${v.visits}</td><td style="font-family:var(--font-display);font-weight:700;color:var(--accent)">${fmtMoney(v.total)}</td><td style="color:var(--accent2)">${fmtMoney(v.hmo)}</td><td style="color:var(--accent)">${fmtMoney(v.cash)}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">No attended appointments in this period</td></tr>`;
   // Fee schedule
   document.getElementById('fee-grid').innerHTML=Object.entries(feeSchedule).map(([t,p])=>`<div class="fee-card"><span class="fee-name">${t}</span><input class="fee-input" type="number" id="fee-${t.replace(/\s+/g,'-').replace(/\//g,'')}" value="${p}" placeholder="0"></div>`).join('');
 }
@@ -2004,7 +2112,7 @@ function renderInventory(){
   tb.innerHTML=list.map(i=>{
     const st=i.qty===0?{cls:'pill-out',l:'Out'}:i.qty<=i.minQty?{cls:'pill-low',l:'Low'}:{cls:'pill-ok',l:'OK'};
     const qc=i.qty===0?'var(--red)':i.qty<=i.minQty?'var(--yellow)':'var(--text)';
-    return`<tr><td><strong>${i.name}</strong></td><td style="font-size:11px;color:var(--text3)">${i.category}</td><td style="font-size:11px;color:var(--text2)">${i.unit}</td><td><span style="font-family:'Syne',sans-serif;font-weight:700;color:${qc}">${i.qty}</span></td><td style="font-size:11px;color:var(--text3)">${i.minQty}</td><td><span class="pill ${st.cls}">${st.l}</span></td><td style="font-size:11px;color:var(--text3)">${i.lastUsed?fmtDate(i.lastUsed):'—'}</td><td><div style="display:flex;gap:3px"><button class="btn btn-ghost btn-sm" onclick="openUse('${i.id}')">Use</button><button class="btn btn-primary btn-sm" onclick="openRS('${i.id}')">+Stock</button></div></td></tr>`;
+    return`<tr><td><strong>${i.name}</strong></td><td style="font-size:11px;color:var(--text3)">${i.category}</td><td style="font-size:11px;color:var(--text2)">${i.unit}</td><td><span style="font-family:var(--font-display);font-weight:700;color:${qc}">${i.qty}</span></td><td style="font-size:11px;color:var(--text3)">${i.minQty}</td><td><span class="pill ${st.cls}">${st.l}</span></td><td style="font-size:11px;color:var(--text3)">${i.lastUsed?fmtDate(i.lastUsed):'—'}</td><td><div style="display:flex;gap:3px"><button class="btn btn-ghost btn-sm" onclick="openUse('${i.id}')">Use</button><button class="btn btn-primary btn-sm" onclick="openRS('${i.id}')">+Stock</button></div></td></tr>`;
   }).join('');
 }
 function setIC(c){invCatFilter=c;renderInventory();}
@@ -2362,24 +2470,7 @@ function startNotifScheduler() {
 
 
 // ==================== MOBILE SIDEBAR ====================
-function toggleMobileSidebar() {
-  const sb = document.getElementById('sidebar');
-  const ov = document.getElementById('sidebar-overlay');
-  const open = sb.classList.toggle('mobile-open');
-  ov.classList.toggle('show', open);
-}
-function closeMobileSidebar() {
-  document.getElementById('sidebar').classList.remove('mobile-open');
-  document.getElementById('sidebar-overlay').classList.remove('show');
-}
-// Close mobile sidebar when a nav item is tapped
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', function() {
-      if (window.innerWidth <= 768) closeMobileSidebar();
-    });
-  });
-});
+// (handled by unified toggleSidebar above)
 
 // ==================== ONBOARDING TUTORIAL ====================
 var obCurrentStep = 0;
@@ -2722,20 +2813,56 @@ function clearMedHistory() {
 
 // ==================== SIDEBAR COLLAPSE ====================
 var sidebarCollapsed = false;
+
 function toggleSidebar() {
-  sidebarCollapsed = !sidebarCollapsed;
   const sb = document.getElementById('sidebar');
-  const btn = document.getElementById('collapse-btn');
-  sb.classList.toggle('collapsed', sidebarCollapsed);
-  btn.textContent = sidebarCollapsed ? '▶' : '◀';
-  btn.title = sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
-  try { localStorage.setItem('df3_sidebar_collapsed', sidebarCollapsed ? '1' : '0'); } catch(e) {}
+  const ov = document.getElementById('sidebar-overlay');
+  const isMobile = window.innerWidth <= 768;
+
+  if (isMobile) {
+    // Mobile: toggle the off-canvas drawer
+    const open = sb.classList.toggle('mobile-open');
+    ov.classList.toggle('show', open);
+  } else {
+    // Desktop: collapse to icon rail
+    sidebarCollapsed = !sidebarCollapsed;
+    sb.classList.toggle('collapsed', sidebarCollapsed);
+    try { localStorage.setItem('df3_sidebar_collapsed', sidebarCollapsed ? '1' : '0'); } catch(e) {}
+  }
 }
+
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+// Close mobile sidebar when a nav item is tapped
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', function() {
+      if (window.innerWidth <= 768) closeMobileSidebar();
+    });
+  });
+  // Close mobile sidebar on overlay tap
+  document.getElementById('sidebar-overlay').addEventListener('click', closeMobileSidebar);
+});
+
+// On resize: if going from mobile → desktop, clean up mobile-open state
+window.addEventListener('resize', function() {
+  if (window.innerWidth > 768) {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('sidebar-overlay').classList.remove('show');
+    // Re-apply stored desktop collapsed state
+    const sb = document.getElementById('sidebar');
+    sb.classList.toggle('collapsed', sidebarCollapsed);
+  }
+});
+
 function restoreSidebarState() {
   try {
     if (localStorage.getItem('df3_sidebar_collapsed') === '1') {
-      sidebarCollapsed = false; // toggleSidebar will flip it
-      toggleSidebar();
+      sidebarCollapsed = true;
+      document.getElementById('sidebar').classList.add('collapsed');
     }
   } catch(e) {}
 }
@@ -2743,6 +2870,15 @@ function restoreSidebarState() {
 // ==================== INIT ====================
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
 loadStorage();
+// Sync counters to actual data so nothing ever collides after data import
+if(patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
+if(appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
+if(inventory.length) iidC = Math.max(iidC, ...inventory.map(i=>parseInt(i.id.slice(1))||0)) + 1;
+if(labJobs.length) lidC = Math.max(lidC, ...labJobs.map(l=>parseInt(l.id.slice(1))||0)) + 1;
+if(invoices.length){
+  const nums = invoices.map(i=>parseInt(i.receiptNum?.replace('RCP-','')||0)).filter(n=>!isNaN(n));
+  if(nums.length) receiptC = Math.max(receiptC, ...nums) + 1;
+}
 populateHMOSelects();
 renderSettings();
 renderDash();
