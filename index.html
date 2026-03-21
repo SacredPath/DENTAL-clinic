@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentaFlow — Clinic Management</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230d0f14'/><path d='M32 10c-5.5 0-10 2.8-12 7-1.5 3-1.8 6.5-1.2 10l2.5 16c.4 2.5 2.5 4 4.5 3.5 1.5-.4 2.5-1.8 2.8-3.5l1.4-8h4l1.4 8c.3 1.7 1.3 3.1 2.8 3.5 2 .5 4.1-1 4.5-3.5l2.5-16c.6-3.5.3-7-1.2-10-2-4.2-6.5-7-12-7z' fill='%2300d4a0'/><circle cx='26' cy='22' r='2.5' fill='%230d0f14'/><circle cx='38' cy='22' r='2.5' fill='%230d0f14'/></svg>">
 <style>
 /* System font stack — fully offline, zero external requests */
@@ -50,6 +49,9 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:
 /* Tooltip on collapsed icons — desktop only */
 .sidebar.collapsed .nav-item::after{content:attr(data-label);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--surface3);color:var(--text);font-size:12px;font-weight:500;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3);}
 .sidebar.collapsed .nav-item:hover::after{opacity:1;}
+.sidebar.collapsed .nav-sync-btn{position:relative;}
+.sidebar.collapsed .nav-sync-btn::after{content:attr(data-label);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--surface3);color:var(--text);font-size:12px;font-weight:500;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3);}
+.sidebar.collapsed .nav-sync-btn:hover::after{opacity:1;}
 .sidebar-foot{padding:10px;border-top:1px solid var(--border);overflow:hidden;}
 .clinic-badge{background:var(--surface2);border-radius:var(--radius-sm);padding:9px 11px;transition:opacity .15s;}
 .sidebar.collapsed .clinic-badge{opacity:0;pointer-events:none;height:0;padding:0;margin:0;}
@@ -418,6 +420,19 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 .supa-badge.syncing{background:rgba(240,165,0,.08);border-color:rgba(240,165,0,.2);color:var(--yellow);}
 .supa-badge.error{background:rgba(240,74,74,.08);border-color:rgba(240,74,74,.2);color:var(--red);}
 
+/* NAV SYNC BUTTON */
+.nav-sync-btn{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:var(--radius-sm);border:none;background:none;width:100%;text-align:left;cursor:pointer;font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--text2);transition:background .12s,color .12s;margin-top:2px;}
+.nav-sync-btn:hover{background:var(--surface2);color:var(--text);}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s;}
+.sync-dot.online{background:var(--accent);}
+.sync-dot.syncing{background:var(--yellow);animation:sync-pulse .9s ease-in-out infinite;}
+.sync-dot.offline{background:var(--text3);}
+.sync-dot.error{background:var(--red);}
+@keyframes sync-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
+.sync-nav-label{overflow:hidden;white-space:nowrap;flex:1;transition:opacity .15s,width .22s;}
+.sidebar.collapsed .sync-nav-label{opacity:0;width:0;pointer-events:none;}
+.sidebar.collapsed #nav-sync-time{opacity:0;width:0;}
+
 /* Medium desktop — sidebar gets tight */
 @media (max-width:1100px){
   .stats-row{grid-template-columns:repeat(3,minmax(0,1fr));}
@@ -528,7 +543,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
         <button onclick="lsBackToEmail()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 4px">←</button>
         <div>
-          <div class="login-card-title" style="font-size:15px" id="ls-clinic-label">Bright Smile Dental</div>
+          <div class="login-card-title" style="font-size:15px" id="ls-clinic-label">Your Clinic</div>
           <div style="font-size:11px;color:var(--text3)" id="ls-email-label">—</div>
         </div>
       </div>
@@ -633,10 +648,17 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <button class="nav-item" data-label="Lab Work" onclick="go('lab')"><span class="nav-icon">🔬</span><span class="nav-label"> Lab Work</span></button>
     <button class="nav-item" data-label="Settings" onclick="go('settings')"><span class="nav-icon">⚙️</span><span class="nav-label"> Settings</span></button>
   </nav>
+  <div style="padding:6px 8px 2px;border-top:1px solid var(--border);">
+    <button class="nav-sync-btn" id="nav-sync-btn" data-label="Sync" onclick="navSyncClick()" title="Cloud sync status">
+      <span class="sync-dot online" id="nav-sync-dot"></span>
+      <span class="sync-nav-label" id="nav-sync-label">Synced</span>
+      <span id="nav-sync-time" style="font-size:10px;color:var(--text3);flex-shrink:0;overflow:hidden;white-space:nowrap;transition:opacity .15s;"></span>
+    </button>
+  </div>
   <div class="sidebar-foot">
     <div class="clinic-badge">
-      <div class="clinic-name" id="sb-clinic">Bright Smile Dental</div>
-      <div class="clinic-sub" id="sb-dentist">Dr. Adaeze Okafor</div>
+      <div class="clinic-name" id="sb-clinic">Your Clinic</div>
+      <div class="clinic-sub" id="sb-dentist">—</div>
     </div>
     <div class="offline-pill" id="offline-pill">📴 Offline — saved locally</div>
   </div>
@@ -652,8 +674,6 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div class="topbar-right">
       <div class="date-pill" id="date-pill">📅 Today</div>
       <div class="sync-pill" id="sync-pill" onclick="toggleOffline()" title="Click to simulate offline">🟢 Online</div>
-      <span id="supa-sync-badge" class="supa-badge">☁ Sync</span>
-      <span id="supa-badge" class="supa-badge">☁ —</span>
       <span id="role-badge" class="pin-role-badge role-dentist" style="font-size:11px">👨‍⚕️ Dentist</span>
       <button class="btn btn-ghost btn-sm" onclick="lockApp()" title="Lock / switch user" style="font-size:13px">🔒</button>
       <div style="position:relative">
@@ -664,7 +684,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
           <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)">
             <div style="font-family:var(--font-display);font-weight:700;font-size:14px">🔔 Notifications</div>
             <div style="display:flex;gap:6px">
-              <button class="btn btn-ghost btn-sm" onclick="markAllRead()" style="font-size:11px">Mark all read</button>
+              <button class="btn btn-ghost btn-sm" onclick="markAllRead()" style="font-size:11px">Mark read</button>
+              <button class="btn btn-danger btn-sm" onclick="clearAllNotifs()" style="font-size:11px">Clear all</button>
               <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()">✕</button>
             </div>
           </div>
@@ -968,10 +989,10 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div class="settings-grid">
       <div class="s-card">
         <div class="s-title">🏥 Clinic Info</div>
-        <div class="field"><label>Clinic Name</label><input type="text" id="s-clinic" value="Bright Smile Dental"></div>
-        <div class="field"><label>Dentist Name</label><input type="text" id="s-dentist" value="Dr. Adaeze Okafor"></div>
-        <div class="field"><label>Phone</label><input type="text" id="s-phone" value="0801 234 5678"></div>
-        <div class="field"><label>Address</label><input type="text" id="s-address" value="23 Rumuola Road, Port Harcourt"></div>
+        <div class="field"><label>Clinic Name</label><input type="text" id="s-clinic" value="" placeholder="e.g. Bright Smile Dental"></div>
+        <div class="field"><label>Dentist Name</label><input type="text" id="s-dentist" value="" placeholder="e.g. Dr. Adaeze Okafor"></div>
+        <div class="field"><label>Phone</label><input type="text" id="s-phone" value="" placeholder="e.g. 0801 234 5678"></div>
+        <div class="field"><label>Address</label><input type="text" id="s-address" value="" placeholder="e.g. 23 Rumuola Road, Port Harcourt"></div>
       </div>
       <div class="s-card">
         <div class="s-title">🪑 Chairs & Hours</div>
@@ -1360,77 +1381,34 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ==================== STATE ====================
-var S={clinicName:'Bright Smile Dental',dentistName:'Dr. Adaeze Okafor',phone:'0801 234 5678',address:'23 Rumuola Road, Port Harcourt',openTime:'08:00',closeTime:'17:00',slotDuration:45,numChairs:2,chairNames:['Chair 1','Chair 2']};
+var S={clinicName:'',dentistName:'',phone:'',address:'',openTime:'08:00',closeTime:'17:00',slotDuration:45,numChairs:2,chairNames:['Chair 1','Chair 2']};
 var isOffline=false,pendingChanges=0;
 var activeDashChair='all';
 var invCatFilter='All';
 var currentInvId=null,currentApptFilter='all',selPtForDetail=null;
 var currentOdontoPt=null,currentPerioPt=null,activeTool='healthy';
 var invFilterStr='all',revFilter='month';
-var pidC=6,aidC=8,iidC=11,lidC=1,invC=5;
+var pidC=1,aidC=1,iidC=1,lidC=1,invC=1;
 // receiptC loaded from storage — never reset so numbers are always unique
 var receiptC=1001;
 var currentInvoiceId=null;
-// Supabase and login state
-var SUPA_URL='',SUPA_KEY='',supabase_client=null,clinicId='',syncBusy=false,_supaDebounce=null;
+// Supabase and login state — supabase_client is a boolean flag (true = REST available)
+var supabase_client=true,clinicId='',syncBusy=false,_supaDebounce=null;
 var _lsClinicEmail='';
 
-var hmoProviders=[
-  {id:'H001',name:'Hygeia HMO',plan:'Capitation',capitation:18000,status:'active'},
-  {id:'H002',name:'Avon HMO',plan:'Fee-for-service',capitation:0,status:'active'},
-  {id:'H003',name:'Reliance HMO',plan:'Capitation',capitation:12000,status:'active'},
-];
-
-var patients=[
-  {id:'P001',name:'Ngozi Eze',phone:'0803 456 7890',age:34,gender:'Female',payType:'cash',hmoId:'',nextVisit:dOff(1),odonto_notes:'',visits:[
-    {date:dOff(-30),treatment:'Cleaning / Scaling',note:'Mild tartar.'},
-    {date:dOff(-90),treatment:'Consultation',note:'Initial visit.'}]},
-  {id:'P002',name:'Emeka Okonkwo',phone:'0812 234 5678',age:42,gender:'Male',payType:'hmo',hmoId:'H001',nextVisit:dOff(1),odonto_notes:'',visits:[
-    {date:dOff(-14),treatment:'Extraction',note:'Lower right molar removed.'}]},
-  {id:'P003',name:'Fatima Bello',phone:'0901 123 4567',age:28,gender:'Female',payType:'transfer',hmoId:'',nextVisit:dOff(14),odonto_notes:'',visits:[
-    {date:dOff(-7),treatment:'Filling',note:'Composite upper left premolar.'}]},
-  {id:'P004',name:'Chidi Obi',phone:'0706 789 0123',age:55,gender:'Male',payType:'hmo',hmoId:'H002',nextVisit:dOff(7),odonto_notes:'',visits:[
-    {date:dOff(-3),treatment:'Root Canal',note:'Session 1.'}]},
-  {id:'P005',name:'Aisha Musa',phone:'0818 345 6789',age:19,gender:'Female',payType:'cash',hmoId:'',nextVisit:dOff(-10),odonto_notes:'',visits:[]},
-];
-
+// All arrays start empty — populated from localStorage or cloud on login
+var hmoProviders=[];
+var patients=[];
 var feeSchedule={
   'Consultation':5000,'Cleaning / Scaling':20000,'Extraction':15000,'Filling':25000,
   'Root Canal':90000,'Crown / Bridge':120000,'Whitening':45000,'X-Ray':8000,'Follow-up':3000
 };
-
-var appointments=[
-  {id:'A001',patientId:'P001',date:today(),time:'09:00',chair:'Chair 1',treatment:'Cleaning / Scaling',payType:'cash',hmoId:'',fee:20000,status:'upcoming',notes:''},
-  {id:'A002',patientId:'P002',date:today(),time:'09:00',chair:'Chair 2',treatment:'Follow-up',payType:'hmo',hmoId:'H001',fee:3000,status:'upcoming',notes:''},
-  {id:'A003',patientId:'P003',date:today(),time:'10:30',chair:'Chair 1',treatment:'Filling',payType:'transfer',hmoId:'',fee:25000,status:'upcoming',notes:''},
-  {id:'A004',patientId:'P004',date:today(),time:'11:00',chair:'Chair 2',treatment:'Root Canal',payType:'hmo',hmoId:'H002',fee:90000,status:'upcoming',notes:'Session 2'},
-  {id:'A005',patientId:'P005',date:tomorrow(),time:'09:00',chair:'Chair 1',treatment:'Consultation',payType:'cash',hmoId:'',fee:5000,status:'upcoming',notes:''},
-  {id:'A006',patientId:'P001',date:tomorrow(),time:'11:00',chair:'Chair 1',treatment:'Consultation',payType:'cash',hmoId:'',fee:5000,status:'upcoming',notes:''},
-  {id:'A007',patientId:'P002',date:tomorrow(),time:'13:30',chair:'Chair 2',treatment:'Follow-up',payType:'hmo',hmoId:'H001',fee:3000,status:'upcoming',notes:''},
-];
-
+var appointments=[];
 var invoices=[];
-
-var labJobs=[
-  {id:'L001',patientId:'P002',treatment:'Full Crown #26',labName:'PhCity Dental Lab',sentDate:dOff(-5),dueDate:dOff(2),fee:45000,status:'pending',notes:'Shade A2'},
-  {id:'L002',patientId:'P004',treatment:'Partial Denture (lower)',labName:'Dent-Pro Lab PH',sentDate:dOff(-3),dueDate:dOff(4),fee:80000,status:'pending',notes:''},
-  {id:'L003',patientId:'P001',treatment:'Porcelain Crown #11',labName:'PhCity Dental Lab',sentDate:dOff(-14),dueDate:dOff(-2),fee:55000,status:'completed',notes:'Delivered'},
-];
-
+var labJobs=[];
 var odontograms={};
 var perioCharts={};
-var inventory=[
-  {id:'I001',name:'Composite Resin A2',category:'Restorative',unit:'syringe',qty:12,minQty:5,lastUsed:dOff(-1)},
-  {id:'I002',name:'Lidocaine 2% Cartridges',category:'Anaesthetic',unit:'cartridge',qty:3,minQty:10,lastUsed:today()},
-  {id:'I003',name:'Extraction Forceps (upper)',category:'Surgical / Extraction',unit:'piece',qty:6,minQty:2,lastUsed:dOff(-3)},
-  {id:'I004',name:'Prophylaxis Paste',category:'Preventive',unit:'jar',qty:2,minQty:4,lastUsed:dOff(-2)},
-  {id:'I005',name:'Nitrile Gloves (M)',category:'PPE',unit:'box (100)',qty:8,minQty:3,lastUsed:today()},
-  {id:'I006',name:'Surgical Masks',category:'PPE',unit:'box (50)',qty:1,minQty:5,lastUsed:today()},
-  {id:'I007',name:'Alginate Impression',category:'Impression',unit:'pouch',qty:9,minQty:4,lastUsed:dOff(-5)},
-  {id:'I008',name:'Gutta Percha Points #30',category:'Endodontic',unit:'box',qty:0,minQty:3,lastUsed:dOff(-10)},
-  {id:'I009',name:'Dental Floss Rolls',category:'Preventive',unit:'roll',qty:25,minQty:10,lastUsed:dOff(-1)},
-  {id:'I010',name:'Temp Filling Material',category:'Restorative',unit:'tube',qty:4,minQty:3,lastUsed:dOff(-4)},
-];
+var inventory=[];
 
 // ==================== PERSIST / STORAGE ====================
 function persist(){
@@ -1465,38 +1443,6 @@ function loadStorage(){
     const l=localStorage.getItem('df3_lab');if(l)labJobs=JSON.parse(l);
     const f=localStorage.getItem('df3_fees');if(f)feeSchedule=JSON.parse(f);
     const rc=localStorage.getItem('df3_receiptC');if(rc)receiptC=parseInt(rc);
-
-    // ── DATA MIGRATION ──
-    // Strip the old hardcoded mock invoice (RCP-101 for A003/P003) that
-    // shipped in earlier versions. Real invoices only exist when the dentist
-    // explicitly marks an appointment as attended.
-    const MOCK_IDS = ['R101'];
-    const MOCK_RECEIPT_NUMS = ['RCP-101'];
-    const before = invoices.length;
-    invoices = invoices.filter(i =>
-      !MOCK_IDS.includes(i.id) && !MOCK_RECEIPT_NUMS.includes(i.receiptNum)
-    );
-    // Also fix any stored A003 that was incorrectly marked 'attended' by old
-    // seed data — reset it to 'upcoming' so it doesn't ghost a receipt.
-    const a003 = appointments.find(a => a.id === 'A003');
-    if (a003 && a003.status === 'attended') {
-      a003.status = 'upcoming';
-      // Remove any visit entry on P003 that came from A003
-      const p003 = patients.find(p => p.id === 'P003');
-      if (p003) {
-        p003.visits = p003.visits.filter(v =>
-          !(v.treatment === 'Filling' && v.date === a003.date && v.note === '')
-        );
-      }
-    }
-    // Persist cleaned data if anything changed
-    if (invoices.length !== before || a003) {
-      try {
-        localStorage.setItem('df3_invoices', JSON.stringify(invoices));
-        localStorage.setItem('df3_appts', JSON.stringify(appointments));
-        localStorage.setItem('df3_pts', JSON.stringify(patients));
-      } catch(e) {}
-    }
   }catch(e){}
 }
 
@@ -1511,8 +1457,8 @@ function updateOfflineUI(){
   if(isOffline){btn.textContent=`📴 Offline${pendingChanges?` ·${pendingChanges}`:''}`;btn.classList.add('off');badge.classList.add('show');if(panel)panel.classList.add('show');}
   else{btn.textContent='🟢 Online';btn.classList.remove('off');badge.classList.remove('show');if(panel)panel.classList.remove('show');}
 }
-window.addEventListener('online',()=>{isOffline=false;updateOfflineUI();showToast('🟢 Internet restored');});
-window.addEventListener('offline',()=>{isOffline=true;updateOfflineUI();showToast('📴 Offline — saving locally');});
+window.addEventListener('online',()=>{isOffline=false;updateOfflineUI();});
+window.addEventListener('offline',()=>{isOffline=true;updateOfflineUI();});
 
 // ==================== NAV ====================
 var PAGE_MAP={dashboard:'Dashboard',appointments:'Appointments',patients:'Patients',reminders:'Reminders',recall:'Recall List',invoices:'Invoices',hmo:'HMO / Insurance',revenue:'Revenue & Fees',odontogram:'Odontogram',perio:'Perio Charting',inventory:'Inventory',lab:'Lab Work',settings:'Settings'};
@@ -2566,10 +2512,22 @@ function markLabDone(id){labJobs.find(l=>l.id===id).status='completed';persist()
 
 // ==================== SETTINGS ====================
 function renderSettings(){
-  document.getElementById('s-clinic').value=S.clinicName;document.getElementById('s-dentist').value=S.dentistName;document.getElementById('s-phone').value=S.phone;document.getElementById('s-address').value=S.address||'';
-  document.getElementById('s-open').value=S.openTime;document.getElementById('s-close').value=S.closeTime;document.getElementById('s-slot').value=S.slotDuration;document.getElementById('s-chairs').value=S.numChairs;
+  document.getElementById('s-clinic').value=S.clinicName||'';
+  document.getElementById('s-dentist').value=S.dentistName||'';
+  document.getElementById('s-phone').value=S.phone||'';
+  document.getElementById('s-address').value=S.address||'';
+  document.getElementById('s-open').value=S.openTime||'08:00';
+  document.getElementById('s-close').value=S.closeTime||'17:00';
+  document.getElementById('s-slot').value=S.slotDuration||45;
+  document.getElementById('s-chairs').value=S.numChairs||2;
   renderChairNameFields();
-  const ls=localStorage.getItem('df3_saved');document.getElementById('last-saved').textContent=ls||'Not saved yet';
+  // Keep sidebar in sync
+  const sbCl=document.getElementById('sb-clinic');
+  const sbDr=document.getElementById('sb-dentist');
+  if(sbCl)sbCl.textContent=S.clinicName||'Your Clinic';
+  if(sbDr)sbDr.textContent=S.dentistName||'—';
+  const ls=localStorage.getItem('df3_saved');
+  document.getElementById('last-saved').textContent=ls||'Not saved yet';
   document.getElementById('data-summary').innerHTML=`<div style="font-size:12px;color:var(--text2);line-height:2">👥 ${patients.length} patients · 📅 ${appointments.length} appointments<br>🧾 ${invoices.length} invoices · 🏥 ${hmoProviders.length} HMO providers<br>🔬 ${labJobs.length} lab jobs · 📦 ${inventory.length} inventory items</div>`;
   updateCloudUI();
 }
@@ -2807,25 +2765,29 @@ function renderNotifList() {
   }).join('');
 }
 
+function clearAllNotifs() {
+  notifications = [];
+  firedNotifs = {}; // reset so checks can re-fire if conditions still exist
+  updateNotifBadge();
+  renderNotifList();
+  showToast('Notifications cleared');
+}
+
 function handleNotifClick(id) {
   const n = notifications.find(x => x.id === id);
   if (!n) return;
-  // Mark read
-  n.read = true;
+  // Auto-remove the notification once the user acts on it
+  notifications = notifications.filter(x => x.id !== id);
   updateNotifBadge();
   // Close panel
   notifPanelOpen = false;
   const panel = document.getElementById('notif-panel');
   if (panel) panel.style.display = 'none';
-  // Navigate to the specific destination
+  // Navigate
   if (!n.action) return;
-  try {
-    eval(n.action);
-  } catch(e) { console.error('Notif action error:', e); }
-  // After navigation, highlight the target if we have a targetId
-  if (n.targetId) {
-    setTimeout(() => highlightNotifTarget(n.type, n.targetId), 120);
-  }
+  try { eval(n.action); } catch(e) { console.error('Notif action error:', e); }
+  // Highlight target row if available
+  if (n.targetId) setTimeout(() => highlightNotifTarget(n.type, n.targetId), 120);
 }
 
 // ---- AUTOMATED CHECKS ----
@@ -2836,6 +2798,36 @@ function runNotifChecks() {
   const td = today();
   const tom = tomorrow();
   const now = new Date();
+
+  // ── Auto-remove stale notifications ──
+  // Remove notifications whose underlying condition is no longer true
+  notifications = notifications.filter(n => {
+    if (n.type === 'appointment_soon') {
+      // Remove if the appointment has been attended or cancelled
+      const appt = appointments.find(a => a.id === n.targetId);
+      if (appt && appt.status !== 'upcoming') return false;
+    }
+    if (n.type === 'low_stock') {
+      // Remove if stock has been restocked above minimum
+      const item = inventory.find(i => i.id === n.targetId);
+      if (item && item.qty > item.minQty) return false;
+    }
+    if (n.type === 'lab_overdue') {
+      // Remove if lab job has been completed
+      const job = labJobs.find(l => l.id === n.targetId);
+      if (job && job.status === 'completed') return false;
+    }
+    if (n.type === 'recall_due') {
+      // Remove if all overdue patients now have upcoming appointments
+      const stillOverdue = patients.filter(p =>
+        p.nextVisit && p.nextVisit < td &&
+        !appointments.find(a => a.patientId === p.id && a.status === 'upcoming' && a.date >= td)
+      );
+      if (stillOverdue.length === 0) return false;
+    }
+    return true;
+  });
+  updateNotifBadge();
 
   // 1. APPOINTMENT REMINDERS — tomorrow's appointments → go to Reminders page
   const tomAppts = appointments.filter(a => a.date === tom && a.status === 'upcoming');
@@ -3149,116 +3141,141 @@ function maybeShowOnboarding() {
 
 
 // ==================== SUPABASE CONFIG ====================
-// Credentials are baked in — users never see or configure these
+// Uses plain fetch() against the Supabase REST API directly.
+// No JS client library — avoids the Headers/DataCloneError bug entirely.
 const _SUPA_URL = 'https://bmyifrkiccrkmxvbdmri.supabase.co';
 const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJteWlmcmtpY2Nya214dmJkbXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMjcyNzcsImV4cCI6MjA4OTcwMzI3N30.o0Hw-c4zrGVvqPEyXJZfrW6y0Efn3BBsgaVY42iotmQ';
+const _SUPA_REST = _SUPA_URL + '/rest/v1/dentaflow_clinics';
 
+// supabase_client is kept as a boolean flag — true = REST is reachable
 function loadSupaConfig() {
-  try {
-    SUPA_URL = _SUPA_URL;
-    SUPA_KEY = _SUPA_KEY;
-    initSupabase();
-  } catch(e) { console.error('Supabase init failed:', e); }
-}
-function saveSupaConfig() {
-  // No-op — credentials are hardcoded
-  showToast('✓ Cloud sync is active');
-}
-function initSupabase() {
-  try {
-    if (!SUPA_URL || !SUPA_KEY) return;
-    supabase_client = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-    setSupaBadge('synced', '☁ Synced');
-    updateCloudUI();
-  } catch(e) {
-    setSupaBadge('error', '☁ Error');
-    console.error('Supabase init error:', e);
+  supabase_client = true;
+  const lastPush = localStorage.getItem('df3_last_supa_push');
+  const timePart = lastPush ? lastPush.split(',')[1]?.trim() || '' : '';
+  if (navigator.onLine) {
+    setNavSync('online', lastPush ? 'Synced' : 'Not synced yet', timePart);
+  } else {
+    setNavSync('offline', 'Offline', '');
   }
+  updateCloudUI();
 }
+function saveSupaConfig() { showToast('✓ Cloud sync is active'); }
+function initSupabase() { supabase_client = true; updateCloudUI(); }
 function updateCloudUI() {
   const dot = document.getElementById('cloud-sync-dot');
   const lbl = document.getElementById('cloud-sync-label');
   const sub = document.getElementById('cloud-sync-sub');
   const lastPush = localStorage.getItem('df3_last_supa_push');
-  if (dot) dot.style.background = supabase_client ? 'var(--accent)' : 'var(--red)';
-  if (lbl) lbl.textContent = supabase_client ? 'Auto-sync active' : 'Sync unavailable';
-  if (sub) sub.textContent = lastPush ? `Last synced: ${lastPush}` : 'Not yet synced this session';
+  if (dot) dot.style.background = 'var(--accent)';
+  if (lbl) lbl.textContent = 'Auto-sync active';
+  if (sub) sub.textContent = lastPush ? 'Last synced: ' + lastPush : 'Not yet synced this session';
 }
-function setSupaBadge(cls, txt) {
-  const el = document.getElementById('supa-badge');
-  if (!el) return;
-  el.className = 'supa-badge ' + cls;
-  el.textContent = txt;
-}
+function setSupaBadge(cls, txt) { updateCloudUI(); }
 
-// ── Supabase push: local is source of truth, always overwrites remote ──
 // ── LOCAL IS ALWAYS THE SOURCE OF TRUTH ──
 // Every persist() → scheduleSupaSync() → pushToSupabase()
-// Local deletions/edits/creates are all captured in the single JSON blob.
-// Supabase is completely overwritten on every push — never merges, never wins over local.
+// Full local state sent as one JSON blob — completely overwrites Supabase.
+// Deletions/edits/creates in local are all captured automatically.
+
+var _syncState = 'idle'; // 'idle' | 'syncing' | 'error' | 'offline'
+
+function setNavSync(state, labelText, timeText) {
+  _syncState = state;
+  const dot = document.getElementById('nav-sync-dot');
+  const lbl = document.getElementById('nav-sync-label');
+  const tim = document.getElementById('nav-sync-time');
+  if (!dot) return;
+  dot.className = 'sync-dot ' + (state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : state === 'offline' ? 'offline' : 'online');
+  if (lbl) lbl.textContent = labelText || 'Synced';
+  if (tim) tim.textContent = timeText || '';
+  // Also update the Settings card dot
+  const sdot = document.getElementById('cloud-sync-dot');
+  if (sdot) sdot.style.background = state === 'error' ? 'var(--red)' : state === 'offline' ? 'var(--text3)' : 'var(--accent)';
+}
+function updateCloudUI() {
+  const lastPush = localStorage.getItem('df3_last_supa_push');
+  const lbl = document.getElementById('cloud-sync-label');
+  const sub = document.getElementById('cloud-sync-sub');
+  if (lbl) lbl.textContent = navigator.onLine ? 'Auto-sync active' : 'Offline — saved locally';
+  if (sub) sub.textContent = lastPush ? 'Last synced: ' + lastPush : 'Not yet synced this session';
+  if (!navigator.onLine) setNavSync('offline', 'Offline', '');
+}
+function setSupaBadge(cls, txt) { updateCloudUI(); }
+function navSyncClick() {
+  // Manual sync on click
+  syncBusy = false;
+  pushToSupabase();
+}
 
 async function pushToSupabase() {
-  if (!supabase_client || !clinicId) return;
-  if (syncBusy) return; // debounce guard — scheduleSupaSync handles retries
+  if (!clinicId || !navigator.onLine) {
+    setNavSync('offline', 'Offline', '');
+    return;
+  }
+  if (syncBusy) return;
   syncBusy = true;
-  setSupaBadge('syncing', '☁ Syncing…');
+  setNavSync('syncing', 'Syncing…', '');
   try {
-    // Serialize the FULL local state as the canonical truth
-    const payload = {
-      clinic_id: clinicId,
-      data: JSON.stringify({
-        S, patients, appointments, invoices, hmoProviders,
-        labJobs, inventory, odontograms, perioCharts, feeSchedule,
-        pins: getPINs(),
-        savedAt: localStorage.getItem('df3_saved') || new Date().toISOString()
-      }),
-      updated_at: new Date().toISOString()
-    };
-    // Upsert with onConflict — fully overwrites any existing Supabase row.
-    // This means anything deleted locally is gone from Supabase after this call.
-    const { error } = await supabase_client
-      .from('dentaflow_clinics')
-      .upsert(payload, { onConflict: 'clinic_id' });
-    if (error) throw error;
-    setSupaBadge('synced', '☁ Synced');
+    const dataBlob = JSON.stringify({
+      S, patients, appointments, invoices, hmoProviders,
+      labJobs, inventory, odontograms, perioCharts, feeSchedule,
+      pins: getPINs(),
+      savedAt: localStorage.getItem('df3_saved') || new Date().toISOString()
+    });
+    // Supabase REST upsert: POST to table with on_conflict query param
+    // This is the correct CORS-safe approach — no client library needed
+    const res = await fetch(
+      _SUPA_REST + '?on_conflict=clinic_id',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': _SUPA_KEY,
+          'Authorization': 'Bearer ' + _SUPA_KEY,
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify({
+          clinic_id: clinicId,
+          data: dataBlob,
+          updated_at: new Date().toISOString()
+        })
+      }
+    );
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 120));
+    }
     const now = new Date().toLocaleString('en-NG');
     localStorage.setItem('df3_last_supa_push', now);
+    // Show just the time portion for the nav label
+    const timePart = new Date().toLocaleTimeString('en-NG', {hour:'2-digit', minute:'2-digit'});
+    setNavSync('online', 'Synced', timePart);
     updateCloudUI();
   } catch(e) {
-    setSupaBadge('error', '☁ Sync error');
-    const msg = e?.message || e?.error_description || JSON.stringify(e);
-    console.error('Supabase push error:', msg, e);
+    const msg = e?.message || String(e);
+    console.error('Supabase push error:', msg);
+    setNavSync('error', 'Sync error', '');
     const stxt = document.getElementById('supa-status-txt');
-    if (stxt) stxt.textContent = 'Sync error: ' + msg;
+    if (stxt) stxt.textContent = msg;
   }
   syncBusy = false;
 }
 
-// Pull is ONLY used on first login on a new device where local storage is empty.
-// If local already has data, we always push (local wins), never pull.
+// Pull — only when local is empty (new device restore)
 async function pullFromSupabase() {
-  if (!supabase_client || !clinicId) return;
-
-  // If local already has patient data, push local to cloud instead of pulling.
-  // Local is always the source of truth — never overwrite it from cloud.
+  if (!clinicId || !navigator.onLine) return;
   if (patients.length > 0 || appointments.length > 0 || invoices.length > 0) {
-    await pushToSupabase();
-    return;
+    await pushToSupabase(); return;
   }
-
-  // Local is empty (new device / fresh browser) — safe to restore from cloud.
-  setSupaBadge('syncing', '☁ Restoring…');
   try {
-    const { data, error } = await supabase_client
-      .from('dentaflow_clinics')
-      .select('data, updated_at')
-      .eq('clinic_id', clinicId)
-      .single();
-    if (error || !data) {
-      setSupaBadge('synced', '☁ No cloud data');
-      return;
-    }
-    const d = JSON.parse(data.data);
+    const res = await fetch(
+      _SUPA_REST + '?clinic_id=eq.' + encodeURIComponent(clinicId) + '&select=data&limit=1',
+      { headers: { 'apikey': _SUPA_KEY, 'Authorization': 'Bearer ' + _SUPA_KEY } }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!rows || !rows.length) return;
+    const d = JSON.parse(rows[0].data);
     if (d.S) S = d.S;
     if (d.patients) patients = d.patients;
     if (d.appointments) appointments = d.appointments;
@@ -3270,39 +3287,50 @@ async function pullFromSupabase() {
     if (d.perioCharts) perioCharts = d.perioCharts;
     if (d.feeSchedule) feeSchedule = d.feeSchedule;
     if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
-    // Re-sync counters after restore
-    if (patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
-    if (appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
-    if (inventory.length) iidC = Math.max(iidC, ...inventory.map(i=>parseInt(i.id.slice(1))||0)) + 1;
-    if (labJobs.length) lidC = Math.max(lidC, ...labJobs.map(l=>parseInt(l.id.slice(1))||0)) + 1;
-    if (invoices.length) {
-      const nums = invoices.map(i=>parseInt(i.receiptNum?.replace('RCP-','')||0)).filter(n=>!isNaN(n));
-      if (nums.length) receiptC = Math.max(receiptC, ...nums) + 1;
-    }
-    persist(); // saves restored data to localStorage
-    setSupaBadge('synced', '☁ Restored');
+    resyncCounters();
+    persist();
     showToast('☁ Data restored from cloud');
-    renderDash();
-    populateHMOSelects();
-    renderSettings();
-  } catch(e) {
-    setSupaBadge('error', '☁ Restore error');
-    console.error('Supabase pull error:', e);
-  }
+    renderDash(); populateHMOSelects(); renderSettings();
+  } catch(e) { console.error('Supabase pull error:', e?.message || e); }
 }
 
-// Force sync — callable from Settings "Sync Now" button
-function forcePushToSupabase() {
-  syncBusy = false; // override busy guard for manual push
-  return pushToSupabase();
+// Check if clinic exists in cloud (used during email-step login)
+async function checkClinicInCloud(email) {
+  if (!navigator.onLine) return null;
+  try {
+    const cid = btoa(email).replace(/=/g, '');
+    const res = await fetch(
+      _SUPA_REST + '?clinic_id=eq.' + encodeURIComponent(cid) + '&select=data&limit=1',
+      { headers: { 'apikey': _SUPA_KEY, 'Authorization': 'Bearer ' + _SUPA_KEY } }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!rows || !rows.length) return null;
+    return JSON.parse(rows[0].data);
+  } catch(e) { return null; }
 }
-function forcePullFromSupabase() { return pullFromSupabase(); }
+
+// Force sync from Settings
+function forcePushToSupabase() { syncBusy = false; return pushToSupabase(); }
 
 // Auto-sync: debounced 2.5s after every persist()
 function scheduleSupaSync() {
   clearTimeout(_supaDebounce);
   _supaDebounce = setTimeout(pushToSupabase, 2500);
 }
+
+// Online/offline listeners — update nav sync dot immediately
+window.addEventListener('online', () => {
+  setNavSync('online', 'Back online', '');
+  updateOfflineUI();
+  scheduleSupaSync();
+  showToast('🟢 Internet restored — syncing…');
+});
+window.addEventListener('offline', () => {
+  setNavSync('offline', 'Offline', '');
+  updateOfflineUI();
+  showToast('📴 Offline — saving locally');
+});
 
 // ==================== LOGIN SYSTEM ====================
 function lsInit() {
@@ -3348,42 +3376,65 @@ async function lsEmailNext() {
   errEl.classList.remove('show');
   _lsClinicEmail = email;
 
-  // Check if clinic exists locally
+  // 1. Check local session first (works fully offline)
   let clinicName = null;
   try {
     const sess = JSON.parse(localStorage.getItem('df3_session') || 'null');
     if (sess && sess.email === email) clinicName = sess.clinicName;
   } catch(e) {}
 
-  // If Supabase configured, check remote
-  if (!clinicName && supabase_client) {
-    setSupaBadge('syncing', '☁ Checking…');
-    try {
-      const cid = btoa(email).replace(/=/g,'');
-      const { data } = await supabase_client.from('dentaflow_clinics').select('data').eq('clinic_id', cid).single();
-      if (data) {
-        const d = JSON.parse(data.data);
-        clinicName = d.S?.clinicName || email;
+  // 2. If not found locally, try Supabase REST (only when online)
+  if (!clinicName && navigator.onLine) {
+    const cloudData = await checkClinicInCloud(email);
+    if (cloudData) {
+      clinicName = cloudData.S?.clinicName || email;
+      // Restore cloud data to local if local is empty
+      if (patients.length === 0) {
+        if (cloudData.S) S = cloudData.S;
+        if (cloudData.patients) patients = cloudData.patients;
+        if (cloudData.appointments) appointments = cloudData.appointments;
+        if (cloudData.invoices) invoices = cloudData.invoices;
+        if (cloudData.hmoProviders) hmoProviders = cloudData.hmoProviders;
+        if (cloudData.labJobs) labJobs = cloudData.labJobs;
+        if (cloudData.inventory) inventory = cloudData.inventory;
+        if (cloudData.odontograms) odontograms = cloudData.odontograms;
+        if (cloudData.perioCharts) perioCharts = cloudData.perioCharts;
+        if (cloudData.feeSchedule) feeSchedule = cloudData.feeSchedule;
+        if (cloudData.pins) localStorage.setItem('df3_pins', JSON.stringify(cloudData.pins));
+        resyncCounters();
+        persist();
       }
-    } catch(e) {}
-    setSupaBadge('synced', '☁ Connected');
+      // Cache session locally so next login works offline
+      localStorage.setItem('df3_session', JSON.stringify({ email, clinicName }));
+    }
   }
 
+  // 3. No clinic found anywhere — tell user to register
   if (!clinicName) {
-    errEl.textContent = 'No clinic found for this email. Please register first.'; errEl.classList.add('show'); return;
+    errEl.textContent = 'No clinic found for this email. Please register first.';
+    errEl.classList.add('show'); return;
   }
 
-  // Remember email for autofill
+  // Found — proceed to PIN
   localStorage.setItem('df3_last_email', email);
   clinicId = btoa(email).replace(/=/g,'');
-
-  // Show PIN step
   document.getElementById('ls-clinic-label').textContent = clinicName;
   document.getElementById('ls-email-label').textContent = email;
   document.getElementById('ls-email-step').classList.remove('active');
   document.getElementById('ls-pin-step').classList.add('active');
   pinEntry = '';
   updatePinDots();
+}
+
+function resyncCounters() {
+  if (patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
+  if (appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
+  if (inventory.length) iidC = Math.max(iidC, ...inventory.map(i=>parseInt(i.id.slice(1))||0)) + 1;
+  if (labJobs.length) lidC = Math.max(lidC, ...labJobs.map(l=>parseInt(l.id.slice(1))||0)) + 1;
+  if (invoices.length) {
+    const nums = invoices.map(i=>parseInt(i.receiptNum?.replace('RCP-','')||0)).filter(n=>!isNaN(n));
+    if (nums.length) receiptC = Math.max(receiptC, ...nums) + 1;
+  }
 }
 
 async function lsRegister() {
@@ -3395,11 +3446,17 @@ async function lsRegister() {
   const errEl = document.getElementById('ls-reg-err');
 
   if (!clinic || !email || !dentist) { errEl.textContent = 'Clinic name, email and dentist name are required.'; errEl.classList.add('show'); return; }
+  if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; errEl.classList.add('show'); return; }
   if (!dpin || !/^\d{4}$/.test(dpin)) { errEl.textContent = 'Dentist PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
   if (!rpin || !/^\d{4}$/.test(rpin)) { errEl.textContent = 'Receptionist PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
   errEl.classList.remove('show');
 
-  // Set up clinic data
+  // Reset to clean slate — new clinic gets empty data
+  patients = []; appointments = []; invoices = []; labJobs = [];
+  inventory = []; hmoProviders = []; odontograms = {}; perioCharts = {};
+  pidC = 1; aidC = 1; iidC = 1; lidC = 1; receiptC = 1001;
+
+  // Set up clinic settings
   S.clinicName = clinic;
   S.dentistName = dentist;
   _lsClinicEmail = email;
@@ -3410,18 +3467,23 @@ async function lsRegister() {
   localStorage.setItem('df3_last_email', email);
   localStorage.setItem('df3_session', JSON.stringify({ email, clinicName: clinic }));
 
+  // Save to local first — always works, no internet needed
   persist();
-  // Push to Supabase if configured
-  if (supabase_client) await pushToSupabase();
 
-  // Log in as dentist
+  // Push to cloud in background if online — don't block registration
+  if (navigator.onLine) {
+    pushToSupabase().catch(e => console.warn('Cloud push after register failed:', e));
+  }
+
+  // Enter the app as dentist
   currentRole = 'dentist';
   applyRoleMode();
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('sb-clinic').textContent = S.clinicName;
   document.getElementById('sb-dentist').textContent = S.dentistName;
-  showToast('✓ Clinic registered! Welcome, ' + dentist);
+  showToast('✓ Welcome, ' + dentist + '! Your clinic is ready.');
   renderDash();
+  setTimeout(startOnboarding, 600);
 }
 
 // ==================== PIN LOCK SYSTEM ====================
@@ -3444,7 +3506,7 @@ function savePINs() {
   localStorage.setItem('df3_pins', JSON.stringify(pins));
   document.getElementById('s-dentist-pin').value = '';
   document.getElementById('s-recept-pin').value = '';
-  if (supabase_client) scheduleSupaSync();
+  scheduleSupaSync();
   showToast('✓ PINs updated!');
 }
 function selectPinRole(role) {
@@ -3486,23 +3548,22 @@ function checkPIN() {
     // Hide whichever screen is visible
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('pin-screen').classList.add('hidden');
-    // Save session
+    // Save session locally — always works offline
     try {
       const existing = JSON.parse(localStorage.getItem('df3_session') || '{}');
       localStorage.setItem('df3_session', JSON.stringify({ ...existing, email: _lsClinicEmail }));
     } catch(e) {}
-    // On login: if local is empty, try to restore from cloud (new device).
-    // If local has data, push it to cloud (local always wins).
-    if (supabase_client) {
-      if (patients.length === 0 && appointments.length === 0) {
-        pullFromSupabase().then(() => renderDash());
+    // Sync with cloud only when online — never blocks login
+    if (navigator.onLine) {
+      // Local has data → push it (local always wins)
+      // Local is empty → pull from cloud (new device restore)
+      if (patients.length === 0 && appointments.length === 0 && invoices.length === 0) {
+        pullFromSupabase().then(() => { resyncCounters(); renderDash(); populateHMOSelects(); });
       } else {
-        scheduleSupaSync(); // push local state to cloud
-        renderDash();
+        scheduleSupaSync();
       }
-    } else {
-      renderDash();
     }
+    renderDash();
     showToast(`✓ Welcome${currentRole === 'dentist' ? ', Doctor' : ' back'}!`);
   } else {
     updatePinDots(true);
@@ -3891,28 +3952,18 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
 loadStorage();
 loadSupaConfig();
 
-// Sync counters to actual data so nothing ever collides after data import
-if(patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
-if(appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
-if(inventory.length) iidC = Math.max(iidC, ...inventory.map(i=>parseInt(i.id.slice(1))||0)) + 1;
-if(labJobs.length) lidC = Math.max(lidC, ...labJobs.map(l=>parseInt(l.id.slice(1))||0)) + 1;
-if(invoices.length){
-  const nums = invoices.map(i=>parseInt(i.receiptNum?.replace('RCP-','')||0)).filter(n=>!isNaN(n));
-  if(nums.length) receiptC = Math.max(receiptC, ...nums) + 1;
-}
+// Sync ID counters so new records never collide with existing ones
+resyncCounters();
 populateHMOSelects();
 renderSettings();
-
 restoreSidebarState();
 startNotifScheduler();
 
-// ── Show login screen on load ──
-// Check if clinic session exists; if so go straight to PIN, else email step
+// Show login screen — handles autofill and session detection
 lsInit();
 
-// Initial render (login screen is on top — user can't interact until they log in)
+// Render dashboard behind the login screen (ready when user logs in)
 renderDash();
-maybeShowOnboarding();
 </script>
 </body>
 </html>
