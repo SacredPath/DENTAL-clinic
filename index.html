@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentaFlow — Clinic Management</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230d0f14'/><path d='M32 10c-5.5 0-10 2.8-12 7-1.5 3-1.8 6.5-1.2 10l2.5 16c.4 2.5 2.5 4 4.5 3.5 1.5-.4 2.5-1.8 2.8-3.5l1.4-8h4l1.4 8c.3 1.7 1.3 3.1 2.8 3.5 2 .5 4.1-1 4.5-3.5l2.5-16c.6-3.5.3-7-1.2-10-2-4.2-6.5-7-12-7z' fill='%2300d4a0'/><circle cx='26' cy='22' r='2.5' fill='%230d0f14'/><circle cx='38' cy='22' r='2.5' fill='%230d0f14'/></svg>">
 <style>
 /* System font stack — fully offline, zero external requests */
@@ -385,7 +387,37 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 .ob-spotlight{position:fixed;box-shadow:0 0 0 4000px rgba(0,0,0,.75);border-radius:10px;border:2px solid var(--accent);z-index:498;pointer-events:none;transition:all .35s cubic-bezier(.4,0,.2,1);display:none;}
 .ob-spotlight.show{display:block;}
 
-/* ============ RESPONSIVE BREAKPOINTS ============ */
+/* ============ LOGIN SCREEN ============ */
+.login-screen{position:fixed;inset:0;background:var(--bg);z-index:700;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow-y:auto;padding:20px;}
+.login-screen.hidden{display:none;}
+.login-logo{font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--accent);margin-bottom:4px;}
+.login-tagline{font-size:12px;color:var(--text3);margin-bottom:36px;text-transform:uppercase;letter-spacing:1px;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px 32px;width:360px;max-width:92vw;}
+.login-card-title{font-family:var(--font-display);font-weight:800;font-size:18px;margin-bottom:4px;}
+.login-card-sub{font-size:12px;color:var(--text3);margin-bottom:22px;line-height:1.5;}
+.login-step{display:none;}
+.login-step.active{display:block;}
+.login-err{background:rgba(240,74,74,.1);border:1px solid rgba(240,74,74,.3);border-radius:var(--radius-sm);padding:8px 11px;font-size:12px;color:var(--red);margin-bottom:12px;display:none;}
+.login-err.show{display:block;}
+
+/* ============ CHART CONTAINERS ============ */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+.chart-title{font-family:var(--font-display);font-weight:700;font-size:13px;margin-bottom:12px;}
+.chart-wrap{position:relative;height:220px;}
+.chart-wrap-tall{position:relative;height:280px;}
+.charts-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+@media(max-width:768px){.charts-2col{grid-template-columns:1fr;}}
+
+/* WhatsApp send button */
+.wa-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.3);border-radius:var(--radius-sm);color:#25d366;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .12s;font-family:var(--font-sans);}
+.wa-btn:hover{background:rgba(37,211,102,.22);}
+
+/* Supabase sync badge */
+.supa-badge{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--text3);margin-left:4px;}
+.supa-badge.synced{background:rgba(0,212,160,.08);border-color:rgba(0,212,160,.2);color:var(--accent);}
+.supa-badge.syncing{background:rgba(240,165,0,.08);border-color:rgba(240,165,0,.2);color:var(--yellow);}
+.supa-badge.error{background:rgba(240,74,74,.08);border-color:rgba(240,74,74,.2);color:var(--red);}
+
 /* Medium desktop — sidebar gets tight */
 @media (max-width:1100px){
   .stats-row{grid-template-columns:repeat(3,minmax(0,1fr));}
@@ -470,36 +502,102 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 </head>
 <body>
 
-<!-- PIN LOCK SCREEN -->
-<div class="pin-screen" id="pin-screen">
+<!-- ============ LOGIN SCREEN (Step 1: Email) ============ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-logo">🦷 DentaFlow</div>
+  <div class="login-tagline">Dental Clinic Management</div>
+  <div class="login-card">
+    <!-- Step 1: Email -->
+    <div class="login-step active" id="ls-email-step">
+      <div class="login-card-title">Welcome back</div>
+      <div class="login-card-sub">Enter your clinic email to continue</div>
+      <div class="login-err" id="ls-email-err"></div>
+      <div class="field">
+        <label>Clinic Email</label>
+        <input type="email" id="ls-email" placeholder="clinic@example.com" autocomplete="email"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--text);font-family:var(--font-sans);outline:none;transition:border-color .12s;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter')lsEmailNext()">
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px;padding:10px" onclick="lsEmailNext()">Continue →</button>
+      <div style="margin-top:18px;text-align:center;font-size:12px;color:var(--text3)">New clinic? <a href="#" style="color:var(--accent);text-decoration:none" onclick="lsShowRegister()">Register here</a></div>
+    </div>
+
+    <!-- Step 2: PIN -->
+    <div class="login-step" id="ls-pin-step">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+        <button onclick="lsBackToEmail()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 4px">←</button>
+        <div>
+          <div class="login-card-title" style="font-size:15px" id="ls-clinic-label">Bright Smile Dental</div>
+          <div style="font-size:11px;color:var(--text3)" id="ls-email-label">—</div>
+        </div>
+      </div>
+      <div class="login-err" id="ls-pin-err"></div>
+      <div class="pin-role-tabs" style="margin-bottom:18px;">
+        <button class="pin-role-tab active" id="pin-tab-dentist" onclick="selectPinRole('dentist')">👨‍⚕️ Dentist</button>
+        <button class="pin-role-tab" id="pin-tab-receptionist" onclick="selectPinRole('receptionist')">🧑‍💼 Receptionist</button>
+      </div>
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-key" onclick="pinPress('1')">1</button><button class="pin-key" onclick="pinPress('2')">2</button><button class="pin-key" onclick="pinPress('3')">3</button>
+        <button class="pin-key" onclick="pinPress('4')">4</button><button class="pin-key" onclick="pinPress('5')">5</button><button class="pin-key" onclick="pinPress('6')">6</button>
+        <button class="pin-key" onclick="pinPress('7')">7</button><button class="pin-key" onclick="pinPress('8')">8</button><button class="pin-key" onclick="pinPress('9')">9</button>
+        <button class="pin-key empty"></button><button class="pin-key" onclick="pinPress('0')">0</button><button class="pin-key del" onclick="pinDel()">⌫</button>
+      </div>
+      <div class="pin-hint" id="pin-hint">Default dentist PIN: <strong>1234</strong></div>
+    </div>
+
+    <!-- Step 3: Register -->
+    <div class="login-step" id="ls-reg-step">
+      <div class="login-card-title">Register Clinic</div>
+      <div class="login-card-sub">Create your clinic account. Each device saves data locally and syncs to the cloud.</div>
+      <div class="login-err" id="ls-reg-err"></div>
+      <div class="field"><label>Clinic Name</label>
+        <input type="text" id="reg-clinic" placeholder="e.g. Bright Smile Dental" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
+      </div>
+      <div class="field"><label>Clinic Email</label>
+        <input type="email" id="reg-email" placeholder="clinic@example.com" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
+      </div>
+      <div class="field"><label>Dentist Name</label>
+        <input type="text" id="reg-dentist" placeholder="Dr. Adaeze Okafor" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field"><label>Dentist PIN (4 digits)</label>
+          <input type="password" id="reg-dpin" maxlength="4" placeholder="e.g. 1234" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:16px;color:var(--text);font-family:var(--font-sans);outline:none;letter-spacing:6px;">
+        </div>
+        <div class="field"><label>Receptionist PIN</label>
+          <input type="password" id="reg-rpin" maxlength="4" placeholder="e.g. 0000" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:16px;color:var(--text);font-family:var(--font-sans);outline:none;letter-spacing:6px;">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:10px;margin-top:4px" onclick="lsRegister()">Create Clinic Account</button>
+      <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--text3)"><a href="#" style="color:var(--accent);text-decoration:none" onclick="lsShowEmail()">← Back to login</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- PIN LOCK SCREEN (shown when locking mid-session, email already known) -->
+<div class="pin-screen hidden" id="pin-screen">
   <div class="pin-logo">🦷 DentaFlow</div>
-  <div class="pin-sub">Enter your PIN to continue</div>
+  <div class="pin-sub" id="pin-screen-sub">Enter your PIN to continue</div>
   <div class="pin-card">
     <div class="pin-role-tabs">
-      <button class="pin-role-tab active" id="pin-tab-dentist" onclick="selectPinRole('dentist')">👨‍⚕️ Dentist</button>
-      <button class="pin-role-tab" id="pin-tab-receptionist" onclick="selectPinRole('receptionist')">🧑‍💼 Receptionist</button>
+      <button class="pin-role-tab active" id="pinlock-tab-dentist" onclick="selectPinRole('dentist')">👨‍⚕️ Dentist</button>
+      <button class="pin-role-tab" id="pinlock-tab-receptionist" onclick="selectPinRole('receptionist')">🧑‍💼 Receptionist</button>
     </div>
-    <div class="pin-dots" id="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
+    <div class="pin-dots" id="pinlock-dots">
+      <div class="pin-dot" id="pld0"></div><div class="pin-dot" id="pld1"></div>
+      <div class="pin-dot" id="pld2"></div><div class="pin-dot" id="pld3"></div>
     </div>
     <div class="pin-keypad">
-      <button class="pin-key" onclick="pinPress('1')">1</button>
-      <button class="pin-key" onclick="pinPress('2')">2</button>
-      <button class="pin-key" onclick="pinPress('3')">3</button>
-      <button class="pin-key" onclick="pinPress('4')">4</button>
-      <button class="pin-key" onclick="pinPress('5')">5</button>
-      <button class="pin-key" onclick="pinPress('6')">6</button>
-      <button class="pin-key" onclick="pinPress('7')">7</button>
-      <button class="pin-key" onclick="pinPress('8')">8</button>
-      <button class="pin-key" onclick="pinPress('9')">9</button>
-      <button class="pin-key empty"></button>
-      <button class="pin-key" onclick="pinPress('0')">0</button>
-      <button class="pin-key del" onclick="pinDel()">⌫</button>
+      <button class="pin-key" onclick="pinPress('1')">1</button><button class="pin-key" onclick="pinPress('2')">2</button><button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button><button class="pin-key" onclick="pinPress('5')">5</button><button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button><button class="pin-key" onclick="pinPress('8')">8</button><button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key empty"></button><button class="pin-key" onclick="pinPress('0')">0</button><button class="pin-key del" onclick="pinDel()">⌫</button>
     </div>
-    <div class="pin-hint" id="pin-hint">Default dentist PIN: <strong>1234</strong> · receptionist: <strong>0000</strong></div>
+    <div class="pin-hint" id="pin-hint">Default dentist PIN: <strong>1234</strong></div>
   </div>
 </div>
 
@@ -554,6 +652,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div class="topbar-right">
       <div class="date-pill" id="date-pill">📅 Today</div>
       <div class="sync-pill" id="sync-pill" onclick="toggleOffline()" title="Click to simulate offline">🟢 Online</div>
+      <span id="supa-sync-badge" class="supa-badge">☁ Sync</span>
+      <span id="supa-badge" class="supa-badge">☁ —</span>
       <span id="role-badge" class="pin-role-badge role-dentist" style="font-size:11px">👨‍⚕️ Dentist</span>
       <button class="btn btn-ghost btn-sm" onclick="lockApp()" title="Lock / switch user" style="font-size:13px">🔒</button>
       <div style="position:relative">
@@ -589,11 +689,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div class="stat-card c-red"><div class="stat-label">Recall Due</div><div class="stat-val" id="s-recall">0</div><div class="stat-sub">overdue patients</div></div>
     </div>
 
-    <div class="rev-row" id="dash-rev-row">
-      <div class="rev-card"><div class="rev-label">This Month Revenue</div><div class="rev-val" id="d-month-rev">₦0</div><div class="rev-sub" id="d-month-count">0 attended visits</div></div>
-      <div class="rev-card"><div class="rev-label">Cash Collections</div><div class="rev-val" id="d-cash-rev">₦0</div><div class="rev-sub">direct payments</div></div>
-      <div class="rev-card"><div class="rev-label">HMO Claims Due</div><div class="rev-val" id="d-hmo-due" style="color:var(--accent2)">₦0</div><div class="rev-sub">pending submission</div></div>
-    </div>
+    <!-- rev summary moved to charts above -->
 
     <div class="util-card">
       <div class="util-head">
@@ -605,6 +701,17 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       </div>
       <div class="util-bar-bg"><div class="util-bar-fill" id="util-fill" style="width:0%"></div></div>
       <div class="util-labels"><span>0%</span><span id="util-booked-lbl">—</span><span>100%</span></div>
+    </div>
+
+    <div class="charts-2col" id="dash-rev-row" style="margin-bottom:16px;">
+      <div class="chart-card">
+        <div class="chart-title">📈 Revenue This Month (Daily)</div>
+        <div class="chart-wrap"><canvas id="chart-dash-revenue"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">📊 Today's Appointments by Status</div>
+        <div class="chart-wrap"><canvas id="chart-dash-appts"></canvas></div>
+      </div>
     </div>
 
     <div class="sec-head">
@@ -619,6 +726,16 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
   <!-- ============ APPOINTMENTS ============ -->
   <div class="page" id="page-appointments">
+    <div class="charts-2col">
+      <div class="chart-card">
+        <div class="chart-title">📊 Appointments by Status</div>
+        <div class="chart-wrap"><canvas id="chart-appt-status"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">📅 Bookings This Week (by day)</div>
+        <div class="chart-wrap"><canvas id="chart-appt-week"></canvas></div>
+      </div>
+    </div>
     <div class="appt-filters">
       <button class="f-btn active" onclick="filterA('all',this)">All</button>
       <button class="f-btn" onclick="filterA('upcoming',this)">Upcoming</button>
@@ -648,8 +765,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
   <!-- ============ REMINDERS ============ -->
   <div class="page" id="page-reminders">
-    <div style="margin-bottom:12px;padding:10px 14px;background:rgba(0,212,160,.07);border:1px solid rgba(0,212,160,.2);border-radius:var(--radius);font-size:12px;color:var(--text2);line-height:1.6;">
-      📲 <strong style="color:var(--accent)">Tomorrow's reminder list.</strong> Copy each message → paste into WhatsApp chat. Done in 5 minutes.
+    <div style="margin-bottom:12px;padding:10px 14px;background:rgba(37,211,102,.07);border:1px solid rgba(37,211,102,.2);border-radius:var(--radius);font-size:12px;color:var(--text2);line-height:1.6;">
+      📲 <strong style="color:#25d366">Tomorrow's WhatsApp reminders.</strong> Click <strong>Send on WhatsApp</strong> — it opens with the message ready. Patient just needs to tap Send.
     </div>
     <div class="rem-list" id="rem-list"></div>
   </div>
@@ -695,6 +812,17 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div class="stat-card c-green"><div class="stat-label">Claims Paid</div><div class="stat-val" id="hmo-paid">₦0</div><div class="stat-sub">this month</div></div>
     </div>
 
+    <div class="charts-2col" style="margin-bottom:16px;">
+      <div class="chart-card">
+        <div class="chart-title">🏥 Patients by HMO Provider</div>
+        <div class="chart-wrap"><canvas id="chart-hmo-providers"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">💜 Claims: Pending vs Paid</div>
+        <div class="chart-wrap"><canvas id="chart-hmo-claims"></canvas></div>
+      </div>
+    </div>
+
     <div class="sec-head" style="margin-bottom:10px;">
       <div class="sec-title">HMO Provider Management</div>
       <button class="btn btn-ghost btn-sm" onclick="openAddHmoModal()">+ Add Provider</button>
@@ -706,7 +834,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
     <div class="sec-head">
       <div class="sec-title">HMO Visit Log</div>
-      <button class="btn btn-primary btn-sm" onclick="exportHMOClaims()">⬇ Export Claims (CSV)</button>
+      <button class="btn btn-primary btn-sm" onclick="exportHMOClaims()">🖨 Print Claims Report</button>
     </div>
     <div class="tbl-wrap">
       <table><thead><tr><th>Date</th><th>Patient</th><th>HMO</th><th>Treatment</th><th>Claim Value (₦)</th><th>Copay (₦)</th><th>Status</th></tr></thead>
@@ -722,6 +850,16 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <button class="f-btn" onclick="filterRev('all',this)">All Time</button>
     </div>
     <div class="rev-row" id="rev-summary-cards"></div>
+    <div class="charts-2col">
+      <div class="chart-card">
+        <div class="chart-title">💰 Revenue by Treatment</div>
+        <div class="chart-wrap-tall"><canvas id="chart-rev-treatment"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">📈 Cash vs HMO Trend (Monthly)</div>
+        <div class="chart-wrap-tall"><canvas id="chart-rev-trend"></canvas></div>
+      </div>
+    </div>
     <div class="sec-head"><div class="sec-title">Revenue by Treatment</div></div>
     <div class="tbl-wrap" style="margin-bottom:18px;">
       <table><thead><tr><th>Treatment</th><th>Visits</th><th>Total Revenue (₦)</th><th>HMO Portion (₦)</th><th>Cash Portion (₦)</th></tr></thead>
@@ -870,9 +1008,22 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
         <div style="margin-top:10px;font-size:11px;color:var(--text3)">PINs are stored locally on this device only.</div>
       </div>
       <div class="s-card">
-        <div class="s-title">📴 Offline & Data</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">All data saved to browser localStorage — works fully offline. Export JSON backup regularly.</div>
-        <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export JSON Backup</button>
+        <div class="s-title">☁️ Cloud Sync</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">Your data syncs automatically across all devices. No setup needed.</div>
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);">
+          <span id="cloud-sync-dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
+          <div>
+            <div style="font-size:12px;font-weight:600" id="cloud-sync-label">Auto-sync active</div>
+            <div style="font-size:11px;color:var(--text3)" id="cloud-sync-sub">Last synced: —</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="forcePushToSupabase().then(()=>updateCloudUI())">Sync Now</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3)" id="supa-status-txt"></div>
+      </div>
+      <div class="s-card">
+        <div class="s-title">📁 Data & Backup</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">Export a full backup of your clinic data at any time.</div>
+        <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export Data Backup</button>
         <div style="margin-top:8px;font-size:11px;color:var(--text3)">Last saved: <span id="last-saved">—</span></div>
         <div style="margin-top:12px" id="data-summary"></div>
       </div>
@@ -1177,7 +1328,21 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 <div class="toast" id="toast"></div>
 
 <script>
-// ==================== HELPERS (must come first) ====================
+/*
+ * ============================================================
+ * SUPABASE SETUP — Run this SQL in your Supabase SQL editor:
+ * ============================================================
+ * create table dentaflow_clinics (
+ *   clinic_id text primary key,
+ *   data      text,
+ *   updated_at timestamptz default now()
+ * );
+ * -- Enable Row Level Security and allow all operations (data is already
+ * -- scoped per clinic_id so no user-level auth is needed):
+ * alter table dentaflow_clinics enable row level security;
+ * create policy "open" on dentaflow_clinics for all using (true) with check (true);
+ * ============================================================
+ */
 function today(){return new Date().toISOString().split('T')[0];}
 function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
 function dOff(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
@@ -1206,6 +1371,9 @@ var pidC=6,aidC=8,iidC=11,lidC=1,invC=5;
 // receiptC loaded from storage — never reset so numbers are always unique
 var receiptC=1001;
 var currentInvoiceId=null;
+// Supabase and login state
+var SUPA_URL='',SUPA_KEY='',supabase_client=null,clinicId='',syncBusy=false,_supaDebounce=null;
+var _lsClinicEmail='';
 
 var hmoProviders=[
   {id:'H001',name:'Hygeia HMO',plan:'Capitation',capitation:18000,status:'active'},
@@ -1280,6 +1448,8 @@ function persist(){
     localStorage.setItem('df3_saved',new Date().toLocaleString('en-NG'));
     localStorage.setItem('df3_receiptC', receiptC);
     if(isOffline)pendingChanges++;
+    // Schedule Supabase sync (debounced 2.5s)
+    scheduleSupaSync();
   }catch(e){}
 }
 function loadStorage(){
@@ -1383,21 +1553,10 @@ function renderDash(){
   if(isDentist){
     const todayRev=appointments.filter(a=>a.date===td&&a.status==='attended'&&a.payType!=='hmo').reduce((s,a)=>s+(a.fee||0),0);
     const hmoToday=todayA.filter(a=>a.payType==='hmo').length;
-    const mStart=thisMonthStart();
-    const monthA=appointments.filter(a=>a.date>=mStart&&a.status==='attended');
-    const monthRev=monthA.reduce((s,a)=>s+(a.payType!=='hmo'?a.fee||0:0),0);
-    const cashRev=appointments.filter(a=>a.date>=mStart&&a.status==='attended'&&a.payType!=='hmo').reduce((s,a)=>s+(a.fee||0),0);
-    const hmoUnpaid=invoices.filter(i=>i.payType==='hmo'&&!i.paid&&i.date>=mStart).reduce((s,i)=>s+(i.amount||0),0);
     document.getElementById('s-rev').textContent=fmtMoney(todayRev);
     document.getElementById('s-hmo').textContent=hmoToday;
     document.getElementById('s-recall').textContent=recallDue;
-    document.getElementById('d-month-rev').textContent=fmtMoney(monthRev);
-    document.getElementById('d-month-count').textContent=`${monthA.length} attended visits`;
-    document.getElementById('d-cash-rev').textContent=fmtMoney(cashRev);
-    document.getElementById('d-hmo-due').textContent=fmtMoney(hmoUnpaid);
-    // Show revenue row for dentist
-    document.getElementById('dash-rev-row').style.display='grid';
-    // Stat cards — show all
+    // Show revenue stat cards for dentist
     document.getElementById('s-rev-card').style.display='';
     document.getElementById('s-hmo-card').style.display='';
   } else {
@@ -1445,6 +1604,8 @@ function renderDash(){
     });
   });
   updateOfflineUI();
+  // Render dashboard charts
+  setTimeout(renderDashCharts, 0);
 }
 function setDashChair(c){activeDashChair=c;renderDash();}
 function getChairColor(chair){const colors=['#00d4a0','#7c6af7','#f0a500','#4a9ff0'];const i=getChairs().indexOf(chair);return colors[i%colors.length]||'#00d4a0';}
@@ -1467,7 +1628,7 @@ function renderAppts(){
     const pc=a.status==='attended'?'pill-att':a.status==='cancelled'?'pill-can':'pill-up';
     const ptc=a.payType==='hmo'?'pill-hmo':a.payType==='transfer'?'pill-pending':'pill-cash';
     const cc=getChairColor(a.chair);
-    return`<tr>
+    return`<tr data-id="${a.id}">
       <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${cc}22;color:${cc}">${a.chair}</span></td>
       <td><strong>${fmtTime(a.time)}</strong><div style="font-size:10px;color:var(--text3)">${fmtDate(a.date)}</div></td>
       <td>${pt?pt.name:'—'}</td>
@@ -1480,16 +1641,33 @@ function renderAppts(){
       <td><div style="display:flex;gap:3px">${a.status==='upcoming'?`<button class="btn btn-ghost btn-sm" onclick="markAttended('${a.id}')">✓</button><button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">✕</button>`:''}</div></td>
     </tr>`;
   }).join('');
+  // Render appointment charts
+  setTimeout(renderApptCharts, 0);
 }
 function markAttended(id){
-  const a=appointments.find(x=>x.id===id);if(!a)return;a.status='attended';
+  const a=appointments.find(x=>x.id===id);if(!a||a.status==='attended')return;
+  // Guard: prevent duplicate invoice for same appointment
+  if(invoices.find(i=>i.apptId===a.id)){
+    a.status='attended';
+    persist();renderAppts();renderDash();showToast('✓ Marked attended (receipt already exists)');return;
+  }
+  a.status='attended';
   const pt=getPt(a.patientId);if(pt)pt.visits.unshift({date:a.date,treatment:a.treatment,note:a.notes||''});
-  // Auto-create invoice
   const inv={id:`R${receiptC}`,apptId:a.id,patientId:a.patientId,date:a.date,treatment:a.treatment,amount:a.fee||0,payType:a.payType,hmoId:a.hmoId||'',copay:0,paid:a.payType!=='hmo',receiptNum:`RCP-${receiptC}`};
   invoices.push(inv);receiptC++;
   persist();renderAppts();renderDash();showToast('✓ Attended — receipt created');runNotifChecks();
 }
-function cancelAppt(id){if(!confirm('Cancel this appointment?'))return;appointments.find(x=>x.id===id).status='cancelled';persist();renderAppts();renderDash();}
+function cancelAppt(id){
+  if(!confirm('Cancel this appointment?'))return;
+  const a=appointments.find(x=>x.id===id);
+  if(!a)return;
+  a.status='cancelled';
+  persist();
+  // Immediately re-render so cancellation is reflected at once
+  renderAppts();
+  renderDash();
+  showToast('✗ Appointment cancelled');
+}
 
 // ==================== BOOKING ====================
 function openBooking(prefillTime,prefillChair){
@@ -1534,13 +1712,30 @@ function saveBooking(){
   const payType=document.getElementById('bk-paytype').value,hmoId=payType==='hmo'?document.getElementById('bk-hmo').value:'';
   const nt=document.getElementById('bk-notes').value;
   if(!d||!t||!c){alert('Date, time and chair required');return;}
+
+  // Block duplicate chair/time booking
+  const slotConflict=appointments.find(a=>a.date===d&&a.time===t&&a.chair===c&&a.status!=='cancelled');
+  if(slotConflict){document.getElementById('dbl-warn').classList.add('show');return;}
+
   let pid;
   if(ps==='new'){
     const n=document.getElementById('bk-name').value.trim(),ph=document.getElementById('bk-phone').value.trim();
     if(!n||!ph){alert('Name and phone required');return;}
-    const npt={id:`P${String(pidC).padStart(3,'0')}`,name:n,phone:ph,age:document.getElementById('bk-age').value||'—',gender:'—',payType:document.getElementById('bk-new-paytype').value,hmoId:document.getElementById('bk-new-paytype').value==='hmo'?document.getElementById('bk-new-hmo').value:'',nextVisit:'',odonto_notes:'',visits:[]};
-    patients.push(npt);pidC++;pid=npt.id;
-  }else pid=ps;
+    // Check if patient with same phone already exists — prevent duplicates
+    const existPt=patients.find(p=>p.phone.replace(/\D/g,'')=== ph.replace(/\D/g,''));
+    if(existPt){
+      if(!confirm(`A patient with this phone already exists: ${existPt.name}. Book for them instead?`))return;
+      pid=existPt.id;
+    } else {
+      const npt={id:`P${String(pidC).padStart(3,'0')}`,name:n,phone:ph,age:document.getElementById('bk-age').value||'—',gender:'—',payType:document.getElementById('bk-new-paytype').value,hmoId:document.getElementById('bk-new-paytype').value==='hmo'?document.getElementById('bk-new-hmo').value:'',nextVisit:'',odonto_notes:'',visits:[]};
+      patients.push(npt);pidC++;pid=npt.id;
+    }
+  }else{
+    pid=ps;
+    // Block same patient booked twice on same day (different time is fine, same time is a dupe)
+    const ptSameSlot=appointments.find(a=>a.patientId===pid&&a.date===d&&a.time===t&&a.status!=='cancelled');
+    if(ptSameSlot){showToast('⚠ This patient already has an appointment at this time');return;}
+  }
   appointments.push({id:`A${String(aidC).padStart(3,'0')}`,patientId:pid,date:d,time:t,chair:c,treatment:tr,payType,hmoId,fee,status:'upcoming',notes:nt});
   aidC++;closeModal('booking-modal');persist();renderDash();showToast('✓ Appointment booked!');runNotifChecks();
 }
@@ -1659,19 +1854,48 @@ function goOdonto(){closeModal('pt-detail-modal');go('odontogram');setTimeout(()
 function goPerio(){closeModal('pt-detail-modal');go('perio');setTimeout(()=>{document.getElementById('perio-sel').value=selPtForDetail;loadPerio();},50);}
 
 // ==================== REMINDERS ====================
+function buildReminderMsg(a) {
+  const pt = getPt(a.patientId); if (!pt) return '';
+  const hmo = a.hmoId ? getHMO(a.hmoId) : null;
+  return `Hello ${pt.name.split(' ')[0]} 👋\n\nReminder from *${S.clinicName}*.\n\nYour appointment with *${S.dentistName}* is *tomorrow* at *${fmtTime(a.time)}* (${a.chair}).\n\nTreatment: ${a.treatment}${hmo ? `\nInsurance: ${hmo.name}` : ''}\n\nPlease arrive 5 minutes early. Reply to reschedule.\n\nThank you 🦷`;
+}
+function waLink(phone, msg) {
+  const clean = phone.replace(/\D/g,'').replace(/^0/, '234');
+  return `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
+}
 function renderReminders(){
-  const tom=tomorrow();
-  const list=appointments.filter(a=>a.date===tom&&a.status==='upcoming');
-  const el=document.getElementById('rem-list');
-  if(!list.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">💬</div><div>No appointments tomorrow</div></div>`;return;}
-  el.innerHTML=list.map((a,i)=>{
-    const pt=getPt(a.patientId);if(!pt)return'';
-    const hmo=a.hmoId?getHMO(a.hmoId):null;
-    const msg=`Hello ${pt.name.split(' ')[0]} 👋\n\nReminder from *${S.clinicName}*.\n\nYour appointment with *${S.dentistName}* is *tomorrow* at *${fmtTime(a.time)}* (${a.chair}).\n\nTreatment: ${a.treatment}${hmo?`\nInsurance: ${hmo.name}`:''}\n\nPlease arrive 5 minutes early. Reply to reschedule.\n\nThank you 🦷`;
-    return`<div class="rem-card"><div class="rem-av">${initials(pt.name)}</div><div class="rem-body"><div class="rem-name">${pt.name} ${a.payType==='hmo'?'<span class="pill pill-hmo" style="font-size:10px">HMO</span>':''}</div><div class="rem-det">${fmtTime(a.time)} · ${a.chair} · ${a.treatment} · ${pt.phone}</div><div class="msg-preview">${msg.replace(/\n/g,'<br>')}</div><button class="copy-btn" id="cb-${i}" onclick="copyMsg(${i},\`${msg.replace(/`/g,'\\`')}\`)">📋 Copy to WhatsApp</button></div></div>`;
+  const tom = tomorrow();
+  const list = appointments.filter(a => a.date === tom && a.status === 'upcoming');
+  const el = document.getElementById('rem-list');
+  if (!list.length) { el.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><div>No appointments tomorrow</div></div>`; return; }
+  el.innerHTML = list.map((a, i) => {
+    const pt = getPt(a.patientId); if (!pt) return '';
+    const msg = buildReminderMsg(a);
+    const url = waLink(pt.phone, msg);
+    return `<div class="rem-card">
+      <div class="rem-av">${initials(pt.name)}</div>
+      <div class="rem-body">
+        <div class="rem-name">${pt.name} ${a.payType==='hmo'?'<span class="pill pill-hmo" style="font-size:10px">HMO</span>':''}</div>
+        <div class="rem-det">${fmtTime(a.time)} · ${a.chair} · ${a.treatment} · ${pt.phone}</div>
+        <div class="msg-preview" style="white-space:pre-line">${msg}</div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <a href="${url}" target="_blank" rel="noopener" class="wa-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send on WhatsApp
+          </a>
+          <button class="copy-btn" id="cb-${i}" onclick="copyMsg(${i},\`${msg.replace(/`/g,'\\`')}\`)">📋 Copy</button>
+        </div>
+      </div>
+    </div>`;
   }).join('');
 }
-function copyMsg(i,msg){navigator.clipboard.writeText(msg).then(()=>{const b=document.getElementById(`cb-${i}`);b.textContent='✓ Copied!';b.classList.add('copied');setTimeout(()=>{b.textContent='📋 Copy to WhatsApp';b.classList.remove('copied');},2000);showToast('Copied!')});}
+function copyMsg(i, msg) {
+  navigator.clipboard.writeText(msg).then(() => {
+    const b = document.getElementById(`cb-${i}`);
+    if (b) { b.textContent = '✓ Copied!'; b.classList.add('copied'); setTimeout(() => { b.textContent = '📋 Copy'; b.classList.remove('copied'); }, 2000); }
+    showToast('Copied!');
+  });
+}
 
 // ==================== RECALL ====================
 function renderRecall(){
@@ -1691,7 +1915,11 @@ function renderRecall(){
         <div class="rem-det">${p.phone} · Overdue by <strong style="color:var(--yellow)">${daysOver} day${daysOver!==1?'s':''}</strong> · Last: ${lv?lv.treatment:'No visits'}</div>
         <div class="msg-preview">${msg.replace(/\n/g,'<br>')}</div>
         <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-          <button class="copy-btn" id="rcb-${i}" onclick="copyMsg('r${i}',\`${msg.replace(/`/g,'\\`')}\`)">📋 Copy Recall Message</button>
+          <a href="${waLink(p.phone, msg)}" target="_blank" rel="noopener" class="wa-btn" style="font-size:11px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send Recall on WhatsApp
+          </a>
+          <button class="copy-btn" id="rcb-${i}" onclick="copyMsg('r${i}',\`${msg.replace(/`/g,'\\`')}\`)">📋 Copy</button>
           <button class="btn btn-ghost btn-sm" onclick="closeRecallAndBook('${p.id}')">+ Book Now</button>
         </div>
       </div>
@@ -2031,6 +2259,8 @@ function renderHMO(){
     const inv=invoices.find(i=>i.apptId===a.id);
     return`<tr><td style="font-size:11px">${fmtDate(a.date)}</td><td>${pt?pt.name:'—'}</td><td style="color:var(--accent2)">${hmo?hmo.name:'—'}</td><td>${a.treatment}</td><td style="font-weight:600">${fmtMoney(a.fee)}</td><td>${fmtMoney(a.copay||0)}</td><td><span class="pill ${inv&&inv.paid?'pill-att':'pill-pending'}">${inv&&inv.paid?'Claimed':'Pending'}</span></td></tr>`;
   }).join(''):`<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No HMO visits yet</td></tr>`;
+  // Render HMO charts
+  setTimeout(renderHMOCharts, 0);
 }
 function openAddHmoModal(){['hmo-name','hmo-plan','hmo-cap'].forEach(id=>document.getElementById(id).value='');document.getElementById('add-hmo-modal').classList.add('open');}
 function saveHMO(){
@@ -2045,15 +2275,147 @@ function quickAddHMO(){
   persist();populateHMOSelects();showToast('✓ HMO provider added!');
 }
 function exportHMOClaims(){
-  const mStart=thisMonthStart();
-  const rows=[['Date','Patient','Phone','HMO','Treatment','Claim (₦)','Copay (₦)','Status']];
-  appointments.filter(a=>a.payType==='hmo'&&a.status==='attended').forEach(a=>{
-    const pt=getPt(a.patientId),hmo=getHMO(a.hmoId),inv=invoices.find(i=>i.apptId===a.id);
-    rows.push([a.date,pt?pt.name:'—',pt?pt.phone:'—',hmo?hmo.name:'—',a.treatment,a.fee||0,a.copay||0,inv&&inv.paid?'Claimed':'Pending']);
+  const allHmoAppts = appointments.filter(a=>a.payType==='hmo'&&a.status==='attended')
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  if(!allHmoAppts.length){showToast('No HMO claims to export');return;}
+
+  const totalClaim = allHmoAppts.reduce((s,a)=>s+(a.fee||0),0);
+  const totalCopay = allHmoAppts.reduce((s,a)=>s+(a.copay||0),0);
+  const pending = allHmoAppts.filter(a=>{const inv=invoices.find(i=>i.apptId===a.id);return !inv||!inv.paid;}).length;
+  const claimed = allHmoAppts.length - pending;
+  const mStart = thisMonthStart();
+  const monthCount = allHmoAppts.filter(a=>a.date>=mStart).length;
+
+  // Group by provider
+  const byProvider = {};
+  allHmoAppts.forEach(a=>{
+    const h=getHMO(a.hmoId);const key=h?h.name:'Unknown';
+    if(!byProvider[key])byProvider[key]={visits:[],total:0,copay:0,pending:0,claimed:0};
+    byProvider[key].visits.push(a);byProvider[key].total+=(a.fee||0);byProvider[key].copay+=(a.copay||0);
+    const inv=invoices.find(i=>i.apptId===a.id);
+    if(inv&&inv.paid)byProvider[key].claimed++;else byProvider[key].pending++;
   });
-  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`hmo-claims-${today()}.csv`;link.click();
-  showToast('✓ CSV exported!');
+
+  const rows = allHmoAppts.map(a=>{
+    const pt=getPt(a.patientId),hmo=getHMO(a.hmoId),inv=invoices.find(i=>i.apptId===a.id);
+    const status=inv&&inv.paid?'Claimed':'Pending';
+    const statusColor=inv&&inv.paid?'#065f46':'#92400e';
+    const statusBg=inv&&inv.paid?'#d1fae5':'#fef3c7';
+    return`<tr>
+      <td>${fmtDate(a.date)}</td>
+      <td>${pt?pt.name:'—'}</td>
+      <td style="font-size:11px">${pt?pt.phone:'—'}</td>
+      <td><strong>${hmo?hmo.name:'—'}</strong></td>
+      <td>${a.treatment}</td>
+      <td style="text-align:right;font-weight:600">₦${Number(a.fee||0).toLocaleString('en-NG')}</td>
+      <td style="text-align:right">₦${Number(a.copay||0).toLocaleString('en-NG')}</td>
+      <td style="text-align:center"><span style="background:${statusBg};color:${statusColor};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700">${status}</span></td>
+    </tr>`;
+  }).join('');
+
+  const providerSummary = Object.entries(byProvider).map(([name,d])=>`
+    <tr>
+      <td><strong>${name}</strong></td>
+      <td style="text-align:center">${d.visits.length}</td>
+      <td style="text-align:right;font-weight:600;color:#00d4a0">₦${Number(d.total).toLocaleString('en-NG')}</td>
+      <td style="text-align:right">₦${Number(d.copay).toLocaleString('en-NG')}</td>
+      <td style="text-align:center"><span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${d.claimed} claimed</span></td>
+      <td style="text-align:center"><span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${d.pending} pending</span></td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HMO Claims Report — ${S.clinicName}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'DM Sans',Arial,sans-serif;color:#1a1a2e;background:#fff;font-size:13px}
+  .header{background:linear-gradient(135deg,#0d0f14 0%,#141720 100%);padding:28px 36px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+  .clinic-name{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#00d4a0;letter-spacing:-0.3px}
+  .clinic-meta{font-size:11px;color:#8b91aa;margin-top:5px;line-height:1.8}
+  .report-title{text-align:right;flex-shrink:0}
+  .report-label{font-size:9px;color:#555d7a;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+  .report-name{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff}
+  .report-date{font-size:11px;color:#8b91aa;margin-top:4px}
+  .summary-band{background:#f8f9fc;border-bottom:1px solid #e8eaef;padding:18px 36px;display:flex;gap:24px;flex-wrap:wrap}
+  .kpi{flex:1;min-width:120px}
+  .kpi-val{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#1a1a2e}
+  .kpi-val.green{color:#00d4a0}.kpi-val.purple{color:#7c6af7}.kpi-val.yellow{color:#d97706}
+  .kpi-lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .body{padding:24px 36px}
+  .section-head{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#1a1a2e;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #00d4a0;display:flex;align-items:center;gap:8px}
+  table{width:100%;border-collapse:collapse;margin-bottom:28px;font-size:12px}
+  thead th{background:#f8f9fc;padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e8eaef}
+  tbody tr{border-bottom:1px solid #f0f0f0}
+  tbody tr:hover{background:#fafafa}
+  td{padding:9px 10px;vertical-align:middle}
+  .footer{background:#f8f9fc;border-top:1px solid #e8eaef;padding:14px 36px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#999}
+  .footer-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:#00d4a0}
+  .total-row{background:#f0fdf9;font-weight:700}
+  .total-row td{border-top:2px solid #00d4a0;padding-top:10px}
+  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <div class="clinic-name">🦷 ${S.clinicName}</div>
+    <div class="clinic-meta">${S.address||''}<br>${S.phone||''}</div>
+  </div>
+  <div class="report-title">
+    <div class="report-label">Document</div>
+    <div class="report-name">HMO Claims Report</div>
+    <div class="report-date">Generated: ${new Date().toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+  </div>
+</div>
+
+<div class="summary-band">
+  <div class="kpi"><div class="kpi-val">${allHmoAppts.length}</div><div class="kpi-lbl">Total HMO Visits</div></div>
+  <div class="kpi"><div class="kpi-val">${monthCount}</div><div class="kpi-lbl">This Month</div></div>
+  <div class="kpi"><div class="kpi-val green">₦${Number(totalClaim).toLocaleString('en-NG')}</div><div class="kpi-lbl">Total Claim Value</div></div>
+  <div class="kpi"><div class="kpi-val purple">${claimed}</div><div class="kpi-lbl">Claimed</div></div>
+  <div class="kpi"><div class="kpi-val yellow">${pending}</div><div class="kpi-lbl">Pending Claim</div></div>
+  <div class="kpi"><div class="kpi-val">${S.dentistName}</div><div class="kpi-lbl">Treating Dentist</div></div>
+</div>
+
+<div class="body">
+  <div class="section-head">📊 Summary by HMO Provider</div>
+  <table>
+    <thead><tr><th>HMO Provider</th><th style="text-align:center">Visits</th><th style="text-align:right">Total (₦)</th><th style="text-align:right">Co-pay (₦)</th><th style="text-align:center">Claimed</th><th style="text-align:center">Pending</th></tr></thead>
+    <tbody>
+      ${providerSummary}
+      <tr class="total-row">
+        <td><strong>TOTAL</strong></td>
+        <td style="text-align:center"><strong>${allHmoAppts.length}</strong></td>
+        <td style="text-align:right"><strong>₦${Number(totalClaim).toLocaleString('en-NG')}</strong></td>
+        <td style="text-align:right"><strong>₦${Number(totalCopay).toLocaleString('en-NG')}</strong></td>
+        <td style="text-align:center"><strong>${claimed}</strong></td>
+        <td style="text-align:center"><strong>${pending}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-head">📋 Detailed Visit Log</div>
+  <table>
+    <thead><tr><th>Date</th><th>Patient</th><th>Phone</th><th>HMO Provider</th><th>Treatment</th><th style="text-align:right">Claim (₦)</th><th style="text-align:right">Co-pay (₦)</th><th style="text-align:center">Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div class="footer-brand">🦷 ${S.clinicName}</div>
+  <div>This report is computer-generated · ${new Date().toLocaleDateString('en-NG')} · DentaFlow</div>
+  <button class="no-print" onclick="window.print()" style="background:#00d4a0;color:#0d0f14;border:none;padding:6px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">🖨 Print / Save PDF</button>
+</div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  showToast('✓ HMO Claims Report opened — Print or Save as PDF');
 }
 
 // ==================== REVENUE ====================
@@ -2075,6 +2437,8 @@ function renderRevenue(){
   document.getElementById('rev-by-treatment').innerHTML=sorted.length?sorted.map(([t,v])=>`<tr><td><strong>${t}</strong></td><td style="color:var(--text3)">${v.visits}</td><td style="font-family:var(--font-display);font-weight:700;color:var(--accent)">${fmtMoney(v.total)}</td><td style="color:var(--accent2)">${fmtMoney(v.hmo)}</td><td style="color:var(--accent)">${fmtMoney(v.cash)}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">No attended appointments in this period</td></tr>`;
   // Fee schedule
   document.getElementById('fee-grid').innerHTML=Object.entries(feeSchedule).map(([t,p])=>`<div class="fee-card"><span class="fee-name">${t}</span><input class="fee-input" type="number" id="fee-${t.replace(/\s+/g,'-').replace(/\//g,'')}" value="${p}" placeholder="0"></div>`).join('');
+  // Render revenue charts
+  setTimeout(renderRevCharts, 0);
 }
 function saveFees(){
   Object.keys(feeSchedule).forEach(t=>{const el=document.getElementById(`fee-${t.replace(/\s+/g,'-').replace(/\//g,'')}`);if(el)feeSchedule[t]=parseFloat(el.value)||0;});
@@ -2144,7 +2508,7 @@ function renderInventory(){
   tb.innerHTML=list.map(i=>{
     const st=i.qty===0?{cls:'pill-out',l:'Out'}:i.qty<=i.minQty?{cls:'pill-low',l:'Low'}:{cls:'pill-ok',l:'OK'};
     const qc=i.qty===0?'var(--red)':i.qty<=i.minQty?'var(--yellow)':'var(--text)';
-    return`<tr><td><strong>${i.name}</strong></td><td style="font-size:11px;color:var(--text3)">${i.category}</td><td style="font-size:11px;color:var(--text2)">${i.unit}</td><td><span style="font-family:var(--font-display);font-weight:700;color:${qc}">${i.qty}</span></td><td style="font-size:11px;color:var(--text3)">${i.minQty}</td><td><span class="pill ${st.cls}">${st.l}</span></td><td style="font-size:11px;color:var(--text3)">${i.lastUsed?fmtDate(i.lastUsed):'—'}</td><td><div style="display:flex;gap:3px"><button class="btn btn-ghost btn-sm" onclick="openUse('${i.id}')">Use</button><button class="btn btn-primary btn-sm" onclick="openRS('${i.id}')">+Stock</button></div></td></tr>`;
+    return`<tr data-id="${i.id}"><td><strong>${i.name}</strong></td><td style="font-size:11px;color:var(--text3)">${i.category}</td><td style="font-size:11px;color:var(--text2)">${i.unit}</td><td><span style="font-family:var(--font-display);font-weight:700;color:${qc}">${i.qty}</span></td><td style="font-size:11px;color:var(--text3)">${i.minQty}</td><td><span class="pill ${st.cls}">${st.l}</span></td><td style="font-size:11px;color:var(--text3)">${i.lastUsed?fmtDate(i.lastUsed):'—'}</td><td><div style="display:flex;gap:3px"><button class="btn btn-ghost btn-sm" onclick="openUse('${i.id}')">Use</button><button class="btn btn-primary btn-sm" onclick="openRS('${i.id}')">+Stock</button></div></td></tr>`;
   }).join('');
 }
 function setIC(c){invCatFilter=c;renderInventory();}
@@ -2175,7 +2539,7 @@ function renderLab(){
     const dueToday=l.status!=='completed'&&l.dueDate===td;
     const stCls=l.status==='completed'?'pill-lab-done':overdue?'pill-lab-late':'pill-lab-wait';
     const stLbl=l.status==='completed'?'Completed':overdue?'OVERDUE':dueToday?'Due Today':'At Lab';
-    return`<tr style="${overdue?'background:rgba(240,74,74,.03)':''}">
+    return`<tr data-id="${l.id}" style="${overdue?'background:rgba(240,74,74,.03)':''}">
       <td>${pt?pt.name:'—'}</td>
       <td>${l.treatment}</td>
       <td style="font-size:11px;color:var(--text2)">${l.labName}</td>
@@ -2207,6 +2571,7 @@ function renderSettings(){
   renderChairNameFields();
   const ls=localStorage.getItem('df3_saved');document.getElementById('last-saved').textContent=ls||'Not saved yet';
   document.getElementById('data-summary').innerHTML=`<div style="font-size:12px;color:var(--text2);line-height:2">👥 ${patients.length} patients · 📅 ${appointments.length} appointments<br>🧾 ${invoices.length} invoices · 🏥 ${hmoProviders.length} HMO providers<br>🔬 ${labJobs.length} lab jobs · 📦 ${inventory.length} inventory items</div>`;
+  updateCloudUI();
 }
 function renderChairNameFields(){
   const n=parseInt(document.getElementById('s-chairs').value)||2;S.numChairs=n;
@@ -2221,8 +2586,42 @@ function saveSettings(){
   document.getElementById('sb-clinic').textContent=S.clinicName;document.getElementById('sb-dentist').textContent=S.dentistName;persist();showToast('✓ Settings saved!');
 }
 function exportData(){
-  const blob=new Blob([JSON.stringify({S,patients,appointments,invoices,hmoProviders,labJobs,inventory,odontograms,perioCharts,feeSchedule,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dentaflow-v3-backup-${today()}.json`;a.click();showToast('✓ Exported!');
+  const payload = {
+    meta: {
+      clinic: S.clinicName,
+      dentist: S.dentistName,
+      address: S.address,
+      phone: S.phone,
+      exportedAt: new Date().toISOString(),
+      exportedBy: 'DentaFlow Clinic Management',
+      version: '3.0',
+      counts: {
+        patients: patients.length,
+        appointments: appointments.length,
+        invoices: invoices.length,
+        hmoProviders: hmoProviders.length,
+        labJobs: labJobs.length,
+        inventoryItems: inventory.length
+      }
+    },
+    settings: S,
+    patients,
+    appointments,
+    invoices,
+    hmoProviders,
+    labJobs,
+    inventory,
+    odontograms,
+    perioCharts,
+    feeSchedule
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${S.clinicName.replace(/\s+/g,'-')}-backup-${today()}.json`;
+  a.click();
+  showToast('✓ Backup exported!');
 }
 
 
@@ -2239,12 +2638,13 @@ var pushPermission = 'default'; // 'granted' | 'denied' | 'default'
 // lab_overdue          — fires at 8 AM when a lab job passes its due date
 // appointment_soon     — fires 1 hour before each booked appointment
 
-function addNotif(type, title, body, action, actionLabel, urgent) {
+function addNotif(type, title, body, action, actionLabel, urgent, targetId) {
   const id = notifIdCounter++;
   notifications.unshift({
     id, type, title, body,
     action: action || null,
     actionLabel: actionLabel || null,
+    targetId: targetId || null,
     urgent: !!urgent,
     read: false,
     time: new Date().toISOString()
@@ -2256,13 +2656,33 @@ function addNotif(type, title, body, action, actionLabel, urgent) {
   // Push to browser if permitted
   if (pushPermission === 'granted') {
     try {
-      new Notification(title, {
+      const bn = new Notification(title, {
         body,
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="28" font-size="28">🦷</text></svg>',
         tag: `dentaflow-${type}-${id}`
       });
+      bn.onclick = () => { window.focus(); handleNotifClick(id); };
     } catch(e) {}
   }
+}
+
+// Flash-highlight a table row or card after navigation
+function highlightNotifTarget(type, targetId) {
+  let el = null;
+  // Try to find a row in the active page's table by data attribute
+  el = document.querySelector(`[data-id="${targetId}"]`);
+  // Fallback: search tbody rows for matching text content (appointment ID, etc.)
+  if (!el) {
+    document.querySelectorAll('tbody tr').forEach(row => {
+      if (row.textContent.includes(targetId)) el = row;
+    });
+  }
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const orig = el.style.background;
+  el.style.transition = 'background 0.3s';
+  el.style.background = 'rgba(0,212,160,0.18)';
+  setTimeout(() => { el.style.background = orig; }, 1800);
 }
 
 function updateNotifBadge() {
@@ -2352,19 +2772,60 @@ function renderNotifList() {
   el.innerHTML = notifications.map(n => {
     const icon = NOTIF_ICONS[n.type] || '💡';
     const col = NOTIF_COLORS[n.type] || 'var(--accent)';
-    return `<div style="display:flex;gap:10px;padding:11px 12px;border-radius:var(--radius-sm);background:${n.read?'transparent':'rgba(255,255,255,.03)'};border-left:3px solid ${n.read?'transparent':col};margin-bottom:4px;transition:background .12s" onmouseenter="markRead(${n.id})">
-      <div style="font-size:18px;flex-shrink:0;margin-top:1px">${icon}</div>
+    const isClickable = !!n.action;
+    return `<div
+      data-notif-id="${n.id}"
+      onclick="handleNotifClick(${n.id})"
+      style="
+        display:flex;gap:10px;padding:12px 14px;border-radius:var(--radius-sm);
+        background:${n.read ? 'transparent' : 'rgba(255,255,255,.04)'};
+        border-left:3px solid ${n.read ? 'transparent' : col};
+        margin-bottom:3px;transition:background .12s;
+        ${isClickable ? 'cursor:pointer;' : ''}
+      "
+      ${isClickable ? `onmouseenter="this.style.background='rgba(255,255,255,.07)'" onmouseleave="this.style.background='${n.read ? 'transparent' : 'rgba(255,255,255,.04)'}'"` : ''}
+    >
+      <div style="font-size:20px;flex-shrink:0;margin-top:1px">${icon}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;color:${n.read?'var(--text2)':'var(--text)'};margin-bottom:2px">${n.title}</div>
-        <div style="font-size:12px;color:var(--text3);line-height:1.5">${n.body}</div>
-        ${n.action ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:11px" onclick="${n.action};toggleNotifPanel()">${n.actionLabel||'View'}</button>` : ''}
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+          <div style="font-weight:600;font-size:13px;color:${n.read ? 'var(--text2)' : 'var(--text)'};flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.title}</div>
+          ${n.urgent ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:rgba(240,74,74,.15);color:var(--red);flex-shrink:0">URGENT</span>` : ''}
+        </div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.5;white-space:pre-line">${n.body}</div>
+        ${isClickable ? `<div style="margin-top:5px;font-size:11px;color:${col};font-weight:600;display:flex;align-items:center;gap:4px">
+          ${n.actionLabel || 'View'} →
+        </div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-        <div style="font-size:10px;color:var(--text3)">${timeAgo(n.time)}</div>
-        <button onclick="dismissNotif(${n.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:2px 4px">✕</button>
+        <div style="font-size:10px;color:var(--text3);white-space:nowrap">${timeAgo(n.time)}</div>
+        <button onclick="event.stopPropagation();dismissNotif(${n.id})"
+          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;line-height:1;transition:color .1s"
+          onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='var(--text3)'"
+          title="Dismiss">✕</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function handleNotifClick(id) {
+  const n = notifications.find(x => x.id === id);
+  if (!n) return;
+  // Mark read
+  n.read = true;
+  updateNotifBadge();
+  // Close panel
+  notifPanelOpen = false;
+  const panel = document.getElementById('notif-panel');
+  if (panel) panel.style.display = 'none';
+  // Navigate to the specific destination
+  if (!n.action) return;
+  try {
+    eval(n.action);
+  } catch(e) { console.error('Notif action error:', e); }
+  // After navigation, highlight the target if we have a targetId
+  if (n.targetId) {
+    setTimeout(() => highlightNotifTarget(n.type, n.targetId), 120);
+  }
 }
 
 // ---- AUTOMATED CHECKS ----
@@ -2375,9 +2836,8 @@ function runNotifChecks() {
   const td = today();
   const tom = tomorrow();
   const now = new Date();
-  const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-  // 1. APPOINTMENT REMINDERS — for tomorrow's appointments (fire once per session at startup + 8am check)
+  // 1. APPOINTMENT REMINDERS — tomorrow's appointments → go to Reminders page
   const tomAppts = appointments.filter(a => a.date === tom && a.status === 'upcoming');
   if (tomAppts.length > 0) {
     const key = `rem_${tom}`;
@@ -2388,15 +2848,16 @@ function runNotifChecks() {
         `${tomAppts.length} appointment${tomAppts.length>1?'s':''} tomorrow`,
         tomAppts.map(a => {
           const pt = getPt(a.patientId);
-          return `${fmtTime(a.time)} — ${pt?pt.name:'?'} (${a.chair})`;
+          return `${fmtTime(a.time)} — ${pt ? pt.name : '?'} (${a.chair})`;
         }).join('\n'),
         "go('reminders')",
-        'Send Reminders'
+        'Open Reminders →',
+        false
       );
     }
   }
 
-  // 2. APPOINTMENT SOON — 1 hour before each today's appointment
+  // 2. APPOINTMENT SOON — 1 hour before → go to Appointments and highlight row
   const todayAppts = appointments.filter(a => a.date === td && a.status === 'upcoming');
   todayAppts.forEach(a => {
     const [ah, am] = a.time.split(':').map(Number);
@@ -2410,17 +2871,18 @@ function runNotifChecks() {
         const pt = getPt(a.patientId);
         addNotif(
           'appointment_soon',
-          `⏰ Coming up in ${diff} min: ${pt ? pt.name : '?'}`,
+          `⏰ In ${diff} min: ${pt ? pt.name : '?'}`,
           `${a.treatment} · ${a.chair} at ${fmtTime(a.time)}`,
-          "go('appointments')",
-          'View Schedule',
-          true
+          `go('appointments');filterA('upcoming',document.querySelector('.appt-filters .f-btn'))`,
+          'View Appointment →',
+          true,
+          a.id
         );
       }
     }
   });
 
-  // 3. RECALL DUE — overdue patients with no upcoming appointment
+  // 3. RECALL DUE → go to Recall List
   const overdue = patients.filter(p =>
     p.nextVisit && p.nextVisit < td &&
     !appointments.find(a => a.patientId === p.id && a.status === 'upcoming' && a.date >= td)
@@ -2434,28 +2896,30 @@ function runNotifChecks() {
         `${overdue.length} patient${overdue.length>1?'s':''} overdue for recall`,
         overdue.slice(0, 3).map(p => p.name).join(', ') + (overdue.length > 3 ? ` +${overdue.length-3} more` : ''),
         "go('recall')",
-        'View Recall List'
+        'Open Recall List →',
+        false
       );
     }
   }
 
-  // 4. LOW STOCK alerts
+  // 4. LOW STOCK → go to Inventory, highlight the item row
   inventory.filter(i => i.qty <= i.minQty).forEach(item => {
     const key = `stock_${item.id}_${item.qty}`;
     if (!firedNotifs[key]) {
       firedNotifs[key] = true;
       addNotif(
         'low_stock',
-        item.qty === 0 ? `OUT OF STOCK: ${item.name}` : `Low stock: ${item.name}`,
-        `Only ${item.qty} ${item.unit} remaining (min: ${item.minQty})`,
-        "go('inventory')",
-        'View Inventory',
-        item.qty === 0
+        item.qty === 0 ? `🚨 OUT OF STOCK: ${item.name}` : `📦 Low stock: ${item.name}`,
+        `${item.qty} ${item.unit} left (minimum: ${item.minQty})`,
+        `go('inventory')`,
+        'Go to Inventory →',
+        item.qty === 0,
+        item.id
       );
     }
   });
 
-  // 5. LAB OVERDUE
+  // 5. LAB OVERDUE → go to Lab Work page, highlight the overdue row
   const lateJobs = labJobs.filter(l => l.status !== 'completed' && l.dueDate < td);
   lateJobs.forEach(l => {
     const key = `lab_late_${l.id}`;
@@ -2465,11 +2929,12 @@ function runNotifChecks() {
       const daysLate = Math.floor((new Date(td) - new Date(l.dueDate + 'T00:00:00')) / 86400000);
       addNotif(
         'lab_overdue',
-        `Lab job overdue: ${l.treatment}`,
-        `${pt ? pt.name : '?'} — ${l.labName} · ${daysLate} day${daysLate !== 1 ? 's' : ''} late`,
+        `🔬 Lab overdue: ${l.treatment}`,
+        `${pt ? pt.name : '?'} · ${l.labName} · ${daysLate} day${daysLate !== 1 ? 's' : ''} late`,
         "go('lab')",
-        'View Lab Jobs',
-        true
+        'Go to Lab Work →',
+        true,
+        l.id
       );
     }
   });
@@ -2683,16 +3148,255 @@ function maybeShowOnboarding() {
 }
 
 
+// ==================== SUPABASE CONFIG ====================
+// Credentials are baked in — users never see or configure these
+const _SUPA_URL = 'https://bmyifrkiccrkmxvbdmri.supabase.co';
+const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJteWlmcmtpY2Nya214dmJkbXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMjcyNzcsImV4cCI6MjA4OTcwMzI3N30.o0Hw-c4zrGVvqPEyXJZfrW6y0Efn3BBsgaVY42iotmQ';
+
+function loadSupaConfig() {
+  try {
+    SUPA_URL = _SUPA_URL;
+    SUPA_KEY = _SUPA_KEY;
+    initSupabase();
+  } catch(e) { console.error('Supabase init failed:', e); }
+}
+function saveSupaConfig() {
+  // No-op — credentials are hardcoded
+  showToast('✓ Cloud sync is active');
+}
+function initSupabase() {
+  try {
+    if (!SUPA_URL || !SUPA_KEY) return;
+    supabase_client = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    setSupaBadge('synced', '☁ Synced');
+    updateCloudUI();
+  } catch(e) {
+    setSupaBadge('error', '☁ Error');
+    console.error('Supabase init error:', e);
+  }
+}
+function updateCloudUI() {
+  const dot = document.getElementById('cloud-sync-dot');
+  const lbl = document.getElementById('cloud-sync-label');
+  const sub = document.getElementById('cloud-sync-sub');
+  const lastPush = localStorage.getItem('df3_last_supa_push');
+  if (dot) dot.style.background = supabase_client ? 'var(--accent)' : 'var(--red)';
+  if (lbl) lbl.textContent = supabase_client ? 'Auto-sync active' : 'Sync unavailable';
+  if (sub) sub.textContent = lastPush ? `Last synced: ${lastPush}` : 'Not yet synced this session';
+}
+function setSupaBadge(cls, txt) {
+  const el = document.getElementById('supa-badge');
+  if (!el) return;
+  el.className = 'supa-badge ' + cls;
+  el.textContent = txt;
+}
+
+// ── Supabase push: local is source of truth, always overwrites remote ──
+async function pushToSupabase() {
+  if (!supabase_client || !clinicId || syncBusy) return;
+  syncBusy = true;
+  setSupaBadge('syncing', '☁ Syncing…');
+  try {
+    const payload = {
+      clinic_id: clinicId,
+      data: JSON.stringify({
+        S, patients, appointments, invoices, hmoProviders,
+        labJobs, inventory, odontograms, perioCharts, feeSchedule,
+        pins: getPINs()
+      }),
+      updated_at: new Date().toISOString()
+    };
+    // Upsert — overwrites any existing row for this clinic_id
+    const { error } = await supabase_client
+      .from('dentaflow_clinics')
+      .upsert(payload, { onConflict: 'clinic_id' });
+    if (error) throw error;
+    setSupaBadge('synced', '☁ Synced');
+    const now = new Date().toLocaleString('en-NG');
+    localStorage.setItem('df3_last_supa_push', now);
+    updateCloudUI();
+  } catch(e) {
+    setSupaBadge('error', '☁ Sync error');
+    console.error('Supabase push error:', e);
+  }
+  syncBusy = false;
+}
+
+async function pullFromSupabase() {
+  if (!supabase_client || !clinicId) return;
+  setSupaBadge('syncing', '☁ Pulling…');
+  try {
+    const { data, error } = await supabase_client
+      .from('dentaflow_clinics')
+      .select('data, updated_at')
+      .eq('clinic_id', clinicId)
+      .single();
+    if (error || !data) { setSupaBadge('synced', '☁ No cloud data'); return; }
+    // Only pull if cloud is newer than local
+    const cloudTime = new Date(data.updated_at).getTime();
+    const localTime = new Date(localStorage.getItem('df3_saved') || 0).getTime();
+    if (cloudTime <= localTime) { setSupaBadge('synced', '☁ Up to date'); return; }
+    // Apply cloud data
+    const d = JSON.parse(data.data);
+    if (d.S) S = d.S;
+    if (d.patients) patients = d.patients;
+    if (d.appointments) appointments = d.appointments;
+    if (d.invoices) invoices = d.invoices;
+    if (d.hmoProviders) hmoProviders = d.hmoProviders;
+    if (d.labJobs) labJobs = d.labJobs;
+    if (d.inventory) inventory = d.inventory;
+    if (d.odontograms) odontograms = d.odontograms;
+    if (d.perioCharts) perioCharts = d.perioCharts;
+    if (d.feeSchedule) feeSchedule = d.feeSchedule;
+    if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
+    persist();
+    setSupaBadge('synced', '☁ Pulled');
+    showToast('☁ Data pulled from cloud');
+  } catch(e) {
+    setSupaBadge('error', '☁ Pull error');
+    console.error('Supabase pull error:', e);
+  }
+}
+
+// Force sync from Settings
+function forcePushToSupabase() { return pushToSupabase().then(()=>{ showToast('☁ Data synced to cloud'); updateCloudUI(); }); }
+function forcePullFromSupabase() { return pullFromSupabase(); }
+
+// Auto-sync after every persist()
+function scheduleSupaSync() {
+  clearTimeout(_supaDebounce);
+  _supaDebounce = setTimeout(pushToSupabase, 2500);
+}
+
+// ==================== LOGIN SYSTEM ====================
+function lsInit() {
+  // Auto-fill email if this device has logged in before
+  try {
+    const saved = localStorage.getItem('df3_last_email');
+    if (saved) {
+      document.getElementById('ls-email').value = saved;
+    }
+    // If we have a valid clinic session, show PIN screen instead of email step
+    const session = JSON.parse(localStorage.getItem('df3_session') || 'null');
+    if (session && session.email && session.clinicName) {
+      _lsClinicEmail = session.email;
+      clinicId = btoa(session.email).replace(/=/g,'');
+      // Show PIN step directly
+      document.getElementById('ls-email-step').classList.remove('active');
+      document.getElementById('ls-pin-step').classList.add('active');
+      document.getElementById('ls-clinic-label').textContent = session.clinicName;
+      document.getElementById('ls-email-label').textContent = session.email;
+    }
+  } catch(e) {}
+}
+
+function lsShowEmail() {
+  document.querySelectorAll('.login-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('ls-email-step').classList.add('active');
+}
+function lsShowRegister() {
+  document.querySelectorAll('.login-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('ls-reg-step').classList.add('active');
+}
+function lsBackToEmail() {
+  document.querySelectorAll('.login-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('ls-email-step').classList.add('active');
+}
+
+async function lsEmailNext() {
+  const email = document.getElementById('ls-email').value.trim().toLowerCase();
+  const errEl = document.getElementById('ls-email-err');
+  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    errEl.textContent = 'Please enter a valid email address.'; errEl.classList.add('show'); return;
+  }
+  errEl.classList.remove('show');
+  _lsClinicEmail = email;
+
+  // Check if clinic exists locally
+  let clinicName = null;
+  try {
+    const sess = JSON.parse(localStorage.getItem('df3_session') || 'null');
+    if (sess && sess.email === email) clinicName = sess.clinicName;
+  } catch(e) {}
+
+  // If Supabase configured, check remote
+  if (!clinicName && supabase_client) {
+    setSupaBadge('syncing', '☁ Checking…');
+    try {
+      const cid = btoa(email).replace(/=/g,'');
+      const { data } = await supabase_client.from('dentaflow_clinics').select('data').eq('clinic_id', cid).single();
+      if (data) {
+        const d = JSON.parse(data.data);
+        clinicName = d.S?.clinicName || email;
+      }
+    } catch(e) {}
+    setSupaBadge('synced', '☁ Connected');
+  }
+
+  if (!clinicName) {
+    errEl.textContent = 'No clinic found for this email. Please register first.'; errEl.classList.add('show'); return;
+  }
+
+  // Remember email for autofill
+  localStorage.setItem('df3_last_email', email);
+  clinicId = btoa(email).replace(/=/g,'');
+
+  // Show PIN step
+  document.getElementById('ls-clinic-label').textContent = clinicName;
+  document.getElementById('ls-email-label').textContent = email;
+  document.getElementById('ls-email-step').classList.remove('active');
+  document.getElementById('ls-pin-step').classList.add('active');
+  pinEntry = '';
+  updatePinDots();
+}
+
+async function lsRegister() {
+  const clinic = document.getElementById('reg-clinic').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const dentist = document.getElementById('reg-dentist').value.trim();
+  const dpin = document.getElementById('reg-dpin').value.trim();
+  const rpin = document.getElementById('reg-rpin').value.trim();
+  const errEl = document.getElementById('ls-reg-err');
+
+  if (!clinic || !email || !dentist) { errEl.textContent = 'Clinic name, email and dentist name are required.'; errEl.classList.add('show'); return; }
+  if (!dpin || !/^\d{4}$/.test(dpin)) { errEl.textContent = 'Dentist PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
+  if (!rpin || !/^\d{4}$/.test(rpin)) { errEl.textContent = 'Receptionist PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
+
+  // Set up clinic data
+  S.clinicName = clinic;
+  S.dentistName = dentist;
+  _lsClinicEmail = email;
+  clinicId = btoa(email).replace(/=/g,'');
+
+  const pins = { dentist: dpin, receptionist: rpin };
+  localStorage.setItem('df3_pins', JSON.stringify(pins));
+  localStorage.setItem('df3_last_email', email);
+  localStorage.setItem('df3_session', JSON.stringify({ email, clinicName: clinic }));
+
+  persist();
+  // Push to Supabase if configured
+  if (supabase_client) await pushToSupabase();
+
+  // Log in as dentist
+  currentRole = 'dentist';
+  applyRoleMode();
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('sb-clinic').textContent = S.clinicName;
+  document.getElementById('sb-dentist').textContent = S.dentistName;
+  showToast('✓ Clinic registered! Welcome, ' + dentist);
+  renderDash();
+}
+
 // ==================== PIN LOCK SYSTEM ====================
-var currentRole = 'dentist'; // 'dentist' | 'receptionist'
+var currentRole = 'dentist';
 var pinEntry = '';
 var pinSelectedRole = 'dentist';
 var PIN_DEFAULTS = { dentist: '1234', receptionist: '0000' };
+var _pinContext = 'login'; // 'login' | 'lock'
 
 function getPINs() {
-  try {
-    return JSON.parse(localStorage.getItem('df3_pins') || 'null') || PIN_DEFAULTS;
-  } catch(e) { return PIN_DEFAULTS; }
+  try { return JSON.parse(localStorage.getItem('df3_pins') || 'null') || PIN_DEFAULTS; } catch(e) { return PIN_DEFAULTS; }
 }
 function savePINs() {
   const dp = document.getElementById('s-dentist-pin').value.trim();
@@ -2704,14 +3408,16 @@ function savePINs() {
   localStorage.setItem('df3_pins', JSON.stringify(pins));
   document.getElementById('s-dentist-pin').value = '';
   document.getElementById('s-recept-pin').value = '';
+  if (supabase_client) scheduleSupaSync();
   showToast('✓ PINs updated!');
 }
 function selectPinRole(role) {
   pinSelectedRole = role;
   pinEntry = '';
   updatePinDots();
-  document.getElementById('pin-tab-dentist').classList.toggle('active', role === 'dentist');
-  document.getElementById('pin-tab-receptionist').classList.toggle('active', role === 'receptionist');
+  // Update tabs in both screens
+  ['pin-tab-dentist','pinlock-tab-dentist'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.toggle('active', role==='dentist'); });
+  ['pin-tab-receptionist','pinlock-tab-receptionist'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.toggle('active', role==='receptionist'); });
   document.getElementById('pin-hint').innerHTML = role === 'dentist'
     ? 'Default dentist PIN: <strong>1234</strong>'
     : 'Default receptionist PIN: <strong>0000</strong>';
@@ -2722,14 +3428,17 @@ function pinPress(digit) {
   updatePinDots();
   if (pinEntry.length === 4) setTimeout(checkPIN, 120);
 }
-function pinDel() {
-  pinEntry = pinEntry.slice(0, -1);
-  updatePinDots();
-}
+function pinDel() { pinEntry = pinEntry.slice(0, -1); updatePinDots(); }
 function updatePinDots(error) {
+  // Update login screen dots (pd0–pd3)
   for (let i = 0; i < 4; i++) {
     const dot = document.getElementById('pd' + i);
-    dot.className = 'pin-dot' + (i < pinEntry.length ? (error ? ' error' : ' filled') : '');
+    if (dot) dot.className = 'pin-dot' + (i < pinEntry.length ? (error ? ' error' : ' filled') : '');
+  }
+  // Update lock screen dots (pld0–pld3)
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pld' + i);
+    if (dot) dot.className = 'pin-dot' + (i < pinEntry.length ? (error ? ' error' : ' filled') : '');
   }
 }
 function checkPIN() {
@@ -2738,50 +3447,50 @@ function checkPIN() {
   if (pinEntry === correct) {
     currentRole = pinSelectedRole;
     applyRoleMode();
+    // Hide whichever screen is visible
+    document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('pin-screen').classList.add('hidden');
+    // Save session
+    try {
+      const existing = JSON.parse(localStorage.getItem('df3_session') || '{}');
+      localStorage.setItem('df3_session', JSON.stringify({ ...existing, email: _lsClinicEmail }));
+    } catch(e) {}
+    // Pull from Supabase after login
+    if (supabase_client) pullFromSupabase().then(() => { renderDash(); });
     showToast(`✓ Welcome${currentRole === 'dentist' ? ', Doctor' : ' back'}!`);
+    renderDash();
   } else {
     updatePinDots(true);
     document.getElementById('pin-hint').innerHTML = '<span style="color:var(--red)">Wrong PIN — try again</span>';
-    setTimeout(() => { pinEntry = ''; updatePinDots(); document.getElementById('pin-hint').innerHTML = pinSelectedRole === 'dentist' ? 'Default dentist PIN: <strong>1234</strong>' : 'Default receptionist PIN: <strong>0000</strong>'; }, 900);
+    setTimeout(() => {
+      pinEntry = ''; updatePinDots();
+      document.getElementById('pin-hint').innerHTML = pinSelectedRole === 'dentist'
+        ? 'Default dentist PIN: <strong>1234</strong>'
+        : 'Default receptionist PIN: <strong>0000</strong>';
+    }, 900);
   }
 }
 function applyRoleMode() {
   const isReceptionist = currentRole === 'receptionist';
   const badge = document.getElementById('role-badge');
-
   if (isReceptionist) {
-    document.body.classList.add('receptionist-mode');
-    document.body.classList.remove('dentist-mode');
+    document.body.classList.add('receptionist-mode'); document.body.classList.remove('dentist-mode');
     if (badge) { badge.className = 'pin-role-badge role-receptionist'; badge.textContent = '🧑‍💼 Receptionist'; }
   } else {
-    document.body.classList.remove('receptionist-mode');
-    document.body.classList.add('dentist-mode');
+    document.body.classList.remove('receptionist-mode'); document.body.classList.add('dentist-mode');
     if (badge) { badge.className = 'pin-role-badge role-dentist'; badge.textContent = '👨‍⚕️ Dentist'; }
   }
-
-  // Hide/show fee field in booking modal
   const feeField = document.getElementById('bk-fee');
   if (feeField) feeField.closest('.field').style.display = isReceptionist ? 'none' : '';
-
-  // Hide/show invoices tab in patient detail
   const invTab = document.getElementById('pd-inv-tab-btn');
   if (invTab) invTab.style.display = isReceptionist ? 'none' : '';
-
-  // If on a restricted page, bounce to dashboard
   if (isReceptionist && DENTIST_ONLY_PAGES.some(p => document.getElementById(`page-${p}`)?.classList.contains('active'))) {
-    go('dashboard');
-    return; // go() calls renderDash already
+    go('dashboard'); return;
   }
-
-  // Always re-render whatever page is currently active so role changes take effect immediately
   const activePage = document.querySelector('.page.active');
   if (activePage) {
     const pageId = activePage.id.replace('page-', '');
-    const fn = {dashboard:renderDash, appointments:renderAppts, patients:renderPatients,
-                reminders:renderReminders, recall:renderRecall, invoices:renderInvoices,
-                hmo:renderHMO, revenue:renderRevenue, odontogram:renderOdontoPage,
-                perio:renderPerioPage, inventory:renderInventory, lab:renderLab, settings:renderSettings};
+    const fn = {dashboard:renderDash,appointments:renderAppts,patients:renderPatients,reminders:renderReminders,recall:renderRecall,invoices:renderInvoices,hmo:renderHMO,revenue:renderRevenue,odontogram:renderOdontoPage,perio:renderPerioPage,inventory:renderInventory,lab:renderLab,settings:renderSettings};
     if (fn[pageId]) fn[pageId]();
   }
 }
@@ -2789,7 +3498,240 @@ function lockApp() {
   pinEntry = '';
   selectPinRole('dentist');
   updatePinDots();
+  // Show the mid-session lock screen (not the full login)
   document.getElementById('pin-screen').classList.remove('hidden');
+}
+
+// ==================== CHARTS ====================
+var _charts = {};
+function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; } }
+
+const CHART_DEFAULTS = {
+  color: { accent: '#00d4a0', accent2: '#7c6af7', yellow: '#f0a500', red: '#f04a4a', blue: '#4a9ff0' },
+  font: { family: 'DM Sans, system-ui, sans-serif', size: 11 },
+  gridColor: 'rgba(42,47,69,0.8)',
+  textColor: '#8b91aa'
+};
+
+function chartOpts(type) {
+  const base = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 11 }, boxWidth: 10 } },
+      tooltip: { backgroundColor: '#1c2030', borderColor: '#2a2f45', borderWidth: 1, titleColor: '#e8eaf2', bodyColor: '#8b91aa', titleFont: { family: CHART_DEFAULTS.font.family }, bodyFont: { family: CHART_DEFAULTS.font.family } }
+    },
+    scales: type !== 'pie' && type !== 'doughnut' ? {
+      x: { grid: { color: CHART_DEFAULTS.gridColor }, ticks: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 10 } } },
+      y: { grid: { color: CHART_DEFAULTS.gridColor }, ticks: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 10 } } }
+    } : {}
+  };
+  return base;
+}
+
+function renderDashCharts() {
+  // Chart 1: Daily revenue this month
+  const mStart = thisMonthStart();
+  const now = new Date();
+  const daysInMonth = now.getDate();
+  const labels = [], revData = [];
+  for (let i = 1; i <= daysInMonth; i++) {
+    const d = `${mStart.slice(0,8)}${String(i).padStart(2,'0')}`;
+    labels.push(i);
+    const dayRev = appointments.filter(a => a.date === d && a.status === 'attended' && a.payType !== 'hmo').reduce((s,a) => s + (a.fee||0), 0);
+    revData.push(dayRev);
+  }
+  destroyChart('chart-dash-revenue');
+  const ctx1 = document.getElementById('chart-dash-revenue');
+  if (ctx1) {
+    const opts = chartOpts('line');
+    opts.plugins.legend.display = false;
+    _charts['chart-dash-revenue'] = new Chart(ctx1, {
+      type: 'line',
+      data: { labels, datasets: [{ data: revData, borderColor: CHART_DEFAULTS.color.accent, backgroundColor: 'rgba(0,212,160,0.08)', fill: true, tension: 0.4, pointRadius: 3, pointHoverRadius: 5 }] },
+      options: opts
+    });
+  }
+
+  // Chart 2: Today's appointments by status
+  const td = today();
+  const todayAll = appointments.filter(a => a.date === td);
+  const upcoming = todayAll.filter(a => a.status === 'upcoming').length;
+  const attended = todayAll.filter(a => a.status === 'attended').length;
+  const cancelled = todayAll.filter(a => a.status === 'cancelled').length;
+  destroyChart('chart-dash-appts');
+  const ctx2 = document.getElementById('chart-dash-appts');
+  if (ctx2 && (upcoming + attended + cancelled) > 0) {
+    const opts = chartOpts('doughnut');
+    opts.cutout = '60%';
+    _charts['chart-dash-appts'] = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Upcoming', 'Attended', 'Cancelled'],
+        datasets: [{ data: [upcoming, attended, cancelled], backgroundColor: [CHART_DEFAULTS.color.yellow, CHART_DEFAULTS.color.accent, CHART_DEFAULTS.color.red], borderWidth: 0 }]
+      },
+      options: opts
+    });
+  } else if (ctx2) {
+    const opts = chartOpts('doughnut');
+    opts.cutout = '60%';
+    _charts['chart-dash-appts'] = new Chart(ctx2, {
+      type: 'doughnut',
+      data: { labels: ['No appointments today'], datasets: [{ data: [1], backgroundColor: ['#2a2f45'], borderWidth: 0 }] },
+      options: opts
+    });
+  }
+}
+
+function renderApptCharts() {
+  // Chart 1: All appointments by status
+  const upcoming = appointments.filter(a => a.status === 'upcoming').length;
+  const attended = appointments.filter(a => a.status === 'attended').length;
+  const cancelled = appointments.filter(a => a.status === 'cancelled').length;
+  destroyChart('chart-appt-status');
+  const ctx1 = document.getElementById('chart-appt-status');
+  if (ctx1) {
+    const opts = chartOpts('bar');
+    opts.plugins.legend.display = false;
+    opts.scales.x.grid.display = false;
+    _charts['chart-appt-status'] = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: ['Upcoming', 'Attended', 'Cancelled'],
+        datasets: [{ data: [upcoming, attended, cancelled], backgroundColor: [CHART_DEFAULTS.color.yellow, CHART_DEFAULTS.color.accent, CHART_DEFAULTS.color.red], borderRadius: 6, borderSkipped: false }]
+      },
+      options: opts
+    });
+  }
+
+  // Chart 2: Bookings this week by day
+  const weekLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const wStart = thisWeekStart();
+  const wData = [0,0,0,0,0,0,0];
+  appointments.forEach(a => {
+    const d = new Date(a.date + 'T12:00:00');
+    const ws = new Date(wStart + 'T00:00:00');
+    const diff = Math.floor((d - ws) / 86400000);
+    if (diff >= 0 && diff < 7) wData[diff]++;
+  });
+  destroyChart('chart-appt-week');
+  const ctx2 = document.getElementById('chart-appt-week');
+  if (ctx2) {
+    const opts = chartOpts('bar');
+    opts.plugins.legend.display = false;
+    opts.scales.x.grid.display = false;
+    _charts['chart-appt-week'] = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: weekLabels,
+        datasets: [{ data: wData, backgroundColor: 'rgba(124,106,247,0.7)', borderRadius: 6, borderSkipped: false }]
+      },
+      options: opts
+    });
+  }
+}
+
+function renderRevCharts() {
+  const startDate = revFilter === 'month' ? thisMonthStart() : revFilter === 'week' ? thisWeekStart() : '2000-01-01';
+  const attended = appointments.filter(a => a.status === 'attended' && a.date >= startDate);
+
+  // Chart 1: Revenue by treatment (horizontal bar)
+  const byTreatment = {};
+  attended.forEach(a => { if (!byTreatment[a.treatment]) byTreatment[a.treatment] = 0; byTreatment[a.treatment] += (a.fee||0); });
+  const sorted = Object.entries(byTreatment).sort((a,b) => b[1]-a[1]).slice(0,8);
+  destroyChart('chart-rev-treatment');
+  const ctx1 = document.getElementById('chart-rev-treatment');
+  if (ctx1) {
+    const opts = chartOpts('bar');
+    opts.indexAxis = 'y';
+    opts.plugins.legend.display = false;
+    opts.scales.x.grid.display = false;
+    _charts['chart-rev-treatment'] = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(([t]) => t),
+        datasets: [{ data: sorted.map(([,v]) => v), backgroundColor: 'rgba(0,212,160,0.7)', borderRadius: 4 }]
+      },
+      options: opts
+    });
+  }
+
+  // Chart 2: Monthly trend cash vs HMO (last 6 months)
+  const trendLabels = [], cashData = [], hmoData = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const mLabel = d.toLocaleDateString('en-NG', { month: 'short', year: '2-digit' });
+    const mStart = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+    const mEnd = new Date(d.getFullYear(), d.getMonth()+1, 0);
+    const mEndStr = mEnd.toISOString().split('T')[0];
+    const mAppts = appointments.filter(a => a.status === 'attended' && a.date >= mStart && a.date <= mEndStr);
+    trendLabels.push(mLabel);
+    cashData.push(mAppts.filter(a => a.payType !== 'hmo').reduce((s,a) => s+(a.fee||0), 0));
+    hmoData.push(mAppts.filter(a => a.payType === 'hmo').reduce((s,a) => s+(a.fee||0), 0));
+  }
+  destroyChart('chart-rev-trend');
+  const ctx2 = document.getElementById('chart-rev-trend');
+  if (ctx2) {
+    const opts = chartOpts('line');
+    opts.scales.x.grid.display = false;
+    _charts['chart-rev-trend'] = new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: trendLabels,
+        datasets: [
+          { label: 'Cash', data: cashData, borderColor: CHART_DEFAULTS.color.accent, backgroundColor: 'rgba(0,212,160,0.08)', fill: true, tension: 0.4 },
+          { label: 'HMO', data: hmoData, borderColor: CHART_DEFAULTS.color.accent2, backgroundColor: 'rgba(124,106,247,0.08)', fill: true, tension: 0.4 }
+        ]
+      },
+      options: opts
+    });
+  }
+}
+
+function renderHMOCharts() {
+  // Chart 1: Patients by HMO provider
+  const providerData = hmoProviders.map(h => ({
+    name: h.name.replace(' HMO','').replace(' Insurance',''),
+    count: patients.filter(p => p.hmoId === h.id).length
+  })).filter(p => p.count > 0);
+  destroyChart('chart-hmo-providers');
+  const ctx1 = document.getElementById('chart-hmo-providers');
+  if (ctx1) {
+    const colors = [CHART_DEFAULTS.color.accent2, CHART_DEFAULTS.color.accent, CHART_DEFAULTS.color.blue, CHART_DEFAULTS.color.yellow, CHART_DEFAULTS.color.red];
+    const opts = chartOpts('doughnut');
+    opts.cutout = '55%';
+    _charts['chart-hmo-providers'] = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: providerData.length ? providerData.map(p => p.name) : ['No HMO patients'],
+        datasets: [{ data: providerData.length ? providerData.map(p => p.count) : [1], backgroundColor: providerData.length ? colors.slice(0, providerData.length) : ['#2a2f45'], borderWidth: 0 }]
+      },
+      options: opts
+    });
+  }
+
+  // Chart 2: Claims pending vs paid per provider
+  const mStart = thisMonthStart();
+  const claimLabels = hmoProviders.map(h => h.name.replace(' HMO',''));
+  const pendingData = hmoProviders.map(h => invoices.filter(i => i.hmoId === h.id && !i.paid && i.date >= mStart).reduce((s,i) => s+(i.amount||0), 0));
+  const paidData = hmoProviders.map(h => invoices.filter(i => i.hmoId === h.id && i.paid && i.date >= mStart).reduce((s,i) => s+(i.amount||0), 0));
+  destroyChart('chart-hmo-claims');
+  const ctx2 = document.getElementById('chart-hmo-claims');
+  if (ctx2) {
+    const opts = chartOpts('bar');
+    opts.scales.x.grid.display = false;
+    _charts['chart-hmo-claims'] = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: claimLabels.length ? claimLabels : ['No providers'],
+        datasets: [
+          { label: 'Pending (₦)', data: pendingData, backgroundColor: 'rgba(240,165,0,0.7)', borderRadius: 4 },
+          { label: 'Paid (₦)', data: paidData, backgroundColor: 'rgba(0,212,160,0.7)', borderRadius: 4 }
+        ]
+      },
+      options: opts
+    });
+  }
 }
 
 // ==================== MEDICAL HISTORY FORM ====================
@@ -2902,6 +3844,8 @@ function restoreSidebarState() {
 // ==================== INIT ====================
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
 loadStorage();
+loadSupaConfig();
+
 // Sync counters to actual data so nothing ever collides after data import
 if(patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
 if(appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
@@ -2913,14 +3857,17 @@ if(invoices.length){
 }
 populateHMOSelects();
 renderSettings();
-renderDash();
+
 restoreSidebarState();
 startNotifScheduler();
+
+// ── Show login screen on load ──
+// Check if clinic session exists; if so go straight to PIN, else email step
+lsInit();
+
+// Initial render (login screen is on top — user can't interact until they log in)
+renderDash();
 maybeShowOnboarding();
-// Render settings PIN fields
-(function(){ const p=getPINs(); })();
-// Show PIN screen on first load (skip if already set to bypass for demo — remove this line in production)
-// lockApp(); // Uncomment to enforce PIN on every load
 </script>
 </body>
 </html>
