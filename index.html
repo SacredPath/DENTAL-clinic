@@ -1016,7 +1016,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
             <div style="font-size:12px;font-weight:600" id="cloud-sync-label">Auto-sync active</div>
             <div style="font-size:11px;color:var(--text3)" id="cloud-sync-sub">Last synced: —</div>
           </div>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="forcePushToSupabase().then(()=>updateCloudUI())">Sync Now</button>
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="forcePushToSupabase()">Sync Now</button>
         </div>
         <div style="margin-top:8px;font-size:11px;color:var(--text3)" id="supa-status-txt"></div>
       </div>
@@ -3192,21 +3192,30 @@ function setSupaBadge(cls, txt) {
 }
 
 // ── Supabase push: local is source of truth, always overwrites remote ──
+// ── LOCAL IS ALWAYS THE SOURCE OF TRUTH ──
+// Every persist() → scheduleSupaSync() → pushToSupabase()
+// Local deletions/edits/creates are all captured in the single JSON blob.
+// Supabase is completely overwritten on every push — never merges, never wins over local.
+
 async function pushToSupabase() {
-  if (!supabase_client || !clinicId || syncBusy) return;
+  if (!supabase_client || !clinicId) return;
+  if (syncBusy) return; // debounce guard — scheduleSupaSync handles retries
   syncBusy = true;
   setSupaBadge('syncing', '☁ Syncing…');
   try {
+    // Serialize the FULL local state as the canonical truth
     const payload = {
       clinic_id: clinicId,
       data: JSON.stringify({
         S, patients, appointments, invoices, hmoProviders,
         labJobs, inventory, odontograms, perioCharts, feeSchedule,
-        pins: getPINs()
+        pins: getPINs(),
+        savedAt: localStorage.getItem('df3_saved') || new Date().toISOString()
       }),
       updated_at: new Date().toISOString()
     };
-    // Upsert — overwrites any existing row for this clinic_id
+    // Upsert with onConflict — fully overwrites any existing Supabase row.
+    // This means anything deleted locally is gone from Supabase after this call.
     const { error } = await supabase_client
       .from('dentaflow_clinics')
       .upsert(payload, { onConflict: 'clinic_id' });
@@ -3217,26 +3226,38 @@ async function pushToSupabase() {
     updateCloudUI();
   } catch(e) {
     setSupaBadge('error', '☁ Sync error');
-    console.error('Supabase push error:', e);
+    const msg = e?.message || e?.error_description || JSON.stringify(e);
+    console.error('Supabase push error:', msg, e);
+    const stxt = document.getElementById('supa-status-txt');
+    if (stxt) stxt.textContent = 'Sync error: ' + msg;
   }
   syncBusy = false;
 }
 
+// Pull is ONLY used on first login on a new device where local storage is empty.
+// If local already has data, we always push (local wins), never pull.
 async function pullFromSupabase() {
   if (!supabase_client || !clinicId) return;
-  setSupaBadge('syncing', '☁ Pulling…');
+
+  // If local already has patient data, push local to cloud instead of pulling.
+  // Local is always the source of truth — never overwrite it from cloud.
+  if (patients.length > 0 || appointments.length > 0 || invoices.length > 0) {
+    await pushToSupabase();
+    return;
+  }
+
+  // Local is empty (new device / fresh browser) — safe to restore from cloud.
+  setSupaBadge('syncing', '☁ Restoring…');
   try {
     const { data, error } = await supabase_client
       .from('dentaflow_clinics')
       .select('data, updated_at')
       .eq('clinic_id', clinicId)
       .single();
-    if (error || !data) { setSupaBadge('synced', '☁ No cloud data'); return; }
-    // Only pull if cloud is newer than local
-    const cloudTime = new Date(data.updated_at).getTime();
-    const localTime = new Date(localStorage.getItem('df3_saved') || 0).getTime();
-    if (cloudTime <= localTime) { setSupaBadge('synced', '☁ Up to date'); return; }
-    // Apply cloud data
+    if (error || !data) {
+      setSupaBadge('synced', '☁ No cloud data');
+      return;
+    }
     const d = JSON.parse(data.data);
     if (d.S) S = d.S;
     if (d.patients) patients = d.patients;
@@ -3249,20 +3270,35 @@ async function pullFromSupabase() {
     if (d.perioCharts) perioCharts = d.perioCharts;
     if (d.feeSchedule) feeSchedule = d.feeSchedule;
     if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
-    persist();
-    setSupaBadge('synced', '☁ Pulled');
-    showToast('☁ Data pulled from cloud');
+    // Re-sync counters after restore
+    if (patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
+    if (appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
+    if (inventory.length) iidC = Math.max(iidC, ...inventory.map(i=>parseInt(i.id.slice(1))||0)) + 1;
+    if (labJobs.length) lidC = Math.max(lidC, ...labJobs.map(l=>parseInt(l.id.slice(1))||0)) + 1;
+    if (invoices.length) {
+      const nums = invoices.map(i=>parseInt(i.receiptNum?.replace('RCP-','')||0)).filter(n=>!isNaN(n));
+      if (nums.length) receiptC = Math.max(receiptC, ...nums) + 1;
+    }
+    persist(); // saves restored data to localStorage
+    setSupaBadge('synced', '☁ Restored');
+    showToast('☁ Data restored from cloud');
+    renderDash();
+    populateHMOSelects();
+    renderSettings();
   } catch(e) {
-    setSupaBadge('error', '☁ Pull error');
+    setSupaBadge('error', '☁ Restore error');
     console.error('Supabase pull error:', e);
   }
 }
 
-// Force sync from Settings
-function forcePushToSupabase() { return pushToSupabase().then(()=>{ showToast('☁ Data synced to cloud'); updateCloudUI(); }); }
+// Force sync — callable from Settings "Sync Now" button
+function forcePushToSupabase() {
+  syncBusy = false; // override busy guard for manual push
+  return pushToSupabase();
+}
 function forcePullFromSupabase() { return pullFromSupabase(); }
 
-// Auto-sync after every persist()
+// Auto-sync: debounced 2.5s after every persist()
 function scheduleSupaSync() {
   clearTimeout(_supaDebounce);
   _supaDebounce = setTimeout(pushToSupabase, 2500);
@@ -3455,10 +3491,19 @@ function checkPIN() {
       const existing = JSON.parse(localStorage.getItem('df3_session') || '{}');
       localStorage.setItem('df3_session', JSON.stringify({ ...existing, email: _lsClinicEmail }));
     } catch(e) {}
-    // Pull from Supabase after login
-    if (supabase_client) pullFromSupabase().then(() => { renderDash(); });
+    // On login: if local is empty, try to restore from cloud (new device).
+    // If local has data, push it to cloud (local always wins).
+    if (supabase_client) {
+      if (patients.length === 0 && appointments.length === 0) {
+        pullFromSupabase().then(() => renderDash());
+      } else {
+        scheduleSupaSync(); // push local state to cloud
+        renderDash();
+      }
+    } else {
+      renderDash();
+    }
     showToast(`✓ Welcome${currentRole === 'dentist' ? ', Doctor' : ' back'}!`);
-    renderDash();
   } else {
     updatePinDots(true);
     document.getElementById('pin-hint').innerHTML = '<span style="color:var(--red)">Wrong PIN — try again</span>';
