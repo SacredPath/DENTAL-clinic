@@ -3158,11 +3158,9 @@ function maybeShowOnboarding() {
 
 const _SUPA_URL   = 'https://bmyifrkiccrkmxvbdmri.supabase.co';
 const _SUPA_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJteWlmcmtpY2Nya214dmJkbXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMjcyNzcsImV4cCI6MjA4OTcwMzI3N30.o0Hw-c4zrGVvqPEyXJZfrW6y0Efn3BBsgaVY42iotmQ';
-const _SUPA_TABLE = _SUPA_URL + '/rest/v1/dentaflow_clinics';
-const _SUPA_RPC   = _SUPA_URL + '/rest/v1/rpc/df_erase_clinic';
+const _SUPA_RPC   = _SUPA_URL + '/rest/v1/rpc/';
 
-// XHR helper -- returns Promise, zero Headers objects involved
-// Sends X-Clinic-Id on every request so Supabase RLS can enforce isolation
+// XHR helper -- zero Headers objects, no postMessage, no DataCloneError
 function _xhr(method, url, body) {
   return new Promise(function(resolve, reject) {
     var x = new XMLHttpRequest();
@@ -3170,11 +3168,6 @@ function _xhr(method, url, body) {
     x.setRequestHeader('Content-Type', 'application/json');
     x.setRequestHeader('apikey', _SUPA_KEY);
     x.setRequestHeader('Authorization', 'Bearer ' + _SUPA_KEY);
-    // RLS enforcement: Supabase reads this to verify clinic_id matches row
-    if (clinicId) x.setRequestHeader('X-Clinic-Id', clinicId);
-    if (method === 'POST') {
-      x.setRequestHeader('Prefer', 'resolution=merge-duplicates,return=minimal');
-    }
     x.timeout = 15000;
     x.onload = function() {
       if (x.status >= 200 && x.status < 300) {
@@ -3182,13 +3175,20 @@ function _xhr(method, url, body) {
         try { if (x.responseText) d = JSON.parse(x.responseText); } catch(e) {}
         resolve({ ok: true, data: d });
       } else {
-        reject(new Error('HTTP ' + x.status + ': ' + x.responseText.slice(0, 200)));
+        reject(new Error('HTTP ' + x.status + ': ' + x.responseText.slice(0, 300)));
       }
     };
     x.onerror   = function() { reject(new Error('Network error')); };
     x.ontimeout = function() { reject(new Error('Request timed out')); };
     x.send(body !== null ? JSON.stringify(body) : null);
   });
+}
+
+// Convenience: call a Supabase SECURITY DEFINER RPC function
+// These functions enforce per-clinic isolation in server-side Postgres code.
+// The anon key can call the functions but cannot touch the table directly.
+function _rpc(fnName, params) {
+  return _xhr('POST', _SUPA_RPC + fnName, params);
 }
 
 // ==================== AES-GCM ENCRYPTION ====================
@@ -3286,12 +3286,10 @@ function navSyncClick() { syncBusy = false; pushToSupabase(); }
 
 // ==================== PUSH / PULL ====================
 // LOCAL IS ALWAYS SOURCE OF TRUTH.
-// Full encrypted snapshot replaces Supabase row on every push.
-// Deletions, edits, and new records are all captured automatically.
+// Full encrypted snapshot pushed via df_upsert_clinic() RPC.
+// Table is locked — only accessible through SECURITY DEFINER functions.
 
-// Track whether the enc_check column exists in the remote table.
-// Detected on first push — if missing, we omit it until migration is run.
-var _hasEncCheckCol = null; // null=unknown, true=exists, false=missing
+var _hasEncCheckCol = true; // RPC functions always include enc_check
 
 async function pushToSupabase() {
   if (!clinicId || !navigator.onLine) {
@@ -3317,35 +3315,13 @@ async function pushToSupabase() {
       encCheck = 'unencrypted';
     }
 
-    var payload = {
-      clinic_id:  clinicId,
-      data:       encData,
-      updated_at: new Date().toISOString()
-    };
-
-    // Try with enc_check first (requires migration SQL to have been run).
-    // On PGRST204 (column not found) retry without it so sync never breaks.
-    var pushed = false;
-    if (_hasEncCheckCol !== false) {
-      payload.enc_check = encCheck;
-      try {
-        await _xhr('POST', _SUPA_TABLE, payload);
-        _hasEncCheckCol = true;
-        pushed = true;
-      } catch(colErr) {
-        var em = (colErr && colErr.message) ? colErr.message : String(colErr);
-        if (em.indexOf('enc_check') !== -1 || em.indexOf('PGRST204') !== -1) {
-          _hasEncCheckCol = false;
-          delete payload.enc_check;
-          console.warn('DentaFlow: enc_check column missing — run dentaflow-migration.sql to enable encryption.');
-        } else {
-          throw colErr;
-        }
-      }
-    }
-    if (!pushed) {
-      await _xhr('POST', _SUPA_TABLE, payload);
-    }
+    // Call SECURITY DEFINER function -- enforces isolation server-side
+    await _rpc('df_upsert_clinic', {
+      p_clinic_id:  clinicId,
+      p_data:       encData,
+      p_enc_check:  encCheck,
+      p_updated_at: new Date().toISOString()
+    });
 
     var now = new Date().toLocaleString('en-NG');
     localStorage.setItem('df3_last_supa_push', now);
@@ -3368,27 +3344,21 @@ async function pullFromSupabase() {
     await pushToSupabase(); return;
   }
   try {
-    // Request enc_check if we know it exists, otherwise just data
-    var selectCols = (_hasEncCheckCol === false) ? 'data' : 'data,enc_check';
-    var url = _SUPA_TABLE + '?clinic_id=eq.' + encodeURIComponent(clinicId) + '&select=' + selectCols + '&limit=1';
-    var res = await _xhr('GET', url, null);
+    var res = await _rpc('df_get_clinic', { p_clinic_id: clinicId });
     if (!res.data || !res.data.length) return;
     var row = res.data[0];
-
-    var plaintext = null;
     var encCheck = row.enc_check || 'unencrypted';
+    var plaintext = null;
 
     if (_encKey && encCheck !== 'unencrypted') {
       var sentinel = await _tryDecrypt(_encKey, encCheck);
       if (sentinel !== 'dentaflow-ok') { showToast('Wrong PIN -- cannot decrypt cloud data'); return; }
       plaintext = await _tryDecrypt(_encKey, row.data);
     } else {
-      // Unencrypted or no key -- try base64 decode then plain JSON
       try { plaintext = decodeURIComponent(escape(atob(row.data))); } catch(e) { plaintext = row.data; }
     }
 
     if (!plaintext) { showToast('Could not read cloud data'); return; }
-
     var d = JSON.parse(plaintext);
     if (d.S) S = d.S;
     if (d.patients) patients = d.patients;
@@ -3412,30 +3382,22 @@ async function checkClinicInCloud(email) {
   if (!navigator.onLine) return null;
   try {
     var cid = btoa(email).replace(/=/g, '');
-    var prevId = clinicId;
-    clinicId = cid;
-    var selectCols = (_hasEncCheckCol === false) ? 'data' : 'data,enc_check';
-    var url = _SUPA_TABLE + '?clinic_id=eq.' + encodeURIComponent(cid) + '&select=' + selectCols + '&limit=1';
-    var res = await _xhr('GET', url, null);
-    clinicId = prevId;
+    var res = await _rpc('df_get_clinic', { p_clinic_id: cid });
     if (!res.data || !res.data.length) return null;
     return res.data[0];
   } catch(e) { return null; }
 }
 
-// NDPR Right to Erasure -- wipes all data from Supabase and localStorage
+// NDPR Right to Erasure
 async function eraseClinicData() {
-  if (!confirm('PERMANENT DELETE: This will erase ALL clinic data from this device and the cloud. This cannot be undone.\n\nType your clinic email to confirm deletion.')) return;
+  if (!confirm('PERMANENT DELETE: This will erase ALL clinic data from this device and the cloud.\nThis cannot be undone.')) return;
   var confirmEmail = prompt('Enter your clinic email to confirm:');
   if (!confirmEmail || confirmEmail.trim().toLowerCase() !== _lsClinicEmail) {
     showToast('Email did not match -- deletion cancelled'); return;
   }
   try {
-    if (navigator.onLine) {
-      await _xhr('POST', _SUPA_RPC, { p_clinic_id: clinicId });
-    }
+    if (navigator.onLine) await _rpc('df_erase_clinic', { p_clinic_id: clinicId });
   } catch(e) { console.warn('Cloud erasure error:', e.message); }
-  // Wipe localStorage entirely
   localStorage.clear();
   showToast('All data erased. Reloading...');
   setTimeout(function() { location.reload(); }, 1800);
