@@ -4119,16 +4119,20 @@ renderDash();
 
 // ==================== PWA ====================
 (function() {
-  // 1. Inject Web App Manifest as a blob URL
-  var iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="%230d0f14"/><path d="M256 80c-55 0-100 28-120 70-15 30-18 65-12 100l25 160c4 25 25 40 45 35 15-4 25-18 28-35l14-80h40l14 80c3 17 13 31 28 35 20 5 41-10 45-35l25-160c6-35 3-70-12-100-20-42-65-70-120-70z" fill="%2300d4a0"/><circle cx="208" cy="210" r="22" fill="%230d0f14"/><circle cx="304" cy="210" r="22" fill="%230d0f14"/></svg>';
+  // All manifest URLs must be absolute — blob URLs have no base URL context
+  var origin = window.location.origin;
+  var base   = window.location.href.split('?')[0].replace(/\/$/, '');
+
+  // Inline SVG icon as data URI — works inside blob manifests
+  var iconSvg = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#0d0f14"/><path d="M256 80c-55 0-100 28-120 70-15 30-18 65-12 100l25 160c4 25 25 40 45 35 15-4 25-18 28-35l14-80h40l14 80c3 17 13 31 28 35 20 5 41-10 45-35l25-160c6-35 3-70-12-100-20-42-65-70-120-70z" fill="#00d4a0"/><circle cx="208" cy="210" r="22" fill="#0d0f14"/><circle cx="304" cy="210" r="22" fill="#0d0f14"/></svg>');
   var iconUrl = 'data:image/svg+xml,' + iconSvg;
 
   var manifest = {
-    name: 'DentaFlow — Clinic Management',
+    name: 'DentaFlow \u2014 Clinic Management',
     short_name: 'DentaFlow',
-    description: 'Dental clinic management — appointments, HMO, invoices, reminders',
-    start_url: '/?source=pwa',
-    scope: '/',
+    description: 'Dental clinic management \u2014 appointments, HMO, invoices, reminders',
+    start_url: base + '/?source=pwa',
+    scope: origin + '/',
     display: 'standalone',
     orientation: 'any',
     background_color: '#0d0f14',
@@ -4139,8 +4143,8 @@ renderDash();
       { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
     ],
     shortcuts: [
-      { name: 'Book Appointment', short_name: 'Book', description: 'Book a new patient appointment', url: './?action=book', icons: [{ src: iconUrl, sizes: '96x96' }] },
-      { name: 'Reminders',        short_name: 'Remind', description: 'Send WhatsApp reminders',      url: './?action=reminders', icons: [{ src: iconUrl, sizes: '96x96' }] }
+      { name: 'Book Appointment', short_name: 'Book',   description: 'Book a new patient appointment', url: base + '/?action=book',      icons: [{ src: iconUrl, sizes: '96x96' }] },
+      { name: 'Reminders',        short_name: 'Remind', description: 'Send WhatsApp reminders',        url: base + '/?action=reminders', icons: [{ src: iconUrl, sizes: '96x96' }] }
     ]
   };
 
@@ -4148,10 +4152,6 @@ renderDash();
   var mUrl = URL.createObjectURL(blob);
   var mLink = document.getElementById('pwa-manifest');
   if (mLink) mLink.href = mUrl;
-
-  // 2. Register Service Worker (inline as blob)
-  // Caches the app shell for full offline capability and fast loads.
-  // Cache-first for static assets, network-first for Supabase API calls.
   if ('serviceWorker' in navigator) {
     // Service worker is at /sw.js (separate file required — blob URLs not supported)
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
