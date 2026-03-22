@@ -685,6 +685,9 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div class="clinic-name" id="sb-clinic">Your Clinic</div>
       <div class="clinic-sub" id="sb-dentist">—</div>
     </div>
+    <button id="sidebar-install-btn" onclick="installPWA()" style="display:none;width:100%;margin-top:8px;background:rgba(0,212,160,.1);border:1px solid rgba(0,212,160,.2);border-radius:var(--radius-sm);padding:7px 12px;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;font-family:var(--font-sans);transition:background .12s;text-align:left;" onmouseenter="this.style.background='rgba(0,212,160,.2)'" onmouseleave="this.style.background='rgba(0,212,160,.1)'">
+      📲 Install App
+    </button>
     <div class="offline-pill" id="offline-pill">📴 Offline — saved locally</div>
   </div>
 </aside>
@@ -4173,25 +4176,39 @@ renderDash();
     window.addEventListener('beforeinstallprompt', function(e) {
       e.preventDefault();
       deferredPrompt = e;
+      // Show sidebar install button immediately
+      var sib = document.getElementById('sidebar-install-btn');
+      if (sib) sib.style.display = 'block';
+      // Show floating banner after 3 seconds
       setTimeout(function() {
         if (deferredPrompt) showInstallBanner();
-      }, 30000);
+      }, 3000);
     });
 
     window.addEventListener('appinstalled', function() {
       deferredPrompt = null;
+      // Hide all install UI
       var banner = document.getElementById('pwa-install-banner');
       if (banner) banner.remove();
+      var sib = document.getElementById('sidebar-install-btn');
+      if (sib) sib.style.display = 'none';
       showToast('DentaFlow installed! Open from your home screen.');
     });
 
     window.installPWA = function() {
-      if (!deferredPrompt) return;
+      if (!deferredPrompt) {
+        showToast('Already installed or not available in this browser');
+        return;
+      }
       deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function() {
+      deferredPrompt.userChoice.then(function(choice) {
         deferredPrompt = null;
         var banner = document.getElementById('pwa-install-banner');
         if (banner) banner.remove();
+        var sib = document.getElementById('sidebar-install-btn');
+        if (choice.outcome === 'accepted') {
+          if (sib) sib.style.display = 'none';
+        }
       });
     };
   }
