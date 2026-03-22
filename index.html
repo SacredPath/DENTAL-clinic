@@ -3289,6 +3289,10 @@ function navSyncClick() { syncBusy = false; pushToSupabase(); }
 // Full encrypted snapshot replaces Supabase row on every push.
 // Deletions, edits, and new records are all captured automatically.
 
+// Track whether the enc_check column exists in the remote table.
+// Detected on first push — if missing, we omit it until migration is run.
+var _hasEncCheckCol = null; // null=unknown, true=exists, false=missing
+
 async function pushToSupabase() {
   if (!clinicId || !navigator.onLine) {
     setNavSync('offline', 'Offline', ''); return;
@@ -3304,24 +3308,44 @@ async function pushToSupabase() {
       savedAt: localStorage.getItem('df3_saved') || new Date().toISOString()
     });
 
-    // Encrypt before sending -- Supabase only ever sees ciphertext
     var encData, encCheck;
     if (_encKey) {
       encData  = await _encrypt(_encKey, plaintext);
-      encCheck = await _encrypt(_encKey, 'dentaflow-ok'); // sentinel for key verification
+      encCheck = await _encrypt(_encKey, 'dentaflow-ok');
     } else {
-      // No key yet (e.g. first push before PIN set) -- store plaintext temporarily
-      // This only happens during registration before PIN is confirmed
       encData  = btoa(unescape(encodeURIComponent(plaintext)));
       encCheck = 'unencrypted';
     }
 
-    await _xhr('POST', _SUPA_TABLE, {
+    var payload = {
       clinic_id:  clinicId,
       data:       encData,
-      enc_check:  encCheck,
       updated_at: new Date().toISOString()
-    });
+    };
+
+    // Try with enc_check first (requires migration SQL to have been run).
+    // On PGRST204 (column not found) retry without it so sync never breaks.
+    var pushed = false;
+    if (_hasEncCheckCol !== false) {
+      payload.enc_check = encCheck;
+      try {
+        await _xhr('POST', _SUPA_TABLE, payload);
+        _hasEncCheckCol = true;
+        pushed = true;
+      } catch(colErr) {
+        var em = (colErr && colErr.message) ? colErr.message : String(colErr);
+        if (em.indexOf('enc_check') !== -1 || em.indexOf('PGRST204') !== -1) {
+          _hasEncCheckCol = false;
+          delete payload.enc_check;
+          console.warn('DentaFlow: enc_check column missing — run dentaflow-migration.sql to enable encryption.');
+        } else {
+          throw colErr;
+        }
+      }
+    }
+    if (!pushed) {
+      await _xhr('POST', _SUPA_TABLE, payload);
+    }
 
     var now = new Date().toLocaleString('en-NG');
     localStorage.setItem('df3_last_supa_push', now);
@@ -3344,26 +3368,26 @@ async function pullFromSupabase() {
     await pushToSupabase(); return;
   }
   try {
-    var url = _SUPA_TABLE + '?clinic_id=eq.' + encodeURIComponent(clinicId) + '&select=data,enc_check&limit=1';
+    // Request enc_check if we know it exists, otherwise just data
+    var selectCols = (_hasEncCheckCol === false) ? 'data' : 'data,enc_check';
+    var url = _SUPA_TABLE + '?clinic_id=eq.' + encodeURIComponent(clinicId) + '&select=' + selectCols + '&limit=1';
     var res = await _xhr('GET', url, null);
     if (!res.data || !res.data.length) return;
     var row = res.data[0];
 
-    // Verify encryption key before applying data
     var plaintext = null;
-    if (_encKey && row.enc_check && row.enc_check !== 'unencrypted') {
-      var sentinel = await _tryDecrypt(_encKey, row.enc_check);
-      if (sentinel !== 'dentaflow-ok') {
-        showToast('Wrong PIN -- cannot decrypt cloud data');
-        return;
-      }
+    var encCheck = row.enc_check || 'unencrypted';
+
+    if (_encKey && encCheck !== 'unencrypted') {
+      var sentinel = await _tryDecrypt(_encKey, encCheck);
+      if (sentinel !== 'dentaflow-ok') { showToast('Wrong PIN -- cannot decrypt cloud data'); return; }
       plaintext = await _tryDecrypt(_encKey, row.data);
-    } else if (row.enc_check === 'unencrypted') {
-      // Legacy unencrypted data -- decode and re-encrypt on next push
+    } else {
+      // Unencrypted or no key -- try base64 decode then plain JSON
       try { plaintext = decodeURIComponent(escape(atob(row.data))); } catch(e) { plaintext = row.data; }
     }
 
-    if (!plaintext) { showToast('Could not decrypt cloud data'); return; }
+    if (!plaintext) { showToast('Could not read cloud data'); return; }
 
     var d = JSON.parse(plaintext);
     if (d.S) S = d.S;
@@ -3388,14 +3412,13 @@ async function checkClinicInCloud(email) {
   if (!navigator.onLine) return null;
   try {
     var cid = btoa(email).replace(/=/g, '');
-    // Temporarily set clinicId so X-Clinic-Id header is sent correctly
     var prevId = clinicId;
     clinicId = cid;
-    var url = _SUPA_TABLE + '?clinic_id=eq.' + encodeURIComponent(cid) + '&select=data,enc_check&limit=1';
+    var selectCols = (_hasEncCheckCol === false) ? 'data' : 'data,enc_check';
+    var url = _SUPA_TABLE + '?clinic_id=eq.' + encodeURIComponent(cid) + '&select=' + selectCols + '&limit=1';
     var res = await _xhr('GET', url, null);
     clinicId = prevId;
     if (!res.data || !res.data.length) return null;
-    // Return the raw row -- caller handles decryption after PIN entry
     return res.data[0];
   } catch(e) { return null; }
 }
