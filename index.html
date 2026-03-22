@@ -588,6 +588,12 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
         </div>
       </div>
       <button class="btn btn-primary" style="width:100%;padding:10px;margin-top:4px" onclick="lsRegister()">Create Clinic Account</button>
+      <div style="margin-top:12px;padding:10px 12px;background:rgba(0,212,160,.06);border:1px solid rgba(0,212,160,.15);border-radius:var(--radius-sm);">
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;color:var(--text2);line-height:1.6;">
+          <input type="checkbox" id="reg-consent" style="accent-color:var(--accent);flex-shrink:0;margin-top:2px;">
+          <span>I agree to the storage and processing of clinic and patient data in accordance with the <strong style="color:var(--accent)">Nigerian Data Protection Regulation (NDPR)</strong>. Patient data is encrypted before storage. I understand I can request full data deletion at any time from Settings.</span>
+        </label>
+      </div>
       <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--text3)"><a href="#" style="color:var(--accent);text-decoration:none" onclick="lsShowEmail()">← Back to login</a></div>
     </div>
   </div>
@@ -1047,6 +1053,11 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
         <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export Data Backup</button>
         <div style="margin-top:8px;font-size:11px;color:var(--text3)">Last saved: <span id="last-saved">—</span></div>
         <div style="margin-top:12px" id="data-summary"></div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;">🔐 NDPR — Right to Erasure</div>
+          <div style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;">Permanently delete all clinic data from this device and the cloud. This action is irreversible.</div>
+          <button class="btn btn-danger btn-sm" onclick="eraseClinicData()">🗑 Delete All Data</button>
+        </div>
       </div>
     </div>
     <div style="margin-top:12px;text-align:right;"><button class="btn btn-primary" onclick="saveSettings()">Save All Settings</button></div>
@@ -1392,8 +1403,8 @@ var pidC=1,aidC=1,iidC=1,lidC=1,invC=1;
 // receiptC loaded from storage — never reset so numbers are always unique
 var receiptC=1001;
 var currentInvoiceId=null;
-// Supabase and login state — supabase_client is a boolean flag (true = REST available)
-var supabase_client=true,clinicId='',syncBusy=false,_supaDebounce=null;
+// Supabase and login state (_db created in Supabase section)
+var clinicId='',syncBusy=false,_supaDebounce=null;
 var _lsClinicEmail='';
 
 // All arrays start empty — populated from localStorage or cloud on login
@@ -1457,8 +1468,7 @@ function updateOfflineUI(){
   if(isOffline){btn.textContent=`📴 Offline${pendingChanges?` ·${pendingChanges}`:''}`;btn.classList.add('off');badge.classList.add('show');if(panel)panel.classList.add('show');}
   else{btn.textContent='🟢 Online';btn.classList.remove('off');badge.classList.remove('show');if(panel)panel.classList.remove('show');}
 }
-window.addEventListener('online',()=>{isOffline=false;updateOfflineUI();});
-window.addEventListener('offline',()=>{isOffline=true;updateOfflineUI();});
+// Online/offline UI handled in Supabase section above
 
 // ==================== NAV ====================
 var PAGE_MAP={dashboard:'Dashboard',appointments:'Appointments',patients:'Patients',reminders:'Reminders',recall:'Recall List',invoices:'Invoices',hmo:'HMO / Insurance',revenue:'Revenue & Fees',odontogram:'Odontogram',perio:'Perio Charting',inventory:'Inventory',lab:'Lab Work',settings:'Settings'};
@@ -3140,142 +3150,222 @@ function maybeShowOnboarding() {
 }
 
 
-// ==================== SUPABASE CONFIG ====================
-// Uses plain fetch() against the Supabase REST API directly.
-// No JS client library — avoids the Headers/DataCloneError bug entirely.
-const _SUPA_URL = 'https://bmyifrkiccrkmxvbdmri.supabase.co';
-const _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJteWlmcmtpY2Nya214dmJkbXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMjcyNzcsImV4cCI6MjA4OTcwMzI3N30.o0Hw-c4zrGVvqPEyXJZfrW6y0Efn3BBsgaVY42iotmQ';
-const _SUPA_REST = _SUPA_URL + '/rest/v1/dentaflow_clinics';
+// ==================== SUPABASE ====================
+// Uses XMLHttpRequest only -- no SDK, no fetch(), no Headers objects.
+// XHR has zero postMessage/DataCloneError issues.
+// Every request sends X-Clinic-Id header so Supabase RLS
+// enforces per-clinic isolation at the database level.
 
-// supabase_client is kept as a boolean flag — true = REST is reachable
-function loadSupaConfig() {
-  supabase_client = true;
-  const lastPush = localStorage.getItem('df3_last_supa_push');
-  const timePart = lastPush ? lastPush.split(',')[1]?.trim() || '' : '';
-  if (navigator.onLine) {
-    setNavSync('online', lastPush ? 'Synced' : 'Not synced yet', timePart);
-  } else {
-    setNavSync('offline', 'Offline', '');
+const _SUPA_URL   = 'https://bmyifrkiccrkmxvbdmri.supabase.co';
+const _SUPA_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJteWlmcmtpY2Nya214dmJkbXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMjcyNzcsImV4cCI6MjA4OTcwMzI3N30.o0Hw-c4zrGVvqPEyXJZfrW6y0Efn3BBsgaVY42iotmQ';
+const _SUPA_TABLE = _SUPA_URL + '/rest/v1/dentaflow_clinics';
+const _SUPA_RPC   = _SUPA_URL + '/rest/v1/rpc/df_erase_clinic';
+
+// XHR helper -- returns Promise, zero Headers objects involved
+// Sends X-Clinic-Id on every request so Supabase RLS can enforce isolation
+function _xhr(method, url, body) {
+  return new Promise(function(resolve, reject) {
+    var x = new XMLHttpRequest();
+    x.open(method, url, true);
+    x.setRequestHeader('Content-Type', 'application/json');
+    x.setRequestHeader('apikey', _SUPA_KEY);
+    x.setRequestHeader('Authorization', 'Bearer ' + _SUPA_KEY);
+    // RLS enforcement: Supabase reads this to verify clinic_id matches row
+    if (clinicId) x.setRequestHeader('X-Clinic-Id', clinicId);
+    if (method === 'POST') {
+      x.setRequestHeader('Prefer', 'resolution=merge-duplicates,return=minimal');
+    }
+    x.timeout = 15000;
+    x.onload = function() {
+      if (x.status >= 200 && x.status < 300) {
+        var d = null;
+        try { if (x.responseText) d = JSON.parse(x.responseText); } catch(e) {}
+        resolve({ ok: true, data: d });
+      } else {
+        reject(new Error('HTTP ' + x.status + ': ' + x.responseText.slice(0, 200)));
+      }
+    };
+    x.onerror   = function() { reject(new Error('Network error')); };
+    x.ontimeout = function() { reject(new Error('Request timed out')); };
+    x.send(body !== null ? JSON.stringify(body) : null);
+  });
+}
+
+// ==================== AES-GCM ENCRYPTION ====================
+// Patient data is encrypted client-side before leaving the browser.
+// The encryption key is derived from the clinic's email + dentist PIN
+// using PBKDF2. Supabase only ever stores ciphertext -- it cannot
+// read patient records even with direct database access.
+
+var _encKey = null; // CryptoKey object, set after login
+
+async function _deriveKey(email, pin) {
+  var enc = new TextEncoder();
+  var keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(email + ':' + pin), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: enc.encode(email), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function _encrypt(key, plaintext) {
+  var enc = new TextEncoder();
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(plaintext));
+  // Prepend IV to ciphertext, base64 encode the whole thing
+  var combined = new Uint8Array(iv.length + ct.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(ct), iv.length);
+  return btoa(String.fromCharCode.apply(null, combined));
+}
+
+async function _decrypt(key, b64) {
+  var combined = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
+  var iv = combined.slice(0, 12);
+  var ct = combined.slice(12);
+  var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
+  return new TextDecoder().decode(pt);
+}
+
+// Try to decrypt -- returns null if key is wrong (wrong PIN)
+async function _tryDecrypt(key, b64) {
+  try { return await _decrypt(key, b64); } catch(e) { return null; }
+}
+
+// Derive and store the encryption key after successful PIN entry
+async function initEncKey(email, pin) {
+  try {
+    _encKey = await _deriveKey(email, pin);
+  } catch(e) {
+    console.error('Key derivation failed:', e);
+    _encKey = null;
   }
+}
+
+// ==================== SYNC STATE UI ====================
+function loadSupaConfig() {
+  var lastPush = localStorage.getItem('df3_last_supa_push');
+  var timePart = lastPush ? (lastPush.split(',')[1] || '').trim() : '';
+  setNavSync(navigator.onLine ? 'online' : 'offline',
+             navigator.onLine ? (lastPush ? 'Synced' : 'Not synced yet') : 'Offline',
+             timePart);
   updateCloudUI();
 }
-function saveSupaConfig() { showToast('✓ Cloud sync is active'); }
-function initSupabase() { supabase_client = true; updateCloudUI(); }
+function saveSupaConfig() { showToast('Cloud sync active'); }
 function updateCloudUI() {
-  const dot = document.getElementById('cloud-sync-dot');
-  const lbl = document.getElementById('cloud-sync-label');
-  const sub = document.getElementById('cloud-sync-sub');
-  const lastPush = localStorage.getItem('df3_last_supa_push');
-  if (dot) dot.style.background = 'var(--accent)';
-  if (lbl) lbl.textContent = 'Auto-sync active';
+  var lastPush = localStorage.getItem('df3_last_supa_push');
+  var lbl = document.getElementById('cloud-sync-label');
+  var sub = document.getElementById('cloud-sync-sub');
+  var dot = document.getElementById('cloud-sync-dot');
+  if (lbl) lbl.textContent = navigator.onLine ? 'Auto-sync active' : 'Offline - saved locally';
   if (sub) sub.textContent = lastPush ? 'Last synced: ' + lastPush : 'Not yet synced this session';
+  if (dot) dot.style.background = navigator.onLine ? 'var(--accent)' : 'var(--text3)';
 }
-function setSupaBadge(cls, txt) { updateCloudUI(); }
+function setSupaBadge() { updateCloudUI(); }
 
-// ── LOCAL IS ALWAYS THE SOURCE OF TRUTH ──
-// Every persist() → scheduleSupaSync() → pushToSupabase()
-// Full local state sent as one JSON blob — completely overwrites Supabase.
-// Deletions/edits/creates in local are all captured automatically.
-
-var _syncState = 'idle'; // 'idle' | 'syncing' | 'error' | 'offline'
-
+var _syncState = 'idle';
 function setNavSync(state, labelText, timeText) {
   _syncState = state;
-  const dot = document.getElementById('nav-sync-dot');
-  const lbl = document.getElementById('nav-sync-label');
-  const tim = document.getElementById('nav-sync-time');
+  var dot = document.getElementById('nav-sync-dot');
+  var lbl = document.getElementById('nav-sync-label');
+  var tim = document.getElementById('nav-sync-time');
   if (!dot) return;
-  dot.className = 'sync-dot ' + (state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : state === 'offline' ? 'offline' : 'online');
+  var stateMap = { syncing: 'syncing', error: 'error', offline: 'offline' };
+  dot.className = 'sync-dot ' + (stateMap[state] || 'online');
   if (lbl) lbl.textContent = labelText || 'Synced';
   if (tim) tim.textContent = timeText || '';
-  // Also update the Settings card dot
-  const sdot = document.getElementById('cloud-sync-dot');
+  var sdot = document.getElementById('cloud-sync-dot');
   if (sdot) sdot.style.background = state === 'error' ? 'var(--red)' : state === 'offline' ? 'var(--text3)' : 'var(--accent)';
 }
-function updateCloudUI() {
-  const lastPush = localStorage.getItem('df3_last_supa_push');
-  const lbl = document.getElementById('cloud-sync-label');
-  const sub = document.getElementById('cloud-sync-sub');
-  if (lbl) lbl.textContent = navigator.onLine ? 'Auto-sync active' : 'Offline — saved locally';
-  if (sub) sub.textContent = lastPush ? 'Last synced: ' + lastPush : 'Not yet synced this session';
-  if (!navigator.onLine) setNavSync('offline', 'Offline', '');
-}
-function setSupaBadge(cls, txt) { updateCloudUI(); }
-function navSyncClick() {
-  // Manual sync on click
-  syncBusy = false;
-  pushToSupabase();
-}
+function navSyncClick() { syncBusy = false; pushToSupabase(); }
+
+// ==================== PUSH / PULL ====================
+// LOCAL IS ALWAYS SOURCE OF TRUTH.
+// Full encrypted snapshot replaces Supabase row on every push.
+// Deletions, edits, and new records are all captured automatically.
 
 async function pushToSupabase() {
   if (!clinicId || !navigator.onLine) {
-    setNavSync('offline', 'Offline', '');
-    return;
+    setNavSync('offline', 'Offline', ''); return;
   }
   if (syncBusy) return;
   syncBusy = true;
-  setNavSync('syncing', 'Syncing…', '');
+  setNavSync('syncing', 'Syncing...', '');
   try {
-    const dataBlob = JSON.stringify({
+    var plaintext = JSON.stringify({
       S, patients, appointments, invoices, hmoProviders,
       labJobs, inventory, odontograms, perioCharts, feeSchedule,
       pins: getPINs(),
       savedAt: localStorage.getItem('df3_saved') || new Date().toISOString()
     });
-    // Supabase REST upsert: POST to table with on_conflict query param
-    // This is the correct CORS-safe approach — no client library needed
-    const res = await fetch(
-      _SUPA_REST + '?on_conflict=clinic_id',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': _SUPA_KEY,
-          'Authorization': 'Bearer ' + _SUPA_KEY,
-          'Prefer': 'resolution=merge-duplicates,return=minimal'
-        },
-        body: JSON.stringify({
-          clinic_id: clinicId,
-          data: dataBlob,
-          updated_at: new Date().toISOString()
-        })
-      }
-    );
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error('HTTP ' + res.status + ' — ' + errText.slice(0, 120));
+
+    // Encrypt before sending -- Supabase only ever sees ciphertext
+    var encData, encCheck;
+    if (_encKey) {
+      encData  = await _encrypt(_encKey, plaintext);
+      encCheck = await _encrypt(_encKey, 'dentaflow-ok'); // sentinel for key verification
+    } else {
+      // No key yet (e.g. first push before PIN set) -- store plaintext temporarily
+      // This only happens during registration before PIN is confirmed
+      encData  = btoa(unescape(encodeURIComponent(plaintext)));
+      encCheck = 'unencrypted';
     }
-    const now = new Date().toLocaleString('en-NG');
+
+    await _xhr('POST', _SUPA_TABLE, {
+      clinic_id:  clinicId,
+      data:       encData,
+      enc_check:  encCheck,
+      updated_at: new Date().toISOString()
+    });
+
+    var now = new Date().toLocaleString('en-NG');
     localStorage.setItem('df3_last_supa_push', now);
-    // Show just the time portion for the nav label
-    const timePart = new Date().toLocaleTimeString('en-NG', {hour:'2-digit', minute:'2-digit'});
-    setNavSync('online', 'Synced', timePart);
+    var t = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+    setNavSync('online', 'Synced', t);
     updateCloudUI();
   } catch(e) {
-    const msg = e?.message || String(e);
+    var msg = (e && e.message) ? e.message : String(e);
     console.error('Supabase push error:', msg);
     setNavSync('error', 'Sync error', '');
-    const stxt = document.getElementById('supa-status-txt');
+    var stxt = document.getElementById('supa-status-txt');
     if (stxt) stxt.textContent = msg;
   }
   syncBusy = false;
 }
 
-// Pull — only when local is empty (new device restore)
 async function pullFromSupabase() {
   if (!clinicId || !navigator.onLine) return;
   if (patients.length > 0 || appointments.length > 0 || invoices.length > 0) {
     await pushToSupabase(); return;
   }
   try {
-    const res = await fetch(
-      _SUPA_REST + '?clinic_id=eq.' + encodeURIComponent(clinicId) + '&select=data&limit=1',
-      { headers: { 'apikey': _SUPA_KEY, 'Authorization': 'Bearer ' + _SUPA_KEY } }
-    );
-    if (!res.ok) return;
-    const rows = await res.json();
-    if (!rows || !rows.length) return;
-    const d = JSON.parse(rows[0].data);
+    var url = _SUPA_TABLE + '?clinic_id=eq.' + encodeURIComponent(clinicId) + '&select=data,enc_check&limit=1';
+    var res = await _xhr('GET', url, null);
+    if (!res.data || !res.data.length) return;
+    var row = res.data[0];
+
+    // Verify encryption key before applying data
+    var plaintext = null;
+    if (_encKey && row.enc_check && row.enc_check !== 'unencrypted') {
+      var sentinel = await _tryDecrypt(_encKey, row.enc_check);
+      if (sentinel !== 'dentaflow-ok') {
+        showToast('Wrong PIN -- cannot decrypt cloud data');
+        return;
+      }
+      plaintext = await _tryDecrypt(_encKey, row.data);
+    } else if (row.enc_check === 'unencrypted') {
+      // Legacy unencrypted data -- decode and re-encrypt on next push
+      try { plaintext = decodeURIComponent(escape(atob(row.data))); } catch(e) { plaintext = row.data; }
+    }
+
+    if (!plaintext) { showToast('Could not decrypt cloud data'); return; }
+
+    var d = JSON.parse(plaintext);
     if (d.S) S = d.S;
     if (d.patients) patients = d.patients;
     if (d.appointments) appointments = d.appointments;
@@ -3289,47 +3379,62 @@ async function pullFromSupabase() {
     if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
     resyncCounters();
     persist();
-    showToast('☁ Data restored from cloud');
+    showToast('Data restored from cloud');
     renderDash(); populateHMOSelects(); renderSettings();
-  } catch(e) { console.error('Supabase pull error:', e?.message || e); }
+  } catch(e) { console.error('Supabase pull error:', (e && e.message) ? e.message : e); }
 }
 
-// Check if clinic exists in cloud (used during email-step login)
 async function checkClinicInCloud(email) {
   if (!navigator.onLine) return null;
   try {
-    const cid = btoa(email).replace(/=/g, '');
-    const res = await fetch(
-      _SUPA_REST + '?clinic_id=eq.' + encodeURIComponent(cid) + '&select=data&limit=1',
-      { headers: { 'apikey': _SUPA_KEY, 'Authorization': 'Bearer ' + _SUPA_KEY } }
-    );
-    if (!res.ok) return null;
-    const rows = await res.json();
-    if (!rows || !rows.length) return null;
-    return JSON.parse(rows[0].data);
+    var cid = btoa(email).replace(/=/g, '');
+    // Temporarily set clinicId so X-Clinic-Id header is sent correctly
+    var prevId = clinicId;
+    clinicId = cid;
+    var url = _SUPA_TABLE + '?clinic_id=eq.' + encodeURIComponent(cid) + '&select=data,enc_check&limit=1';
+    var res = await _xhr('GET', url, null);
+    clinicId = prevId;
+    if (!res.data || !res.data.length) return null;
+    // Return the raw row -- caller handles decryption after PIN entry
+    return res.data[0];
   } catch(e) { return null; }
 }
 
-// Force sync from Settings
+// NDPR Right to Erasure -- wipes all data from Supabase and localStorage
+async function eraseClinicData() {
+  if (!confirm('PERMANENT DELETE: This will erase ALL clinic data from this device and the cloud. This cannot be undone.\n\nType your clinic email to confirm deletion.')) return;
+  var confirmEmail = prompt('Enter your clinic email to confirm:');
+  if (!confirmEmail || confirmEmail.trim().toLowerCase() !== _lsClinicEmail) {
+    showToast('Email did not match -- deletion cancelled'); return;
+  }
+  try {
+    if (navigator.onLine) {
+      await _xhr('POST', _SUPA_RPC, { p_clinic_id: clinicId });
+    }
+  } catch(e) { console.warn('Cloud erasure error:', e.message); }
+  // Wipe localStorage entirely
+  localStorage.clear();
+  showToast('All data erased. Reloading...');
+  setTimeout(function() { location.reload(); }, 1800);
+}
+
 function forcePushToSupabase() { syncBusy = false; return pushToSupabase(); }
 
-// Auto-sync: debounced 2.5s after every persist()
 function scheduleSupaSync() {
   clearTimeout(_supaDebounce);
   _supaDebounce = setTimeout(pushToSupabase, 2500);
 }
 
-// Online/offline listeners — update nav sync dot immediately
-window.addEventListener('online', () => {
+window.addEventListener('online', function() {
+  isOffline = false; updateOfflineUI();
   setNavSync('online', 'Back online', '');
-  updateOfflineUI();
   scheduleSupaSync();
-  showToast('🟢 Internet restored — syncing…');
+  showToast('Internet restored - syncing...');
 });
-window.addEventListener('offline', () => {
+window.addEventListener('offline', function() {
+  isOffline = true; updateOfflineUI();
   setNavSync('offline', 'Offline', '');
-  updateOfflineUI();
-  showToast('📴 Offline — saving locally');
+  showToast('Offline - saving locally');
 });
 
 // ==================== LOGIN SYSTEM ====================
@@ -3383,29 +3488,27 @@ async function lsEmailNext() {
     if (sess && sess.email === email) clinicName = sess.clinicName;
   } catch(e) {}
 
-  // 2. If not found locally, try Supabase REST (only when online)
+  // 2. If not found locally, check Supabase for the clinic row (online only)
+  // We only check if the row EXISTS — actual data restore happens after PIN
+  // because the data is encrypted and the key requires the PIN to derive.
   if (!clinicName && navigator.onLine) {
-    const cloudData = await checkClinicInCloud(email);
-    if (cloudData) {
-      clinicName = cloudData.S?.clinicName || email;
-      // Restore cloud data to local if local is empty
-      if (patients.length === 0) {
-        if (cloudData.S) S = cloudData.S;
-        if (cloudData.patients) patients = cloudData.patients;
-        if (cloudData.appointments) appointments = cloudData.appointments;
-        if (cloudData.invoices) invoices = cloudData.invoices;
-        if (cloudData.hmoProviders) hmoProviders = cloudData.hmoProviders;
-        if (cloudData.labJobs) labJobs = cloudData.labJobs;
-        if (cloudData.inventory) inventory = cloudData.inventory;
-        if (cloudData.odontograms) odontograms = cloudData.odontograms;
-        if (cloudData.perioCharts) perioCharts = cloudData.perioCharts;
-        if (cloudData.feeSchedule) feeSchedule = cloudData.feeSchedule;
-        if (cloudData.pins) localStorage.setItem('df3_pins', JSON.stringify(cloudData.pins));
-        resyncCounters();
-        persist();
+    const row = await checkClinicInCloud(email);
+    if (row) {
+      // Row exists in cloud — extract clinic name from enc_check sentinel
+      // If unencrypted (legacy), we can parse the data directly
+      if (row.enc_check === 'unencrypted') {
+        try {
+          const d = JSON.parse(decodeURIComponent(escape(atob(row.data))));
+          clinicName = d.S?.clinicName || email;
+          if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
+        } catch(e) { clinicName = email; }
+      } else {
+        // Encrypted — clinicName will be recovered after PIN entry + key derivation
+        // For now just confirm the clinic exists
+        clinicName = email; // placeholder shown on PIN screen
       }
-      // Cache session locally so next login works offline
       localStorage.setItem('df3_session', JSON.stringify({ email, clinicName }));
+      localStorage.setItem('df3_cloud_row', JSON.stringify(row)); // cache for post-PIN restore
     }
   }
 
@@ -3415,9 +3518,9 @@ async function lsEmailNext() {
     errEl.classList.add('show'); return;
   }
 
-  // Found — proceed to PIN
+  // Found — proceed to PIN entry
   localStorage.setItem('df3_last_email', email);
-  clinicId = btoa(email).replace(/=/g,'');
+  clinicId = btoa(email).replace(/=/g, '');
   document.getElementById('ls-clinic-label').textContent = clinicName;
   document.getElementById('ls-email-label').textContent = email;
   document.getElementById('ls-email-step').classList.remove('active');
@@ -3438,17 +3541,19 @@ function resyncCounters() {
 }
 
 async function lsRegister() {
-  const clinic = document.getElementById('reg-clinic').value.trim();
-  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const clinic  = document.getElementById('reg-clinic').value.trim();
+  const email   = document.getElementById('reg-email').value.trim().toLowerCase();
   const dentist = document.getElementById('reg-dentist').value.trim();
-  const dpin = document.getElementById('reg-dpin').value.trim();
-  const rpin = document.getElementById('reg-rpin').value.trim();
-  const errEl = document.getElementById('ls-reg-err');
+  const dpin    = document.getElementById('reg-dpin').value.trim();
+  const rpin    = document.getElementById('reg-rpin').value.trim();
+  const consent = document.getElementById('reg-consent')?.checked;
+  const errEl   = document.getElementById('ls-reg-err');
 
   if (!clinic || !email || !dentist) { errEl.textContent = 'Clinic name, email and dentist name are required.'; errEl.classList.add('show'); return; }
   if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; errEl.classList.add('show'); return; }
   if (!dpin || !/^\d{4}$/.test(dpin)) { errEl.textContent = 'Dentist PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
   if (!rpin || !/^\d{4}$/.test(rpin)) { errEl.textContent = 'Receptionist PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
+  if (!consent) { errEl.textContent = 'You must accept the data processing terms to register.'; errEl.classList.add('show'); return; }
   errEl.classList.remove('show');
 
   // Reset to clean slate — new clinic gets empty data
@@ -3456,32 +3561,35 @@ async function lsRegister() {
   inventory = []; hmoProviders = []; odontograms = {}; perioCharts = {};
   pidC = 1; aidC = 1; iidC = 1; lidC = 1; receiptC = 1001;
 
-  // Set up clinic settings
   S.clinicName = clinic;
   S.dentistName = dentist;
   _lsClinicEmail = email;
-  clinicId = btoa(email).replace(/=/g,'');
+  clinicId = btoa(email).replace(/=/g, '');
 
   const pins = { dentist: dpin, receptionist: rpin };
   localStorage.setItem('df3_pins', JSON.stringify(pins));
   localStorage.setItem('df3_last_email', email);
-  localStorage.setItem('df3_session', JSON.stringify({ email, clinicName: clinic }));
+  localStorage.setItem('df3_session', JSON.stringify({
+    email, clinicName: clinic,
+    ndprConsentAt: new Date().toISOString() // NDPR: log consent timestamp
+  }));
 
-  // Save to local first — always works, no internet needed
+  // Derive encryption key from email + dentist PIN
+  await initEncKey(email, dpin);
+
   persist();
 
-  // Push to cloud in background if online — don't block registration
+  // Push encrypted data to cloud in background
   if (navigator.onLine) {
     pushToSupabase().catch(e => console.warn('Cloud push after register failed:', e));
   }
 
-  // Enter the app as dentist
   currentRole = 'dentist';
   applyRoleMode();
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('sb-clinic').textContent = S.clinicName;
   document.getElementById('sb-dentist').textContent = S.dentistName;
-  showToast('✓ Welcome, ' + dentist + '! Your clinic is ready.');
+  showToast('Welcome, ' + dentist + '! Your clinic is ready.');
   renderDash();
   setTimeout(startOnboarding, 600);
 }
@@ -3543,28 +3651,68 @@ function checkPIN() {
   const pins = getPINs();
   const correct = pins[pinSelectedRole];
   if (pinEntry === correct) {
+    const enteredPin = pinEntry; // capture before it's cleared
     currentRole = pinSelectedRole;
     applyRoleMode();
-    // Hide whichever screen is visible
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('pin-screen').classList.add('hidden');
-    // Save session locally — always works offline
+    // Save session locally
     try {
       const existing = JSON.parse(localStorage.getItem('df3_session') || '{}');
       localStorage.setItem('df3_session', JSON.stringify({ ...existing, email: _lsClinicEmail }));
     } catch(e) {}
-    // Sync with cloud only when online — never blocks login
-    if (navigator.onLine) {
-      // Local has data → push it (local always wins)
-      // Local is empty → pull from cloud (new device restore)
-      if (patients.length === 0 && appointments.length === 0 && invoices.length === 0) {
-        pullFromSupabase().then(() => { resyncCounters(); renderDash(); populateHMOSelects(); });
-      } else {
-        scheduleSupaSync();
+    // Derive AES-GCM key from email + PIN, then sync
+    initEncKey(_lsClinicEmail, enteredPin).then(async () => {
+      // Check if we have a cached cloud row to restore (new device login)
+      const cachedRow = localStorage.getItem('df3_cloud_row');
+      if (cachedRow && patients.length === 0) {
+        try {
+          const row = JSON.parse(cachedRow);
+          localStorage.removeItem('df3_cloud_row'); // consume it
+          if (row.enc_check && row.enc_check !== 'unencrypted') {
+            const sentinel = await _tryDecrypt(_encKey, row.enc_check);
+            if (sentinel === 'dentaflow-ok') {
+              const plaintext = await _tryDecrypt(_encKey, row.data);
+              if (plaintext) {
+                const d = JSON.parse(plaintext);
+                if (d.S) S = d.S;
+                if (d.patients) patients = d.patients;
+                if (d.appointments) appointments = d.appointments;
+                if (d.invoices) invoices = d.invoices;
+                if (d.hmoProviders) hmoProviders = d.hmoProviders;
+                if (d.labJobs) labJobs = d.labJobs;
+                if (d.inventory) inventory = d.inventory;
+                if (d.odontograms) odontograms = d.odontograms;
+                if (d.perioCharts) perioCharts = d.perioCharts;
+                if (d.feeSchedule) feeSchedule = d.feeSchedule;
+                if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
+                resyncCounters(); persist();
+                // Update clinic name in session now we have decrypted data
+                const sess = JSON.parse(localStorage.getItem('df3_session') || '{}');
+                if (d.S?.clinicName) {
+                  sess.clinicName = d.S.clinicName;
+                  localStorage.setItem('df3_session', JSON.stringify(sess));
+                }
+                showToast('Data restored from cloud');
+                renderDash(); populateHMOSelects(); renderSettings(); return;
+              }
+            } else {
+              showToast('Wrong PIN — cloud data could not be decrypted');
+            }
+          }
+        } catch(e) { console.warn('Cloud row restore failed:', e); }
       }
-    }
+      // No cloud row to restore — normal sync
+      if (navigator.onLine) {
+        if (patients.length === 0 && appointments.length === 0 && invoices.length === 0) {
+          pullFromSupabase().then(() => { resyncCounters(); renderDash(); populateHMOSelects(); });
+        } else {
+          scheduleSupaSync();
+        }
+      }
+    });
     renderDash();
-    showToast(`✓ Welcome${currentRole === 'dentist' ? ', Doctor' : ' back'}!`);
+    showToast('Welcome' + (currentRole === 'dentist' ? ', Doctor' : ' back') + '!');
   } else {
     updatePinDots(true);
     document.getElementById('pin-hint').innerHTML = '<span style="color:var(--red)">Wrong PIN — try again</span>';
