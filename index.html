@@ -2,10 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DentaFlow">
+<meta name="application-name" content="DentaFlow">
+<meta name="theme-color" content="#0d0f14">
+<meta name="description" content="Dental clinic management — appointments, HMO, invoices, reminders">
 <title>DentaFlow — Clinic Management</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230d0f14'/><path d='M32 10c-5.5 0-10 2.8-12 7-1.5 3-1.8 6.5-1.2 10l2.5 16c.4 2.5 2.5 4 4.5 3.5 1.5-.4 2.5-1.8 2.8-3.5l1.4-8h4l1.4 8c.3 1.7 1.3 3.1 2.8 3.5 2 .5 4.1-1 4.5-3.5l2.5-16c.6-3.5.3-7-1.2-10-2-4.2-6.5-7-12-7z' fill='%2300d4a0'/><circle cx='26' cy='22' r='2.5' fill='%230d0f14'/><circle cx='38' cy='22' r='2.5' fill='%230d0f14'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%230d0f14'/><path d='M90 28c-15.5 0-28 7.8-33.5 19.5-4.2 8.5-5 18.2-3.4 28l7 44.8c1.1 7 7 11.2 12.5 9.8 4.2-1.1 7-5 7.8-9.8l4-22.3h11.2l4 22.3c.8 4.8 3.6 8.7 7.8 9.8 5.5 1.4 11.4-2.8 12.5-9.8l7-44.8c1.6-9.8.8-19.5-3.4-28C118 35.8 105.5 28 90 28z' fill='%2300d4a0'/><circle cx='73' cy='62' r='7' fill='%230d0f14'/><circle cx='107' cy='62' r='7' fill='%230d0f14'/></svg>">
+<link rel="manifest" id="pwa-manifest">
 <style>
 /* System font stack — fully offline, zero external requests */
 :root{
@@ -432,6 +441,16 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 .sync-nav-label{overflow:hidden;white-space:nowrap;flex:1;transition:opacity .15s,width .22s;}
 .sidebar.collapsed .sync-nav-label{opacity:0;width:0;pointer-events:none;}
 .sidebar.collapsed #nav-sync-time{opacity:0;width:0;}
+
+/* PWA install banner animation */
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Safe area insets for notched phones (PWA standalone mode) */
+@supports(padding:max(0px)){
+  .topbar{padding-top:max(12px,env(safe-area-inset-top));}
+  .sidebar{padding-top:env(safe-area-inset-top);}
+  body{padding-bottom:env(safe-area-inset-bottom);}
+}
 
 /* Medium desktop — sidebar gets tight */
 @media (max-width:1100px){
@@ -4097,6 +4116,97 @@ lsInit();
 
 // Render dashboard behind the login screen (ready when user logs in)
 renderDash();
+
+// ==================== PWA ====================
+(function() {
+  // 1. Inject Web App Manifest as a blob URL
+  var iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="%230d0f14"/><path d="M256 80c-55 0-100 28-120 70-15 30-18 65-12 100l25 160c4 25 25 40 45 35 15-4 25-18 28-35l14-80h40l14 80c3 17 13 31 28 35 20 5 41-10 45-35l25-160c6-35 3-70-12-100-20-42-65-70-120-70z" fill="%2300d4a0"/><circle cx="208" cy="210" r="22" fill="%230d0f14"/><circle cx="304" cy="210" r="22" fill="%230d0f14"/></svg>';
+  var iconUrl = 'data:image/svg+xml,' + iconSvg;
+
+  var manifest = {
+    name: 'DentaFlow — Clinic Management',
+    short_name: 'DentaFlow',
+    description: 'Dental clinic management — appointments, HMO, invoices, reminders',
+    start_url: '/?source=pwa',
+    scope: '/',
+    display: 'standalone',
+    orientation: 'any',
+    background_color: '#0d0f14',
+    theme_color: '#0d0f14',
+    categories: ['medical', 'business', 'productivity'],
+    icons: [
+      { src: iconUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+      { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+    ],
+    shortcuts: [
+      { name: 'Book Appointment', short_name: 'Book', description: 'Book a new patient appointment', url: './?action=book', icons: [{ src: iconUrl, sizes: '96x96' }] },
+      { name: 'Reminders',        short_name: 'Remind', description: 'Send WhatsApp reminders',      url: './?action=reminders', icons: [{ src: iconUrl, sizes: '96x96' }] }
+    ]
+  };
+
+  var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  var mUrl = URL.createObjectURL(blob);
+  var mLink = document.getElementById('pwa-manifest');
+  if (mLink) mLink.href = mUrl;
+
+  // 2. Register Service Worker (inline as blob)
+  // Caches the app shell for full offline capability and fast loads.
+  // Cache-first for static assets, network-first for Supabase API calls.
+  if ('serviceWorker' in navigator) {
+    // Service worker is at /sw.js (separate file required — blob URLs not supported)
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(function(reg) {
+        console.log('[DentaFlow PWA] Service worker registered');
+        // Check for URL shortcut actions on launch
+        var params = new URLSearchParams(location.search);
+        var action = params.get('action');
+        if (action === 'book') setTimeout(openBooking, 800);
+        if (action === 'reminders') setTimeout(function() { go('reminders'); }, 800);
+      })
+      .catch(function(err) {
+        // SW failed — app still works fully, just no offline caching
+        console.warn('[DentaFlow PWA] Service worker not available:', err.message);
+      });
+
+    // Prompt "Add to Home Screen" after 30 seconds if not already installed
+    var deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      setTimeout(function() {
+        if (deferredPrompt) showInstallBanner();
+      }, 30000);
+    });
+
+    window.addEventListener('appinstalled', function() {
+      deferredPrompt = null;
+      var banner = document.getElementById('pwa-install-banner');
+      if (banner) banner.remove();
+      showToast('DentaFlow installed! Open from your home screen.');
+    });
+
+    window.installPWA = function() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function() {
+        deferredPrompt = null;
+        var banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.remove();
+      });
+    };
+  }
+
+  function showInstallBanner() {
+    if (document.getElementById('pwa-install-banner')) return;
+    // Don't show if already running as standalone (already installed)
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+    var banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#141720;border:1px solid #2a2f45;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,.5);font-family:DM Sans,system-ui,sans-serif;max-width:340px;width:calc(100% - 32px);animation:slideUp .3s ease';
+    banner.innerHTML = '<span style="font-size:26px;flex-shrink:0">🦷</span><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#e8eaf2;margin-bottom:2px">Install DentaFlow</div><div style="font-size:11px;color:#8b91aa">Add to home screen for faster access &amp; offline use</div></div><button onclick="installPWA()" style="background:#00d4a0;color:#0d0f14;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">Install</button><button onclick="this.closest(\'#pwa-install-banner\').remove()" style="background:none;border:none;color:#8b91aa;cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0">✕</button>';
+    document.body.appendChild(banner);
+  }
+})();
 </script>
 </body>
 </html>
