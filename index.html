@@ -22,6 +22,36 @@
   --font-display:'Syne','Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
 :root{--bg:#0d0f14;--surface:#141720;--surface2:#1c2030;--surface3:#242840;--border:#2a2f45;--accent:#00d4a0;--accent2:#7c6af7;--yellow:#f0a500;--red:#f04a4a;--blue:#4a9ff0;--text:#e8eaf2;--text2:#8b91aa;--text3:#555d7a;--radius:12px;--radius-sm:8px;}
+
+/* ── LIGHT MODE ───────────────────────────────────────────── */
+body.light{
+  --bg:#f0f4f8;
+  --surface:#ffffff;
+  --surface2:#e8eef5;
+  --surface3:#dde5ef;
+  --border:#c8d4e0;
+  --text:#1a2332;
+  --text2:#4a5568;
+  --text3:#8a9ab0;
+  --accent:#009e78;
+  --accent2:#5a48d4;
+  --yellow:#c47d00;
+  --red:#d03030;
+  --blue:#2a7fd4;
+}
+body.light .sidebar{box-shadow:2px 0 12px rgba(0,0,0,.08);}
+body.light .topbar{background:rgba(240,244,248,.96);}
+body.light .tbl-wrap{box-shadow:0 1px 4px rgba(0,0,0,.06);}
+body.light .stat-card,body.light .chart-card,body.light .s-card,body.light .rev-card,body.light .util-card{box-shadow:0 1px 6px rgba(0,0,0,.07);}
+body.light .modal{box-shadow:0 8px 40px rgba(0,0,0,.18);}
+body.light .pin-screen,body.light .login-screen{background:var(--bg);}
+body.light ::-webkit-scrollbar-thumb{background:var(--border);}
+/* Keep invoice always white regardless of theme */
+body.light .invoice-preview{background:#fff;}
+/* Theme toggle button */
+.theme-btn{background:none;border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .2s;display:flex;align-items:center;gap:5px;font-family:var(--font-sans);}
+.theme-btn:hover{background:var(--surface2);color:var(--text);}
+
 *{margin:0;padding:0;box-sizing:border-box;}
 
 /* ROOT LAYOUT — flex row, full viewport height, no overflow lock */
@@ -495,6 +525,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
   .topbar{padding:10px 14px;}
   .page-title{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .date-pill{display:none;}
+  .theme-btn #theme-label{display:none;}
+  .theme-btn{padding:4px 7px;}
   .page{padding:12px;}
 
   .stats-row{grid-template-columns:1fr 1fr;}
@@ -701,6 +733,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     </div>
     <div class="topbar-right">
       <div class="date-pill" id="date-pill">📅 Today</div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">☀️ <span id="theme-label">Light</span></button>
       <div class="sync-pill" id="sync-pill" onclick="toggleOffline()" title="Click to simulate offline">🟢 Online</div>
       <span id="role-badge" class="pin-role-badge role-dentist" style="font-size:11px">👨‍⚕️ Dentist</span>
       <button class="btn btn-ghost btn-sm" onclick="lockApp()" title="Lock / switch user" style="font-size:13px">🔒</button>
@@ -1398,6 +1431,41 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
  * ============================================================
  */
 function today(){return new Date().toISOString().split('T')[0];}
+
+// ==================== THEME ====================
+function initTheme() {
+  var saved = localStorage.getItem('df3_theme');
+  var isLight;
+  if (saved) {
+    isLight = saved === 'light';
+  } else {
+    // Auto: light 6am–7pm, dark otherwise
+    var h = new Date().getHours();
+    isLight = h >= 6 && h < 19;
+  }
+  applyTheme(isLight, false);
+}
+function applyTheme(isLight, save) {
+  document.body.classList.toggle('light', isLight);
+  var btn = document.getElementById('theme-btn');
+  var lbl = document.getElementById('theme-label');
+  if (btn) btn.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+  if (btn) btn.childNodes[0].textContent = isLight ? '🌙 ' : '☀️ ';
+  if (lbl) lbl.textContent = isLight ? 'Dark' : 'Light';
+  // Update PWA theme-color meta
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = isLight ? '#f0f4f8' : '#0d0f14';
+  // Re-render charts so they pick up new CSS variable colours
+  Object.keys(_charts || {}).forEach(function(id) {
+    try { if (_charts[id]) _charts[id].update(); } catch(e) {}
+  });
+  if (save) localStorage.setItem('df3_theme', isLight ? 'light' : 'dark');
+}
+function toggleTheme() {
+  var isLight = !document.body.classList.contains('light');
+  applyTheme(isLight, true);
+}
+
 function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
 function dOff(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
 function fmtDate(s){return new Date(s+'T12:00:00').toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}
@@ -3770,20 +3838,27 @@ function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _ch
 const CHART_DEFAULTS = {
   color: { accent: '#00d4a0', accent2: '#7c6af7', yellow: '#f0a500', red: '#f04a4a', blue: '#4a9ff0' },
   font: { family: 'DM Sans, system-ui, sans-serif', size: 11 },
-  gridColor: 'rgba(42,47,69,0.8)',
-  textColor: '#8b91aa'
+  // Read live from CSS so light/dark mode is always correct
+  get gridColor() { return document.body.classList.contains('light') ? 'rgba(200,212,224,0.7)' : 'rgba(42,47,69,0.8)'; },
+  get textColor() { return document.body.classList.contains('light') ? '#4a5568' : '#8b91aa'; },
+  get tooltipBg() { return document.body.classList.contains('light') ? '#ffffff' : '#1c2030'; },
+  get tooltipBorder() { return document.body.classList.contains('light') ? '#c8d4e0' : '#2a2f45'; },
+  get tooltipTitle() { return document.body.classList.contains('light') ? '#1a2332' : '#e8eaf2'; },
+  get tooltipBody() { return document.body.classList.contains('light') ? '#4a5568' : '#8b91aa'; }
 };
 
 function chartOpts(type) {
-  const base = {
+  var gc = CHART_DEFAULTS.gridColor;
+  var tc = CHART_DEFAULTS.textColor;
+  var base = {
     responsive: true, maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 11 }, boxWidth: 10 } },
-      tooltip: { backgroundColor: '#1c2030', borderColor: '#2a2f45', borderWidth: 1, titleColor: '#e8eaf2', bodyColor: '#8b91aa', titleFont: { family: CHART_DEFAULTS.font.family }, bodyFont: { family: CHART_DEFAULTS.font.family } }
+      legend: { labels: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 11 }, boxWidth: 10 } },
+      tooltip: { backgroundColor: CHART_DEFAULTS.tooltipBg, borderColor: CHART_DEFAULTS.tooltipBorder, borderWidth: 1, titleColor: CHART_DEFAULTS.tooltipTitle, bodyColor: CHART_DEFAULTS.tooltipBody, titleFont: { family: CHART_DEFAULTS.font.family }, bodyFont: { family: CHART_DEFAULTS.font.family } }
     },
     scales: type !== 'pie' && type !== 'doughnut' ? {
-      x: { grid: { color: CHART_DEFAULTS.gridColor }, ticks: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 10 } } },
-      y: { grid: { color: CHART_DEFAULTS.gridColor }, ticks: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 10 } } }
+      x: { grid: { color: gc }, ticks: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 10 } } },
+      y: { grid: { color: gc }, ticks: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 10 } } }
     } : {}
   };
   return base;
@@ -4112,6 +4187,7 @@ resyncCounters();
 populateHMOSelects();
 renderSettings();
 restoreSidebarState();
+initTheme();
 startNotifScheduler();
 
 // Show login screen — handles autofill and session detection
