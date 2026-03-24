@@ -1527,25 +1527,31 @@ function _k(key) { return (clinicId || 'default') + '_' + key; }
 // On first login after the fix, we detect this and migrate the data automatically.
 function migrateDefaultKeys() {
   if (!clinicId || clinicId === 'default') return;
-  var migrationKey = 'df3_migrated_' + clinicId;
+  // v2: now also rescues df3_* keys (original unscoped format) — bump version to re-run
+  var migrationKey = 'df3_migrated_v2_' + clinicId;
   if (localStorage.getItem(migrationKey)) return; // already done
 
   var DATA_KEYS = ['pts','appts','inv','odo','perio','set','hmo','invoices','lab','fees','receiptC','pins'];
   var hadData = false;
   DATA_KEYS.forEach(function(k) {
     var scopedKey  = clinicId + '_' + k;
-    var defaultKey = 'default_' + k;
-    // Only migrate if the scoped key is empty but default has data
-    var scopedVal  = localStorage.getItem(scopedKey);
-    var defaultVal = localStorage.getItem(defaultKey);
-    if (!scopedVal && defaultVal) {
-      localStorage.setItem(scopedKey, defaultVal);
+    // Check both legacy key formats:
+    // 1. 'df3_*'   — original app stored data without any clinic prefix
+    // 2. 'default_*' — broken period where clinicId fell back to 'default'
+    var legacyVal = localStorage.getItem('df3_' + k) || localStorage.getItem('default_' + k);
+    var scopedVal = localStorage.getItem(scopedKey);
+    if (!scopedVal && legacyVal) {
+      localStorage.setItem(scopedKey, legacyVal);
       hadData = true;
+      console.log('[DF:migrate] copied', 'df3_' + k, '→', scopedKey);
     }
   });
-  localStorage.setItem(migrationKey, '1');
+  localStorage.setItem(migrationKey, '1'); // v2 key — won't re-run
   if (hadData) {
-    console.log('[DentaFlow] Migrated data from default_* keys to', clinicId + '_*');
+    console.log('[DF:migrate] Migration complete for', clinicId);
+    showToast('✓ Your clinic data has been restored');
+  } else {
+    console.log('[DF:migrate] No legacy data found to migrate for', clinicId);
   }
 }
 
