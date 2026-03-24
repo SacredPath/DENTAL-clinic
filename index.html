@@ -3698,17 +3698,74 @@ async function lsEmailNext() {
       if (row) {
         // Cache the full encrypted row for post-PIN decryption
         localStorage.setItem(_k('cloud_row'), JSON.stringify(row));
-        // For unencrypted legacy rows, extract name + PINs immediately
+
         if (row.enc_check === 'unencrypted') {
+          // Legacy unencrypted row — extract name + PINs immediately
           try {
             const d = JSON.parse(decodeURIComponent(escape(atob(row.data))));
             clinicName = d.S?.clinicName || clinicName || email;
             if (d.pins) localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
           } catch(e) { clinicName = clinicName || email; }
         } else {
-          // Encrypted row found — use stored name if available, else email as placeholder
+          // ── NEW-DEVICE PIN BOOTSTRAP ─────────────────────────────────────
+          // Encrypted row: we don't know the PIN yet, so we can't decrypt
+          // the full payload. BUT we can brute-try common PINs (0000–9999
+          // would be too slow; instead we try the locally-stored PINs first,
+          // then fall back to the two defaults so a fresh device can always
+          // log in with the correct registered PINs).
+          //
+          // Real strategy: derive a key from email + each candidate PIN and
+          // test it against enc_check. The first one that produces
+          // 'dentaflow-ok' is the real dentist PIN. Store it so getPINs()
+          // returns it before the user even types anything.
+          //
+          // This loop runs at most ~4 candidates and takes < 1 second.
+          const localPins = getPINs();
+          const candidates = [
+            localPins.dentist,
+            localPins.receptionist,
+            PIN_DEFAULTS.dentist,
+            PIN_DEFAULTS.receptionist
+          ].filter((p, i, a) => p && a.indexOf(p) === i); // deduplicate
+
+          let discoveredDentistPin = null;
+          let discoveredReceptPin  = null;
+
+          for (const candidate of candidates) {
+            try {
+              const testKey = await _deriveKey(email, candidate);
+              const sentinel = await _tryDecrypt(testKey, row.enc_check);
+              if (sentinel === 'dentaflow-ok') {
+                // This candidate IS the dentist PIN — decrypt payload for pins + name
+                const plaintext = await _tryDecrypt(testKey, row.data);
+                if (plaintext) {
+                  const d = JSON.parse(plaintext);
+                  clinicName = d.S?.clinicName || clinicName || email;
+                  if (d.pins) {
+                    // Save the real PINs to localStorage NOW so checkPIN() can compare them
+                    localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
+                    discoveredDentistPin = d.pins.dentist;
+                    discoveredReceptPin  = d.pins.receptionist;
+                    console.log('[DF:lsEmailNext] ✓ Real PINs bootstrapped from cloud on new device');
+                  }
+                }
+                break; // found — no need to try more candidates
+              }
+            } catch(e) { /* key derivation or decryption error — try next */ }
+          }
+
+          // If we still couldn't bootstrap PINs (e.g. clinic used a custom PIN
+          // that isn't in our candidates list), we leave the cloud_row cached.
+          // checkPIN() will derive the key from whatever the user types and
+          // attempt decryption — correct PIN → 'dentaflow-ok' sentinel matches
+          // → login succeeds and real PINs are saved then.
+          if (!discoveredDentistPin) {
+            console.warn('[DF:lsEmailNext] Could not bootstrap PINs from candidates — user must enter correct PIN; cloud data will decrypt post-login.');
+          }
+
           clinicName = clinicName || email;
         }
+
         // Persist session with at minimum the email
         try {
           const prev = JSON.parse(localStorage.getItem('df3_session') || '{}');
@@ -3861,8 +3918,77 @@ function updatePinDots(error) {
 function checkPIN() {
   const pins = getPINs();
   const correct = pins[pinSelectedRole];
+
+  // ── NEW-DEVICE CUSTOM-PIN FALLBACK ───────────────────────────────────────
+  // If this device has no real PINs yet (still showing defaults) AND there is
+  // a cached cloud_row, try to validate the entered PIN cryptographically:
+  // derive a key from email + entered PIN and test it against enc_check.
+  // If it decrypts to 'dentaflow-ok', the PIN is correct regardless of what
+  // getPINs() returned. This covers clinics that set a custom PIN that wasn't
+  // in our bootstrap candidate list.
+  const isUsingDefault = (pins.dentist === PIN_DEFAULTS.dentist && pins.receptionist === PIN_DEFAULTS.receptionist);
+  const cachedRowStr = localStorage.getItem(_k('cloud_row'));
+
+  if (isUsingDefault && cachedRowStr && pinEntry.length === 4) {
+    // Run async validation — show a brief loading state on the dots
+    (async function() {
+      let row;
+      try { row = JSON.parse(cachedRowStr); } catch(e) { row = null; }
+
+      if (row && row.enc_check && row.enc_check !== 'unencrypted') {
+        try {
+          const testKey = await _deriveKey(_lsClinicEmail, pinEntry);
+          const sentinel = await _tryDecrypt(testKey, row.enc_check);
+
+          if (sentinel === 'dentaflow-ok') {
+            // Correct PIN — decrypt payload to get real PINs
+            const plaintext = await _tryDecrypt(testKey, row.data);
+            if (plaintext) {
+              const d = JSON.parse(plaintext);
+              if (d.pins) {
+                localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
+                console.log('[DF:checkPIN] ✓ Custom PIN validated via enc_check; real PINs saved');
+              }
+            }
+            // Now proceed with the actual login using the role the user selected
+            // (dentist PIN = dentist role; receptionist PIN needs re-check below)
+            const realPins = getPINs();
+            const roleForPin = pinEntry === realPins.dentist ? 'dentist'
+                             : pinEntry === realPins.receptionist ? 'receptionist'
+                             : 'dentist'; // enc_check passed so it must be dentist
+            pinSelectedRole = roleForPin;
+            _proceedWithLogin(pinEntry);
+            return;
+          }
+        } catch(e) { /* decryption error — fall through to standard wrong-PIN flow */ }
+      }
+
+      // Sentinel check failed — wrong PIN
+      _wrongPIN();
+    })();
+    return; // async path handles everything
+  }
+
+  // ── STANDARD PATH (local PINs already known) ─────────────────────────────
   if (pinEntry === correct) {
-    const enteredPin = pinEntry; // capture before it's cleared
+    _proceedWithLogin(pinEntry);
+  } else {
+    _wrongPIN();
+  }
+}
+
+function _wrongPIN() {
+  updatePinDots(true);
+  document.getElementById('pin-hint').innerHTML = '<span style="color:var(--red)">Wrong PIN — try again</span>';
+  setTimeout(() => {
+    pinEntry = ''; updatePinDots();
+    document.getElementById('pin-hint').innerHTML = pinSelectedRole === 'dentist'
+      ? 'Default dentist PIN: <strong>1234</strong>'
+      : 'Default receptionist PIN: <strong>0000</strong>';
+  }, 900);
+}
+
+function _proceedWithLogin(enteredPin) {
     currentRole = pinSelectedRole;
     applyRoleMode();
     document.getElementById('login-screen').classList.add('hidden');
@@ -3973,16 +4099,6 @@ function checkPIN() {
     resolveEncKeyAndSync();
     renderDash();
     showToast('Welcome' + (currentRole === 'dentist' ? ', Doctor' : ' back') + '!');
-  } else {
-    updatePinDots(true);
-    document.getElementById('pin-hint').innerHTML = '<span style="color:var(--red)">Wrong PIN — try again</span>';
-    setTimeout(() => {
-      pinEntry = ''; updatePinDots();
-      document.getElementById('pin-hint').innerHTML = pinSelectedRole === 'dentist'
-        ? 'Default dentist PIN: <strong>1234</strong>'
-        : 'Default receptionist PIN: <strong>0000</strong>';
-    }, 900);
-  }
 }
 function applyRoleMode() {
   const isReceptionist = currentRole === 'receptionist';
