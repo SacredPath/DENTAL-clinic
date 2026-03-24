@@ -1527,31 +1527,69 @@ function _k(key) { return (clinicId || 'default') + '_' + key; }
 // On first login after the fix, we detect this and migrate the data automatically.
 function migrateDefaultKeys() {
   if (!clinicId || clinicId === 'default') return;
-  // v2: now also rescues df3_* keys (original unscoped format) — bump version to re-run
   var migrationKey = 'df3_migrated_v2_' + clinicId;
-  if (localStorage.getItem(migrationKey)) return; // already done
+  if (localStorage.getItem(migrationKey)) return; // already done for this clinic
 
   var DATA_KEYS = ['pts','appts','inv','odo','perio','set','hmo','invoices','lab','fees','receiptC','pins'];
+
+  // ── df3_* migration (original unscoped format) ──────────────────────────────
+  // df3_* keys are device-global — they belong to whoever first registered on
+  // this device. We only migrate them to the CURRENT clinic if:
+  //   (a) no other clinic has already claimed them (df3_legacy_claimed is unset), AND
+  //   (b) the email stored in df3_set.clinicName or df3_last_email matches this clinic.
+  // This prevents Clinic B on the same device from inheriting Clinic A's data.
+  var df3Claimed = localStorage.getItem('df3_legacy_claimed');
+  var canClaimDf3 = false;
+  if (!df3Claimed) {
+    // Check if df3_set belongs to this clinic by comparing the stored email
+    try {
+      var df3Set = JSON.parse(localStorage.getItem('df3_set') || 'null');
+      var df3Email = localStorage.getItem('df3_last_email') || '';
+      var df3Session = JSON.parse(localStorage.getItem('df3_session') || 'null');
+      var sessionEmail = (df3Session && df3Session.email) ? df3Session.email : df3Email;
+      // clinicId is btoa(email) with = stripped — verify it matches
+      var expectedId = btoa(sessionEmail).replace(/=/g, '');
+      canClaimDf3 = (expectedId === clinicId);
+      console.log('[DF:migrate] df3 ownership check — sessionEmail:', sessionEmail, 'expectedId:', expectedId, 'clinicId:', clinicId, 'canClaim:', canClaimDf3);
+    } catch(e) { canClaimDf3 = false; }
+  }
+
   var hadData = false;
   DATA_KEYS.forEach(function(k) {
-    var scopedKey  = clinicId + '_' + k;
-    // Check both legacy key formats:
-    // 1. 'df3_*'   — original app stored data without any clinic prefix
-    // 2. 'default_*' — broken period where clinicId fell back to 'default'
-    var legacyVal = localStorage.getItem('df3_' + k) || localStorage.getItem('default_' + k);
-    var scopedVal = localStorage.getItem(scopedKey);
-    if (!scopedVal && legacyVal) {
-      localStorage.setItem(scopedKey, legacyVal);
+    var scopedKey = clinicId + '_' + k;
+    if (localStorage.getItem(scopedKey)) return; // scoped key already has data — skip
+
+    // Priority 1: default_* (broken-period fallback — always safe, was written with this clinicId='' bug)
+    var defaultVal = localStorage.getItem('default_' + k);
+    if (defaultVal) {
+      localStorage.setItem(scopedKey, defaultVal);
       hadData = true;
-      console.log('[DF:migrate] copied', 'df3_' + k, '→', scopedKey);
+      console.log('[DF:migrate] default_' + k + ' → ' + scopedKey);
+      return;
+    }
+
+    // Priority 2: df3_* (original unscoped — only if this clinic owns it)
+    if (canClaimDf3) {
+      var df3Val = localStorage.getItem('df3_' + k);
+      if (df3Val) {
+        localStorage.setItem(scopedKey, df3Val);
+        hadData = true;
+        console.log('[DF:migrate] df3_' + k + ' → ' + scopedKey);
+      }
     }
   });
-  localStorage.setItem(migrationKey, '1'); // v2 key — won't re-run
+
+  // Mark df3_* as claimed so no other clinic on this device copies them
+  if (canClaimDf3) {
+    localStorage.setItem('df3_legacy_claimed', clinicId);
+  }
+
+  localStorage.setItem(migrationKey, '1');
   if (hadData) {
     console.log('[DF:migrate] Migration complete for', clinicId);
     showToast('✓ Your clinic data has been restored');
   } else {
-    console.log('[DF:migrate] No legacy data found to migrate for', clinicId);
+    console.log('[DF:migrate] Nothing to migrate for', clinicId);
   }
 }
 
