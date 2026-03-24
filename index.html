@@ -1596,6 +1596,12 @@ function migrateDefaultKeys() {
 
 function persist(){
   try{
+    // Guard: never write to storage unless clinicId is set and matches the loaded session
+    if (!clinicId || clinicId === 'default') {
+      console.warn('[DF:persist] Blocked — clinicId not set, refusing to write');
+      return;
+    }
+    var savedAt = new Date().toISOString(); // ISO for reliable cross-device comparison
     localStorage.setItem(_k('pts'),JSON.stringify(patients));
     localStorage.setItem(_k('appts'),JSON.stringify(appointments));
     localStorage.setItem(_k('inv'),JSON.stringify(inventory));
@@ -1606,15 +1612,36 @@ function persist(){
     localStorage.setItem(_k('invoices'),JSON.stringify(invoices));
     localStorage.setItem(_k('lab'),JSON.stringify(labJobs));
     localStorage.setItem(_k('fees'),JSON.stringify(feeSchedule));
-    localStorage.setItem(_k('saved'),new Date().toLocaleString('en-NG'));
+    localStorage.setItem(_k('saved'), savedAt); // ISO timestamp — source of truth for sync arbitration
     localStorage.setItem(_k('receiptC'), receiptC);
     if(isOffline)pendingChanges++;
     scheduleSupaSync();
   }catch(e){}
 }
 function loadStorage(){
+  // ── CRITICAL CLINIC ISOLATION GUARD ──────────────────────────────────────────
+  // Before loading ANY data, verify that clinicId is set and that the stored
+  // settings record actually belongs to this clinic. If the check fails, we
+  // refuse to load anything — an empty state is safer than showing wrong data.
+  if (!clinicId || clinicId === 'default') {
+    console.warn('[DF:loadStorage] Blocked — clinicId not set');
+    return;
+  }
   console.log('[DF:loadStorage] clinicId="' + clinicId + '" prefix="' + _k('pts') + '"');
   try{
+    // Validate that stored settings match the expected clinicId before loading
+    const stRaw = localStorage.getItem(_k('set'));
+    if (stRaw) {
+      try {
+        const stCheck = JSON.parse(stRaw);
+        // If a clinicEmail is stored in settings and it doesn't match, reject
+        if (stCheck._clinicId && stCheck._clinicId !== clinicId) {
+          console.error('[DF:loadStorage] ISOLATION: stored _clinicId mismatch — refusing to load');
+          return;
+        }
+      } catch(e) {}
+    }
+
     const p=localStorage.getItem(_k('pts'));
     console.log('[DF:loadStorage] pts raw:', p ? p.slice(0,80) : 'NULL');
     if(p)patients=JSON.parse(p);
@@ -1622,7 +1649,7 @@ function loadStorage(){
     const i=localStorage.getItem(_k('inv'));if(i)inventory=JSON.parse(i);
     const o=localStorage.getItem(_k('odo'));if(o)odontograms=JSON.parse(o);
     const pe=localStorage.getItem(_k('perio'));if(pe)perioCharts=JSON.parse(pe);
-    const st=localStorage.getItem(_k('set'));if(st)S=JSON.parse(st);
+    if(stRaw)S=JSON.parse(stRaw);
     const h=localStorage.getItem(_k('hmo'));if(h)hmoProviders=JSON.parse(h);
     const iv=localStorage.getItem(_k('invoices'));if(iv)invoices=JSON.parse(iv);
     const l=localStorage.getItem(_k('lab'));if(l)labJobs=JSON.parse(l);
@@ -3475,11 +3502,12 @@ async function pushToSupabase() {
   syncBusy = true;
   setNavSync('syncing', 'Syncing...', '');
   try {
+    var localSavedAt = localStorage.getItem(_k('saved')) || new Date().toISOString();
     var plaintext = JSON.stringify({
       S, patients, appointments, invoices, hmoProviders,
       labJobs, inventory, odontograms, perioCharts, feeSchedule,
       pins: getPINs(),
-      savedAt: localStorage.getItem(_k('saved')) || new Date().toISOString()
+      savedAt: localSavedAt
     });
 
     var encData, encCheck;
@@ -3496,7 +3524,7 @@ async function pushToSupabase() {
       p_clinic_id:  clinicId,
       p_data:       encData,
       p_enc_check:  encCheck,
-      p_updated_at: new Date().toISOString()
+      p_updated_at: localSavedAt // use local savedAt so server timestamp matches
     });
 
     var now = new Date().toLocaleString('en-NG');
@@ -3514,65 +3542,148 @@ async function pushToSupabase() {
   syncBusy = false;
 }
 
-async function pullFromSupabase() {
-  if (!clinicId || !navigator.onLine) return;
-  if (patients.length > 0 || appointments.length > 0 || invoices.length > 0) {
-    await pushToSupabase(); return;
+// ── CORE SYNC FUNCTION ───────────────────────────────────────────────────────
+// Compares local savedAt vs cloud savedAt.
+// Newer timestamp wins and becomes the source of truth.
+// If local is newer → push to cloud.
+// If cloud is newer → pull and overwrite local.
+// If equal → no-op.
+// opts.forceCloud = true → always use cloud (new device first login)
+// opts.forcePush  = true → always push (legacy path)
+async function syncWithCloud(opts) {
+  opts = opts || {};
+  if (!clinicId || !navigator.onLine) {
+    setNavSync('offline', 'Offline', ''); return;
   }
-  console.log('[DF:pull] Pulling from Supabase for clinicId:', clinicId);
+  if (syncBusy && !opts.forceCloud) return;
+  syncBusy = true;
+  setNavSync('syncing', 'Syncing...', '');
+
   try {
+    // ── Step 1: Fetch cloud row ─────────────────────────────────────────────
     var res = await _rpc('df_get_clinic', { p_clinic_id: clinicId });
-    console.log('[DF:pull] RPC response:', res.ok, 'rows:', res.data ? res.data.length : 0);
-    if (!res.data || !res.data.length) {
-      console.warn('[DF:pull] No cloud row found for this clinic.');
-      showToast('No cloud data found for this clinic');
+    var cloudRow = (res.data && res.data.length) ? res.data[0] : null;
+
+    if (!cloudRow) {
+      // No cloud data — push local data up
+      console.log('[DF:sync] No cloud row — pushing local data up');
+      syncBusy = false;
+      await pushToSupabase();
       return;
     }
-    var row = res.data[0];
-    var encCheck = row.enc_check || 'unencrypted';
-    var plaintext = null;
+
+    // ── Step 2: Decrypt cloud payload to read its savedAt ──────────────────
+    var cloudPlaintext = null;
+    var encCheck = cloudRow.enc_check || 'unencrypted';
 
     if (_encKey && encCheck !== 'unencrypted') {
       var sentinel = await _tryDecrypt(_encKey, encCheck);
-      // If current key fails, try the stored dentist PIN (receptionist login path)
       if (sentinel !== 'dentaflow-ok') {
-        const fallbackPin = getPINs().dentist;
+        // Try stored dentist PIN as fallback (receptionist login)
+        var fallbackPin = getPINs().dentist;
         if (fallbackPin) {
-          var fallbackKey = await _deriveKey(_lsClinicEmail, fallbackPin).catch(() => null);
-          if (fallbackKey) sentinel = await _tryDecrypt(fallbackKey, encCheck);
-          if (sentinel === 'dentaflow-ok') {
-            _encKey = fallbackKey; // use working key going forward
-          }
+          var fbKey = await _deriveKey(_lsClinicEmail, fallbackPin).catch(() => null);
+          if (fbKey) { sentinel = await _tryDecrypt(fbKey, encCheck); if (sentinel === 'dentaflow-ok') _encKey = fbKey; }
         }
       }
-      if (sentinel !== 'dentaflow-ok') {
-        console.warn('[DF:pull] Decryption failed — PIN mismatch');
-        showToast('Could not decrypt cloud data — please log in as Dentist first');
-        return;
+      if (sentinel === 'dentaflow-ok') {
+        cloudPlaintext = await _tryDecrypt(_encKey, cloudRow.data);
+      } else {
+        console.warn('[DF:sync] Could not decrypt cloud row — skipping cloud comparison');
+        syncBusy = false; setNavSync('error', 'Decrypt error', ''); return;
       }
-      plaintext = await _tryDecrypt(_encKey, row.data);
-    } else {
-      try { plaintext = decodeURIComponent(escape(atob(row.data))); } catch(e) { plaintext = row.data; }
+    } else if (encCheck === 'unencrypted') {
+      try { cloudPlaintext = decodeURIComponent(escape(atob(cloudRow.data))); } catch(e) { cloudPlaintext = cloudRow.data; }
     }
 
-    if (!plaintext) { showToast('Could not read cloud data'); return; }
-    var d = JSON.parse(plaintext);
-    if (d.S) S = d.S;
-    if (d.patients) patients = d.patients;
-    if (d.appointments) appointments = d.appointments;
-    if (d.invoices) invoices = d.invoices;
-    if (d.hmoProviders) hmoProviders = d.hmoProviders;
-    if (d.labJobs) labJobs = d.labJobs;
-    if (d.inventory) inventory = d.inventory;
-    if (d.odontograms) odontograms = d.odontograms;
-    if (d.perioCharts) perioCharts = d.perioCharts;
-    if (d.feeSchedule) feeSchedule = d.feeSchedule;
-    if (d.pins) localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
-    resyncCounters();
-    persist();
-    showToast('Data restored from cloud');
-    renderDash(); populateHMOSelects(); renderSettings();
-  } catch(e) { console.error('Supabase pull error:', (e && e.message) ? e.message : e); }
+    if (!cloudPlaintext) {
+      console.warn('[DF:sync] Empty cloud plaintext'); syncBusy = false; return;
+    }
+
+    var cloudData;
+    try { cloudData = JSON.parse(cloudPlaintext); } catch(e) {
+      console.warn('[DF:sync] Cloud JSON parse error'); syncBusy = false; return;
+    }
+
+    // ── Step 3: Compare timestamps ─────────────────────────────────────────
+    var localSavedAt  = localStorage.getItem(_k('saved')) || '';
+    var cloudSavedAt  = cloudData.savedAt || cloudRow.updated_at || '';
+
+    // Parse dates — treat missing/invalid as epoch so the other side always wins
+    var localTs = localSavedAt  ? new Date(localSavedAt).getTime()  : 0;
+    var cloudTs = cloudSavedAt  ? new Date(cloudSavedAt).getTime()  : 0;
+    if (isNaN(localTs)) localTs = 0;
+    if (isNaN(cloudTs)) cloudTs = 0;
+
+    console.log('[DF:sync] local=' + localSavedAt + ' (' + localTs + ') cloud=' + cloudSavedAt + ' (' + cloudTs + ')');
+
+    if (opts.forceCloud || cloudTs > localTs) {
+      // ── Cloud is newer (or forced) → overwrite local ────────────────────
+      console.log('[DF:sync] Cloud wins — applying cloud data');
+      if (cloudData.S) S = cloudData.S;
+      if (cloudData.patients) patients = cloudData.patients;
+      if (cloudData.appointments) appointments = cloudData.appointments;
+      if (cloudData.invoices) invoices = cloudData.invoices;
+      if (cloudData.hmoProviders) hmoProviders = cloudData.hmoProviders;
+      if (cloudData.labJobs) labJobs = cloudData.labJobs;
+      if (cloudData.inventory) inventory = cloudData.inventory;
+      if (cloudData.odontograms) odontograms = cloudData.odontograms;
+      if (cloudData.perioCharts) perioCharts = cloudData.perioCharts;
+      if (cloudData.feeSchedule) feeSchedule = cloudData.feeSchedule;
+      if (cloudData.pins) localStorage.setItem(_k('pins'), JSON.stringify(cloudData.pins));
+
+      // Write cloud data to local storage (including cloud's savedAt so we
+      // don't re-fetch it again on the next comparison)
+      localStorage.setItem(_k('saved'), cloudSavedAt || new Date().toISOString());
+      localStorage.setItem(_k('pts'), JSON.stringify(patients));
+      localStorage.setItem(_k('appts'), JSON.stringify(appointments));
+      localStorage.setItem(_k('inv'), JSON.stringify(inventory));
+      localStorage.setItem(_k('odo'), JSON.stringify(odontograms));
+      localStorage.setItem(_k('perio'), JSON.stringify(perioCharts));
+      localStorage.setItem(_k('set'), JSON.stringify(S));
+      localStorage.setItem(_k('hmo'), JSON.stringify(hmoProviders));
+      localStorage.setItem(_k('invoices'), JSON.stringify(invoices));
+      localStorage.setItem(_k('lab'), JSON.stringify(labJobs));
+      localStorage.setItem(_k('fees'), JSON.stringify(feeSchedule));
+      if (cloudData.receiptC) localStorage.setItem(_k('receiptC'), cloudData.receiptC);
+      else { const rc = localStorage.getItem(_k('receiptC')); if (!rc) localStorage.setItem(_k('receiptC'), receiptC); }
+
+      resyncCounters();
+      renderDash(); populateHMOSelects(); renderSettings();
+      document.getElementById('sb-clinic').textContent = S.clinicName || '';
+      document.getElementById('sb-dentist').textContent = S.dentistName || '';
+
+      var t = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+      localStorage.setItem(_k('last_push'), new Date().toLocaleString('en-NG'));
+      setNavSync('online', 'Synced', t); updateCloudUI();
+      if (opts.forceCloud) showToast('✓ Data loaded from cloud');
+      else showToast('✓ Updated from another device');
+
+    } else if (localTs > cloudTs) {
+      // ── Local is newer → push up ────────────────────────────────────────
+      console.log('[DF:sync] Local wins — pushing to cloud');
+      syncBusy = false;
+      await pushToSupabase();
+      return;
+
+    } else {
+      // ── Equal → no-op ───────────────────────────────────────────────────
+      console.log('[DF:sync] Timestamps equal — no sync needed');
+      var t2 = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+      setNavSync('online', 'Synced', t2); updateCloudUI();
+    }
+
+  } catch(e) {
+    var msg = (e && e.message) ? e.message : String(e);
+    console.error('[DF:sync] Error:', msg);
+    setNavSync('error', 'Sync error', '');
+  }
+  syncBusy = false;
+}
+
+async function pullFromSupabase() {
+  // Legacy entry point — now delegates to syncWithCloud
+  await syncWithCloud({});
 }
 
 async function checkClinicInCloud(email) {
@@ -3635,8 +3746,6 @@ function lsInit() {
       document.getElementById('ls-email').value = saved;
     }
     // Set clinicId from email alone — clinicName must NOT be required.
-    // Previously, missing clinicName caused clinicId to stay '' so _k() fell
-    // back to 'default_*' keys, making every clinic share the same data.
     const session = JSON.parse(localStorage.getItem('df3_session') || 'null');
     const lastEmail = localStorage.getItem('df3_last_email') || '';
     const email = (session && session.email) ? session.email : lastEmail;
@@ -3656,6 +3765,24 @@ function lsInit() {
       }
     }
   } catch(e) {}
+}
+
+// Called after lsInit+loadStorage — if the clinic is already authenticated on this
+// device, compare local vs cloud timestamps and resolve which is source of truth.
+// This runs in the background; the UI is immediately usable with local data.
+async function _postInitSync() {
+  if (!clinicId || !navigator.onLine) return;
+  // Only run if the clinic already has a stored key (i.e. was previously logged in)
+  // _encKey is null here — we need it before we can decrypt cloud data.
+  // We resolve it from the stored dentist PIN, which was saved at login.
+  const storedPins = getPINs();
+  const dentistPin = storedPins.dentist;
+  if (!dentistPin || dentistPin === PIN_DEFAULTS.dentist) return; // no real key available — skip
+  try {
+    await initEncKey(_lsClinicEmail, dentistPin);
+    var hasLocalData = patients.length > 0 || appointments.length > 0 || invoices.length > 0;
+    await syncWithCloud({ forceCloud: !hasLocalData });
+  } catch(e) { console.warn('[DF:postInitSync]', e && e.message); }
 }
 
 function lsShowEmail() {
@@ -4013,21 +4140,12 @@ function _proceedWithLogin(enteredPin) {
     // Data is ALWAYS encrypted with the DENTIST PIN (set at registration).
     // If a receptionist logs in, their PIN unlocks the app but the encryption
     // key must still use the dentist PIN to read/write cloud data.
-    //
-    // Strategy:
-    //   1. Try the entered PIN as the dentist key (works when dentist logs in,
-    //      or when receptionist happens to know the dentist PIN).
-    //   2. If that fails to decrypt the cloud_row sentinel, try the locally
-    //      stored dentist PIN (works for returning receptionist logins where
-    //      the dentist PIN was cached from a previous session).
-    //   3. If still no key, fall through to pullFromSupabase which will try
-    //      again with whatever key is available.
     // ────────────────────────────────────────────────────────────────────────
     async function resolveEncKeyAndSync() {
       // Try entered PIN first (dentist login path)
       await initEncKey(_lsClinicEmail, enteredPin);
 
-      // Check if we have a cached cloud row to restore (new device / fresh browser)
+      // If enc key doesn't work (receptionist login), fall back to stored dentist PIN
       var cachedRowStr = localStorage.getItem(_k('cloud_row'))
                        || localStorage.getItem('df3_cloud_row');
       localStorage.removeItem('df3_cloud_row'); // clean up legacy key
@@ -4036,65 +4154,39 @@ function _proceedWithLogin(enteredPin) {
         try {
           const row = JSON.parse(cachedRowStr);
           if (row.enc_check && row.enc_check !== 'unencrypted') {
-            // Try to decrypt with the entered PIN key
             let sentinel = await _tryDecrypt(_encKey, row.enc_check);
-
-            // If entered PIN didn't work, this is likely the receptionist PIN.
-            // Try the locally stored dentist PIN as the key instead.
             if (sentinel !== 'dentaflow-ok') {
               const storedPins = getPINs();
               const dentistPin = storedPins.dentist;
               if (dentistPin && dentistPin !== enteredPin) {
-                console.log('[DF:checkPIN] entered PIN failed sentinel — trying stored dentist PIN');
                 await initEncKey(_lsClinicEmail, dentistPin);
                 sentinel = await _tryDecrypt(_encKey, row.enc_check);
               }
             }
-
-            if (sentinel === 'dentaflow-ok') {
-              const plaintext = await _tryDecrypt(_encKey, row.data);
-              if (plaintext && patients.length === 0) {
-                const d = JSON.parse(plaintext);
-                if (d.S) S = d.S;
-                if (d.patients) patients = d.patients;
-                if (d.appointments) appointments = d.appointments;
-                if (d.invoices) invoices = d.invoices;
-                if (d.hmoProviders) hmoProviders = d.hmoProviders;
-                if (d.labJobs) labJobs = d.labJobs;
-                if (d.inventory) inventory = d.inventory;
-                if (d.odontograms) odontograms = d.odontograms;
-                if (d.perioCharts) perioCharts = d.perioCharts;
-                if (d.feeSchedule) feeSchedule = d.feeSchedule;
-                // Save real PINs locally so receptionist logins work next time
-                if (d.pins) localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
-                localStorage.removeItem(_k('cloud_row')); // consume
-                resyncCounters(); persist();
-                const sess = JSON.parse(localStorage.getItem('df3_session') || '{}');
-                const resolvedName = d.S?.clinicName || sess.clinicName || _lsClinicEmail;
-                sess.clinicName = resolvedName;
-                localStorage.setItem('df3_session', JSON.stringify(sess));
-                const sbClinic = document.getElementById('sb-clinic');
-                if (sbClinic) sbClinic.textContent = resolvedName;
-                showToast('Data restored from cloud ✓');
-                renderDash(); populateHMOSelects(); renderSettings(); return;
-              }
-            } else {
-              console.warn('[DF:checkPIN] enc_check sentinel failed — PIN cannot decrypt cloud data');
-              // Don't show error toast here — just fall through to pullFromSupabase
-              // which will try again (and show a meaningful error if it also fails)
-            }
           }
-        } catch(e) { console.warn('[DF:checkPIN] cloud row restore failed:', e); }
-      }
-
-      // No cloud row or decryption failed — try a live Supabase pull
-      if (navigator.onLine) {
-        if (patients.length === 0 && appointments.length === 0 && invoices.length === 0) {
-          pullFromSupabase().then(() => { resyncCounters(); renderDash(); populateHMOSelects(); });
-        } else {
-          scheduleSupaSync();
+        } catch(e) { console.warn('[DF:checkPIN] cloud row key probe failed:', e); }
+        // Consume the cached row — syncWithCloud will re-fetch fresh data
+        localStorage.removeItem(_k('cloud_row'));
+      } else {
+        // No cached row — try to derive key via stored dentist PIN as fallback
+        const storedPins = getPINs();
+        if (storedPins.dentist && storedPins.dentist !== enteredPin) {
+          const testKey = await _deriveKey(_lsClinicEmail, storedPins.dentist).catch(() => null);
+          if (testKey) _encKey = testKey;
         }
       }
+
+      // ── Timestamp-based sync ─────────────────────────────────────────────────
+      // The rule:
+      //   • Online + local has data  → compare timestamps; winner is source of truth
+      //   • Online + no local data   → force-pull from cloud (new device)
+      //   • Offline                  → use local data as-is
+      if (navigator.onLine) {
+        var hasLocalData = patients.length > 0 || appointments.length > 0 || invoices.length > 0;
+        var forceCloud = !hasLocalData; // brand-new device: always take cloud
+        syncWithCloud({ forceCloud: forceCloud });
+      }
+      // If offline, local data is already loaded — nothing more to do
     }
     resolveEncKeyAndSync();
     renderDash();
@@ -4502,6 +4594,13 @@ renderSettings();
 
 // Render dashboard behind the login screen (ready when user logs in)
 renderDash();
+
+// ── POST-INIT CLOUD SYNC ──────────────────────────────────────────────────────
+// If this clinic is already authenticated on this device (has a valid session
+// and stored PINs), compare local vs cloud timestamps in the background and
+// take the newer data as source of truth. This handles the case where another
+// device made changes while this device was offline / closed.
+_postInitSync();
 
 // ==================== PWA ====================
 (function() {
