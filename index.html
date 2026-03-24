@@ -1522,75 +1522,85 @@ var inventory=[];
 // ── Storage key scoped per clinic so multiple clinics on same device stay isolated ──
 function _k(key) { return (clinicId || 'default') + '_' + key; }
 
-// ── One-time migration: copy data from broken 'default_*' keys to correct scoped keys ──
-// The light/dark mode update caused all clinics to write to 'default_*' for a period.
-// On first login after the fix, we detect this and migrate the data automatically.
+// ── One-time migration: rescue data from legacy unscoped key formats ──────────
+// Three formats exist in the wild:
+//   1. 'default_*'   — written when clinicId was '' (the broken-period bug)
+//   2. 'df3_*'       — original unscoped format from the very first version
+//   3. 'df3_cloud_row' — cloud row cached under the wrong key
+//
+// Strategy for df3_* ownership:
+//   Each clinic email maps to a unique clinicId (btoa(email)).
+//   The df3_session stores the email that OWNS the df3_* data on this device.
+//   If df3_session.email matches THIS clinic's email → we can copy df3_* safely.
+//   If df3_legacy_claimed is already set to a DIFFERENT clinic → skip df3_* for
+//   this clinic (their data is in Supabase; pullFromSupabase will restore it).
+//   EXCEPTION: if df3_legacy_claimed matches THIS clinic, we can still copy —
+//   the migration just never ran for this clinic yet (e.g. migrationKey was set
+//   before the df3_cloud_row fix was added).
 function migrateDefaultKeys() {
   if (!clinicId || clinicId === 'default') return;
-  var migrationKey = 'df3_migrated_v2_' + clinicId;
-  if (localStorage.getItem(migrationKey)) return; // already done for this clinic
+  var migrationKey = 'df3_migrated_v3_' + clinicId; // bumped to v3 so all clinics re-run
+  if (localStorage.getItem(migrationKey)) return;
 
   var DATA_KEYS = ['pts','appts','inv','odo','perio','set','hmo','invoices','lab','fees','receiptC','pins'];
 
-  // ── df3_* migration (original unscoped format) ──────────────────────────────
-  // df3_* keys are device-global — they belong to whoever first registered on
-  // this device. We only migrate them to the CURRENT clinic if:
-  //   (a) no other clinic has already claimed them (df3_legacy_claimed is unset), AND
-  //   (b) the email stored in df3_set.clinicName or df3_last_email matches this clinic.
-  // This prevents Clinic B on the same device from inheriting Clinic A's data.
-  var df3Claimed = localStorage.getItem('df3_legacy_claimed');
+  // ── Determine if df3_* data belongs to this clinic ──────────────────────────
   var canClaimDf3 = false;
-  if (!df3Claimed) {
-    // Check if df3_set belongs to this clinic by comparing the stored email
-    try {
-      var df3Set = JSON.parse(localStorage.getItem('df3_set') || 'null');
-      var df3Email = localStorage.getItem('df3_last_email') || '';
-      var df3Session = JSON.parse(localStorage.getItem('df3_session') || 'null');
-      var sessionEmail = (df3Session && df3Session.email) ? df3Session.email : df3Email;
-      // clinicId is btoa(email) with = stripped — verify it matches
-      var expectedId = btoa(sessionEmail).replace(/=/g, '');
-      canClaimDf3 = (expectedId === clinicId);
-      console.log('[DF:migrate] df3 ownership check — sessionEmail:', sessionEmail, 'expectedId:', expectedId, 'clinicId:', clinicId, 'canClaim:', canClaimDf3);
-    } catch(e) { canClaimDf3 = false; }
-  }
+  try {
+    var df3Session = JSON.parse(localStorage.getItem('df3_session') || 'null');
+    var df3Email   = (df3Session && df3Session.email) ? df3Session.email
+                   : (localStorage.getItem('df3_last_email') || '');
+    var expectedId = df3Email ? btoa(df3Email).replace(/=/g, '') : '';
+    var claimed    = localStorage.getItem('df3_legacy_claimed');
+    // Can claim if: this clinic owns it (email matches) OR it was already claimed by us
+    canClaimDf3 = (expectedId === clinicId) || (claimed === clinicId);
+    console.log('[DF:migrate] v3 check — df3Email:', df3Email, 'expectedId:', expectedId,
+                'claimed:', claimed, 'clinicId:', clinicId, 'canClaim:', canClaimDf3);
+  } catch(e) { canClaimDf3 = false; }
 
   var hadData = false;
   DATA_KEYS.forEach(function(k) {
     var scopedKey = clinicId + '_' + k;
     if (localStorage.getItem(scopedKey)) return; // scoped key already has data — skip
 
-    // Priority 1: default_* (broken-period fallback — always safe, was written with this clinicId='' bug)
-    var defaultVal = localStorage.getItem('default_' + k);
-    if (defaultVal) {
-      localStorage.setItem(scopedKey, defaultVal);
+    // Priority 1: default_* (broken-period, clinicId='' bug — always safe to claim)
+    var v = localStorage.getItem('default_' + k);
+    if (v) {
+      localStorage.setItem(scopedKey, v);
       hadData = true;
       console.log('[DF:migrate] default_' + k + ' → ' + scopedKey);
       return;
     }
-
-    // Priority 2: df3_* (original unscoped — only if this clinic owns it)
+    // Priority 2: df3_* (original unscoped — only if ownership confirmed)
     if (canClaimDf3) {
-      var df3Val = localStorage.getItem('df3_' + k);
-      if (df3Val) {
-        localStorage.setItem(scopedKey, df3Val);
+      v = localStorage.getItem('df3_' + k);
+      if (v) {
+        localStorage.setItem(scopedKey, v);
         hadData = true;
         console.log('[DF:migrate] df3_' + k + ' → ' + scopedKey);
       }
     }
   });
 
-  // Mark df3_* as claimed so no other clinic on this device copies them
+  // ── Migrate the cloud_row cache (was stored under df3_cloud_row unscoped) ───
+  var scopedCloudKey = clinicId + '_cloud_row';
+  if (!localStorage.getItem(scopedCloudKey)) {
+    var legacyCloudRow = localStorage.getItem('df3_cloud_row');
+    if (legacyCloudRow && canClaimDf3) {
+      localStorage.setItem(scopedCloudKey, legacyCloudRow);
+      hadData = true;
+      console.log('[DF:migrate] df3_cloud_row → ' + scopedCloudKey);
+    }
+  }
+
+  // Mark df3_* as claimed by this clinic
   if (canClaimDf3) {
     localStorage.setItem('df3_legacy_claimed', clinicId);
   }
 
   localStorage.setItem(migrationKey, '1');
-  if (hadData) {
-    console.log('[DF:migrate] Migration complete for', clinicId);
-    showToast('✓ Your clinic data has been restored');
-  } else {
-    console.log('[DF:migrate] Nothing to migrate for', clinicId);
-  }
+  console.log('[DF:migrate] v3 done for', clinicId, '— hadData:', hadData);
+  if (hadData) showToast('✓ Your clinic data has been restored');
 }
 
 function persist(){
@@ -3515,15 +3525,17 @@ async function pushToSupabase() {
 
 async function pullFromSupabase() {
   if (!clinicId || !navigator.onLine) return;
-  // If we already have local data, push it (source of truth is local).
-  // Guard: never push if ALL arrays are empty — that would wipe a cloud backup.
-  var hasLocalData = patients.length > 0 || appointments.length > 0 || invoices.length > 0;
-  if (hasLocalData) {
+  // Local data is source of truth — only pull if we have nothing locally.
+  // Never push empty arrays to the cloud (that would wipe the backup).
+  if (patients.length > 0 || appointments.length > 0 || invoices.length > 0) {
     await pushToSupabase(); return;
   }
+  console.log('[DF:pull] No local data, pulling from Supabase for', clinicId);
   try {
     var res = await _rpc('df_get_clinic', { p_clinic_id: clinicId });
-    if (!res.data || !res.data.length) return;
+    if (!res.data || !res.data.length) {
+      console.log('[DF:pull] No cloud row found for', clinicId); return;
+    }
     var row = res.data[0];
     var encCheck = row.enc_check || 'unencrypted';
     var plaintext = null;
@@ -3548,7 +3560,9 @@ async function pullFromSupabase() {
     if (d.odontograms) odontograms = d.odontograms;
     if (d.perioCharts) perioCharts = d.perioCharts;
     if (d.feeSchedule) feeSchedule = d.feeSchedule;
+    // Always save PINs under the scoped key after a cloud pull
     if (d.pins) localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
+    console.log('[DF:pull] Restored: patients=' + patients.length + ' appts=' + appointments.length);
     resyncCounters();
     persist();
     showToast('Data restored from cloud');
@@ -3656,6 +3670,8 @@ async function lsEmailNext() {
   }
   errEl.classList.remove('show');
   _lsClinicEmail = email;
+  // ── Set clinicId immediately so every _k() call below uses the correct prefix ──
+  clinicId = btoa(email).replace(/=/g, '');
 
   // 1. Check local session first (works fully offline)
   let clinicName = null;
@@ -3703,9 +3719,6 @@ async function lsEmailNext() {
   }
 
   // Found — proceed to PIN entry
-  // ── CRITICAL: set clinicId BEFORE any _k() call so the cloud_row cache
-  // is written under the correct scoped key, not 'default_cloud_row'. ──
-  clinicId = btoa(email).replace(/=/g, '');
   localStorage.setItem('df3_last_email', email);
   document.getElementById('ls-clinic-label').textContent = clinicName;
   document.getElementById('ls-email-label').textContent = email;
@@ -3788,7 +3801,14 @@ var PIN_DEFAULTS = { dentist: '1234', receptionist: '0000' };
 var _pinContext = 'login'; // 'login' | 'lock'
 
 function getPINs() {
-  try { return JSON.parse(localStorage.getItem(_k('pins')) || 'null') || PIN_DEFAULTS; } catch(e) { return PIN_DEFAULTS; }
+  try {
+    var scoped = localStorage.getItem(_k('pins'));
+    if (scoped) return JSON.parse(scoped) || PIN_DEFAULTS;
+    // Fall back to legacy unscoped key (pre-migration or migration not yet run)
+    var legacy = localStorage.getItem('df3_pins');
+    if (legacy) return JSON.parse(legacy) || PIN_DEFAULTS;
+    return PIN_DEFAULTS;
+  } catch(e) { return PIN_DEFAULTS; }
 }
 function savePINs() {
   const dp = document.getElementById('s-dentist-pin').value.trim();
@@ -3849,10 +3869,9 @@ function checkPIN() {
       const clinicName = existing.clinicName || S.clinicName || _lsClinicEmail;
       localStorage.setItem('df3_session', JSON.stringify({ ...existing, email: _lsClinicEmail, clinicName }));
     } catch(e) {}
-    // Migrate any data that was written to 'default_*' keys during the broken period,
-    // then reload storage so the correct scoped data is in memory before rendering.
+    // Migrate any data that was written to legacy keys, THEN reload storage.
+    // migrateDefaultKeys() must run with the correct clinicId (set above from _lsClinicEmail).
     console.log('[DF:checkPIN] clinicId before migration:', clinicId);
-    // Dump all localStorage keys so we can see what prefix is actually stored
     try {
       var allKeys = Object.keys(localStorage).filter(k => k.includes('_pts') || k.includes('_appts') || k.includes('df3_'));
       console.log('[DF:checkPIN] relevant localStorage keys:', allKeys);
@@ -3864,14 +3883,16 @@ function checkPIN() {
     // Derive AES-GCM key from email + PIN, then sync
     initEncKey(_lsClinicEmail, enteredPin).then(async () => {
       // Check if we have a cached cloud row to restore (new device login).
-      // Fall back to 'default_cloud_row' to rescue clinics that were affected
-      // by the clinicId-not-set bug where the key was written under the wrong prefix.
-      var cachedRowStr = localStorage.getItem(_k('cloud_row')) || localStorage.getItem('default_cloud_row');
+      // Fall back to legacy unscoped key 'df3_cloud_row' for devices where the
+      // row was cached before the clinicId-first fix was deployed.
+      var cachedRowStr = localStorage.getItem(_k('cloud_row'))
+                      || localStorage.getItem('df3_cloud_row');
+      // Clean up legacy key regardless
+      localStorage.removeItem('df3_cloud_row');
       if (cachedRowStr && patients.length === 0) {
-        localStorage.removeItem('default_cloud_row'); // clean up legacy key
         try {
           const row = JSON.parse(cachedRowStr);
-          localStorage.removeItem(_k('cloud_row')); // consume scoped key too
+          localStorage.removeItem(_k('cloud_row')); // consume scoped key
           if (row.enc_check && row.enc_check !== 'unencrypted') {
             const sentinel = await _tryDecrypt(_encKey, row.enc_check);
             if (sentinel === 'dentaflow-ok') {
