@@ -22,6 +22,36 @@
   --font-display:'Syne','Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
 :root{--bg:#0d0f14;--surface:#141720;--surface2:#1c2030;--surface3:#242840;--border:#2a2f45;--accent:#00d4a0;--accent2:#7c6af7;--yellow:#f0a500;--red:#f04a4a;--blue:#4a9ff0;--text:#e8eaf2;--text2:#8b91aa;--text3:#555d7a;--radius:12px;--radius-sm:8px;}
+
+/* ── LIGHT MODE ───────────────────────────────────────────── */
+body.light{
+  --bg:#f0f4f8;
+  --surface:#ffffff;
+  --surface2:#e8eef5;
+  --surface3:#dde5ef;
+  --border:#c8d4e0;
+  --text:#1a2332;
+  --text2:#4a5568;
+  --text3:#8a9ab0;
+  --accent:#009e78;
+  --accent2:#5a48d4;
+  --yellow:#c47d00;
+  --red:#d03030;
+  --blue:#2a7fd4;
+}
+body.light .sidebar{box-shadow:2px 0 12px rgba(0,0,0,.08);}
+body.light .topbar{background:rgba(240,244,248,.96);}
+body.light .tbl-wrap{box-shadow:0 1px 4px rgba(0,0,0,.06);}
+body.light .stat-card,body.light .chart-card,body.light .s-card,body.light .rev-card,body.light .util-card{box-shadow:0 1px 6px rgba(0,0,0,.07);}
+body.light .modal{box-shadow:0 8px 40px rgba(0,0,0,.18);}
+body.light .pin-screen,body.light .login-screen{background:var(--bg);}
+body.light ::-webkit-scrollbar-thumb{background:var(--border);}
+/* Keep invoice always white regardless of theme */
+body.light .invoice-preview{background:#fff;}
+/* Theme toggle button */
+.theme-btn{background:none;border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .2s;display:flex;align-items:center;gap:5px;font-family:var(--font-sans);}
+.theme-btn:hover{background:var(--surface2);color:var(--text);}
+
 *{margin:0;padding:0;box-sizing:border-box;}
 
 /* ROOT LAYOUT — flex row, full viewport height, no overflow lock */
@@ -495,6 +525,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
   .topbar{padding:10px 14px;}
   .page-title{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .date-pill{display:none;}
+  .theme-btn #theme-label{display:none;}
+  .theme-btn{padding:4px 7px;}
   .page{padding:12px;}
 
   .stats-row{grid-template-columns:1fr 1fr;}
@@ -701,6 +733,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     </div>
     <div class="topbar-right">
       <div class="date-pill" id="date-pill">📅 Today</div>
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">☀️ <span id="theme-label">Light</span></button>
       <div class="sync-pill" id="sync-pill" onclick="toggleOffline()" title="Click to simulate offline">🟢 Online</div>
       <span id="role-badge" class="pin-role-badge role-dentist" style="font-size:11px">👨‍⚕️ Dentist</span>
       <button class="btn btn-ghost btn-sm" onclick="lockApp()" title="Lock / switch user" style="font-size:13px">🔒</button>
@@ -1398,6 +1431,41 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
  * ============================================================
  */
 function today(){return new Date().toISOString().split('T')[0];}
+
+// ==================== THEME ====================
+function initTheme() {
+  var saved = localStorage.getItem('df3_theme');
+  var isLight;
+  if (saved) {
+    isLight = saved === 'light';
+  } else {
+    // Auto: light 6am–7pm, dark otherwise
+    var h = new Date().getHours();
+    isLight = h >= 6 && h < 19;
+  }
+  applyTheme(isLight, false);
+}
+function applyTheme(isLight, save) {
+  document.body.classList.toggle('light', isLight);
+  var btn = document.getElementById('theme-btn');
+  var lbl = document.getElementById('theme-label');
+  if (btn) btn.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+  if (btn) btn.childNodes[0].textContent = isLight ? '🌙 ' : '☀️ ';
+  if (lbl) lbl.textContent = isLight ? 'Dark' : 'Light';
+  // Update PWA theme-color meta
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = isLight ? '#f0f4f8' : '#0d0f14';
+  // Re-render charts so they pick up new CSS variable colours
+  Object.keys(_charts || {}).forEach(function(id) {
+    try { if (_charts[id]) _charts[id].update(); } catch(e) {}
+  });
+  if (save) localStorage.setItem('df3_theme', isLight ? 'light' : 'dark');
+}
+function toggleTheme() {
+  var isLight = !document.body.classList.contains('light');
+  applyTheme(isLight, true);
+}
+
 function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
 function dOff(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
 function fmtDate(s){return new Date(s+'T12:00:00').toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}
@@ -1444,38 +1512,40 @@ var perioCharts={};
 var inventory=[];
 
 // ==================== PERSIST / STORAGE ====================
+// ── Storage key scoped per clinic so multiple clinics on same device stay isolated ──
+function _k(key) { return (clinicId || 'default') + '_' + key; }
+
 function persist(){
   try{
-    localStorage.setItem('df3_pts',JSON.stringify(patients));
-    localStorage.setItem('df3_appts',JSON.stringify(appointments));
-    localStorage.setItem('df3_inv',JSON.stringify(inventory));
-    localStorage.setItem('df3_odo',JSON.stringify(odontograms));
-    localStorage.setItem('df3_perio',JSON.stringify(perioCharts));
-    localStorage.setItem('df3_set',JSON.stringify(S));
-    localStorage.setItem('df3_hmo',JSON.stringify(hmoProviders));
-    localStorage.setItem('df3_invoices',JSON.stringify(invoices));
-    localStorage.setItem('df3_lab',JSON.stringify(labJobs));
-    localStorage.setItem('df3_fees',JSON.stringify(feeSchedule));
-    localStorage.setItem('df3_saved',new Date().toLocaleString('en-NG'));
-    localStorage.setItem('df3_receiptC', receiptC);
+    localStorage.setItem(_k('pts'),JSON.stringify(patients));
+    localStorage.setItem(_k('appts'),JSON.stringify(appointments));
+    localStorage.setItem(_k('inv'),JSON.stringify(inventory));
+    localStorage.setItem(_k('odo'),JSON.stringify(odontograms));
+    localStorage.setItem(_k('perio'),JSON.stringify(perioCharts));
+    localStorage.setItem(_k('set'),JSON.stringify(S));
+    localStorage.setItem(_k('hmo'),JSON.stringify(hmoProviders));
+    localStorage.setItem(_k('invoices'),JSON.stringify(invoices));
+    localStorage.setItem(_k('lab'),JSON.stringify(labJobs));
+    localStorage.setItem(_k('fees'),JSON.stringify(feeSchedule));
+    localStorage.setItem(_k('saved'),new Date().toLocaleString('en-NG'));
+    localStorage.setItem(_k('receiptC'), receiptC);
     if(isOffline)pendingChanges++;
-    // Schedule Supabase sync (debounced 2.5s)
     scheduleSupaSync();
   }catch(e){}
 }
 function loadStorage(){
   try{
-    const p=localStorage.getItem('df3_pts');if(p)patients=JSON.parse(p);
-    const a=localStorage.getItem('df3_appts');if(a)appointments=JSON.parse(a);
-    const i=localStorage.getItem('df3_inv');if(i)inventory=JSON.parse(i);
-    const o=localStorage.getItem('df3_odo');if(o)odontograms=JSON.parse(o);
-    const pe=localStorage.getItem('df3_perio');if(pe)perioCharts=JSON.parse(pe);
-    const st=localStorage.getItem('df3_set');if(st)S=JSON.parse(st);
-    const h=localStorage.getItem('df3_hmo');if(h)hmoProviders=JSON.parse(h);
-    const iv=localStorage.getItem('df3_invoices');if(iv)invoices=JSON.parse(iv);
-    const l=localStorage.getItem('df3_lab');if(l)labJobs=JSON.parse(l);
-    const f=localStorage.getItem('df3_fees');if(f)feeSchedule=JSON.parse(f);
-    const rc=localStorage.getItem('df3_receiptC');if(rc)receiptC=parseInt(rc);
+    const p=localStorage.getItem(_k('pts'));if(p)patients=JSON.parse(p);
+    const a=localStorage.getItem(_k('appts'));if(a)appointments=JSON.parse(a);
+    const i=localStorage.getItem(_k('inv'));if(i)inventory=JSON.parse(i);
+    const o=localStorage.getItem(_k('odo'));if(o)odontograms=JSON.parse(o);
+    const pe=localStorage.getItem(_k('perio'));if(pe)perioCharts=JSON.parse(pe);
+    const st=localStorage.getItem(_k('set'));if(st)S=JSON.parse(st);
+    const h=localStorage.getItem(_k('hmo'));if(h)hmoProviders=JSON.parse(h);
+    const iv=localStorage.getItem(_k('invoices'));if(iv)invoices=JSON.parse(iv);
+    const l=localStorage.getItem(_k('lab'));if(l)labJobs=JSON.parse(l);
+    const f=localStorage.getItem(_k('fees'));if(f)feeSchedule=JSON.parse(f);
+    const rc=localStorage.getItem(_k('receiptC'));if(rc)receiptC=parseInt(rc);
   }catch(e){}
 }
 
@@ -2558,7 +2628,7 @@ function renderSettings(){
   const sbDr=document.getElementById('sb-dentist');
   if(sbCl)sbCl.textContent=S.clinicName||'Your Clinic';
   if(sbDr)sbDr.textContent=S.dentistName||'—';
-  const ls=localStorage.getItem('df3_saved');
+  const ls=localStorage.getItem(_k('saved'));
   document.getElementById('last-saved').textContent=ls||'Not saved yet';
   document.getElementById('data-summary').innerHTML=`<div style="font-size:12px;color:var(--text2);line-height:2">👥 ${patients.length} patients · 📅 ${appointments.length} appointments<br>🧾 ${invoices.length} invoices · 🏥 ${hmoProviders.length} HMO providers<br>🔬 ${labJobs.length} lab jobs · 📦 ${inventory.length} inventory items</div>`;
   updateCloudUI();
@@ -3271,7 +3341,7 @@ async function initEncKey(email, pin) {
 
 // ==================== SYNC STATE UI ====================
 function loadSupaConfig() {
-  var lastPush = localStorage.getItem('df3_last_supa_push');
+  var lastPush = localStorage.getItem(_k('last_push'));
   var timePart = lastPush ? (lastPush.split(',')[1] || '').trim() : '';
   setNavSync(navigator.onLine ? 'online' : 'offline',
              navigator.onLine ? (lastPush ? 'Synced' : 'Not synced yet') : 'Offline',
@@ -3280,7 +3350,7 @@ function loadSupaConfig() {
 }
 function saveSupaConfig() { showToast('Cloud sync active'); }
 function updateCloudUI() {
-  var lastPush = localStorage.getItem('df3_last_supa_push');
+  var lastPush = localStorage.getItem(_k('last_push'));
   var lbl = document.getElementById('cloud-sync-label');
   var sub = document.getElementById('cloud-sync-sub');
   var dot = document.getElementById('cloud-sync-dot');
@@ -3325,7 +3395,7 @@ async function pushToSupabase() {
       S, patients, appointments, invoices, hmoProviders,
       labJobs, inventory, odontograms, perioCharts, feeSchedule,
       pins: getPINs(),
-      savedAt: localStorage.getItem('df3_saved') || new Date().toISOString()
+      savedAt: localStorage.getItem(_k('saved')) || new Date().toISOString()
     });
 
     var encData, encCheck;
@@ -3346,7 +3416,7 @@ async function pushToSupabase() {
     });
 
     var now = new Date().toLocaleString('en-NG');
-    localStorage.setItem('df3_last_supa_push', now);
+    localStorage.setItem(_k('last_push'), now);
     var t = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
     setNavSync('online', 'Synced', t);
     updateCloudUI();
@@ -3392,7 +3462,7 @@ async function pullFromSupabase() {
     if (d.odontograms) odontograms = d.odontograms;
     if (d.perioCharts) perioCharts = d.perioCharts;
     if (d.feeSchedule) feeSchedule = d.feeSchedule;
-    if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
+    if (d.pins) localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
     resyncCounters();
     persist();
     showToast('Data restored from cloud');
@@ -3420,7 +3490,14 @@ async function eraseClinicData() {
   try {
     if (navigator.onLine) await _rpc('df_erase_clinic', { p_clinic_id: clinicId });
   } catch(e) { console.warn('Cloud erasure error:', e.message); }
-  localStorage.clear();
+  // Wipe only this clinic's scoped keys from localStorage
+  ['pts','appts','inv','odo','perio','set','hmo','invoices','lab','fees',
+   'saved','receiptC','last_push','pins','cloud_row'].forEach(function(k) {
+    localStorage.removeItem(_k(k));
+  });
+  // Also wipe global session keys for this email
+  localStorage.removeItem('df3_session');
+  localStorage.removeItem('df3_last_email');
   showToast('All data erased. Reloading...');
   setTimeout(function() { location.reload(); }, 1800);
 }
@@ -3507,7 +3584,7 @@ async function lsEmailNext() {
         try {
           const d = JSON.parse(decodeURIComponent(escape(atob(row.data))));
           clinicName = d.S?.clinicName || email;
-          if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
+          if (d.pins) localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
         } catch(e) { clinicName = email; }
       } else {
         // Encrypted — clinicName will be recovered after PIN entry + key derivation
@@ -3515,7 +3592,7 @@ async function lsEmailNext() {
         clinicName = email; // placeholder shown on PIN screen
       }
       localStorage.setItem('df3_session', JSON.stringify({ email, clinicName }));
-      localStorage.setItem('df3_cloud_row', JSON.stringify(row)); // cache for post-PIN restore
+      localStorage.setItem(_k('cloud_row'), JSON.stringify(row)); // cache for post-PIN restore
     }
   }
 
@@ -3574,7 +3651,7 @@ async function lsRegister() {
   clinicId = btoa(email).replace(/=/g, '');
 
   const pins = { dentist: dpin, receptionist: rpin };
-  localStorage.setItem('df3_pins', JSON.stringify(pins));
+  localStorage.setItem(_k('pins'), JSON.stringify(pins));
   localStorage.setItem('df3_last_email', email);
   localStorage.setItem('df3_session', JSON.stringify({
     email, clinicName: clinic,
@@ -3609,7 +3686,7 @@ var PIN_DEFAULTS = { dentist: '1234', receptionist: '0000' };
 var _pinContext = 'login'; // 'login' | 'lock'
 
 function getPINs() {
-  try { return JSON.parse(localStorage.getItem('df3_pins') || 'null') || PIN_DEFAULTS; } catch(e) { return PIN_DEFAULTS; }
+  try { return JSON.parse(localStorage.getItem(_k('pins')) || 'null') || PIN_DEFAULTS; } catch(e) { return PIN_DEFAULTS; }
 }
 function savePINs() {
   const dp = document.getElementById('s-dentist-pin').value.trim();
@@ -3618,7 +3695,7 @@ function savePINs() {
   if (rp && !/^\d{4}$/.test(rp)) { showToast('⚠ Receptionist PIN must be 4 digits'); return; }
   const current = getPINs();
   const pins = { dentist: dp || current.dentist, receptionist: rp || current.receptionist };
-  localStorage.setItem('df3_pins', JSON.stringify(pins));
+  localStorage.setItem(_k('pins'), JSON.stringify(pins));
   document.getElementById('s-dentist-pin').value = '';
   document.getElementById('s-recept-pin').value = '';
   scheduleSupaSync();
@@ -3671,11 +3748,11 @@ function checkPIN() {
     // Derive AES-GCM key from email + PIN, then sync
     initEncKey(_lsClinicEmail, enteredPin).then(async () => {
       // Check if we have a cached cloud row to restore (new device login)
-      const cachedRow = localStorage.getItem('df3_cloud_row');
+      const cachedRow = localStorage.getItem(_k('cloud_row'));
       if (cachedRow && patients.length === 0) {
         try {
           const row = JSON.parse(cachedRow);
-          localStorage.removeItem('df3_cloud_row'); // consume it
+          localStorage.removeItem(_k('cloud_row')); // consume it
           if (row.enc_check && row.enc_check !== 'unencrypted') {
             const sentinel = await _tryDecrypt(_encKey, row.enc_check);
             if (sentinel === 'dentaflow-ok') {
@@ -3692,7 +3769,7 @@ function checkPIN() {
                 if (d.odontograms) odontograms = d.odontograms;
                 if (d.perioCharts) perioCharts = d.perioCharts;
                 if (d.feeSchedule) feeSchedule = d.feeSchedule;
-                if (d.pins) localStorage.setItem('df3_pins', JSON.stringify(d.pins));
+                if (d.pins) localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
                 resyncCounters(); persist();
                 // Update clinic name in session now we have decrypted data
                 const sess = JSON.parse(localStorage.getItem('df3_session') || '{}');
@@ -3770,20 +3847,27 @@ function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _ch
 const CHART_DEFAULTS = {
   color: { accent: '#00d4a0', accent2: '#7c6af7', yellow: '#f0a500', red: '#f04a4a', blue: '#4a9ff0' },
   font: { family: 'DM Sans, system-ui, sans-serif', size: 11 },
-  gridColor: 'rgba(42,47,69,0.8)',
-  textColor: '#8b91aa'
+  // Read live from CSS so light/dark mode is always correct
+  get gridColor() { return document.body.classList.contains('light') ? 'rgba(200,212,224,0.7)' : 'rgba(42,47,69,0.8)'; },
+  get textColor() { return document.body.classList.contains('light') ? '#4a5568' : '#8b91aa'; },
+  get tooltipBg() { return document.body.classList.contains('light') ? '#ffffff' : '#1c2030'; },
+  get tooltipBorder() { return document.body.classList.contains('light') ? '#c8d4e0' : '#2a2f45'; },
+  get tooltipTitle() { return document.body.classList.contains('light') ? '#1a2332' : '#e8eaf2'; },
+  get tooltipBody() { return document.body.classList.contains('light') ? '#4a5568' : '#8b91aa'; }
 };
 
 function chartOpts(type) {
-  const base = {
+  var gc = CHART_DEFAULTS.gridColor;
+  var tc = CHART_DEFAULTS.textColor;
+  var base = {
     responsive: true, maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 11 }, boxWidth: 10 } },
-      tooltip: { backgroundColor: '#1c2030', borderColor: '#2a2f45', borderWidth: 1, titleColor: '#e8eaf2', bodyColor: '#8b91aa', titleFont: { family: CHART_DEFAULTS.font.family }, bodyFont: { family: CHART_DEFAULTS.font.family } }
+      legend: { labels: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 11 }, boxWidth: 10 } },
+      tooltip: { backgroundColor: CHART_DEFAULTS.tooltipBg, borderColor: CHART_DEFAULTS.tooltipBorder, borderWidth: 1, titleColor: CHART_DEFAULTS.tooltipTitle, bodyColor: CHART_DEFAULTS.tooltipBody, titleFont: { family: CHART_DEFAULTS.font.family }, bodyFont: { family: CHART_DEFAULTS.font.family } }
     },
     scales: type !== 'pie' && type !== 'doughnut' ? {
-      x: { grid: { color: CHART_DEFAULTS.gridColor }, ticks: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 10 } } },
-      y: { grid: { color: CHART_DEFAULTS.gridColor }, ticks: { color: CHART_DEFAULTS.textColor, font: { family: CHART_DEFAULTS.font.family, size: 10 } } }
+      x: { grid: { color: gc }, ticks: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 10 } } },
+      y: { grid: { color: gc }, ticks: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 10 } } }
     } : {}
   };
   return base;
@@ -4104,18 +4188,20 @@ function restoreSidebarState() {
 
 // ==================== INIT ====================
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
-loadStorage();
 loadSupaConfig();
+restoreSidebarState();
+initTheme();
+startNotifScheduler();
+
+// lsInit sets clinicId from saved session BEFORE loadStorage runs,
+// so all _k() calls in loadStorage use the correct clinic prefix
+lsInit();       // sets clinicId
+loadStorage();  // now reads from the right clinic's keys
 
 // Sync ID counters so new records never collide with existing ones
 resyncCounters();
 populateHMOSelects();
 renderSettings();
-restoreSidebarState();
-startNotifScheduler();
-
-// Show login screen — handles autofill and session detection
-lsInit();
 
 // Render dashboard behind the login screen (ready when user logs in)
 renderDash();
