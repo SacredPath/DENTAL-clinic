@@ -4188,15 +4188,19 @@ function restoreSidebarState() {
 
 // ==================== INIT ====================
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
-loadSupaConfig();
-restoreSidebarState();
+
+// ── CRITICAL: lsInit must be FIRST — it sets clinicId so every subsequent
+// _k() call (loadSupaConfig, loadStorage, etc.) uses the correct clinic prefix.
+// Moving it after loadSupaConfig/restoreSidebarState caused all clinics to
+// read/write the shared "default_*" keys, making every clinic see the same data.
+lsInit();       // sets clinicId from saved session
+
+loadSupaConfig();       // now uses correct clinicId
+restoreSidebarState();  // now uses correct clinicId
 initTheme();
 startNotifScheduler();
 
-// lsInit sets clinicId from saved session BEFORE loadStorage runs,
-// so all _k() calls in loadStorage use the correct clinic prefix
-lsInit();       // sets clinicId
-loadStorage();  // now reads from the right clinic's keys
+loadStorage();  // reads from the right clinic's keys
 
 // Sync ID counters so new records never collide with existing ones
 resyncCounters();
@@ -4242,7 +4246,7 @@ renderDash();
   var mLink = document.getElementById('pwa-manifest');
   if (mLink) mLink.href = mUrl;
   if ('serviceWorker' in navigator) {
-    // Service worker is at /sw.js (separate file required — blob URLs not supported)
+    // sw.js is served at /sw.js alongside index.html
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then(function(reg) {
         console.log('[DentaFlow PWA] Service worker registered');
