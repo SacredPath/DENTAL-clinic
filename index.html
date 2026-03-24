@@ -3515,7 +3515,10 @@ async function pushToSupabase() {
 
 async function pullFromSupabase() {
   if (!clinicId || !navigator.onLine) return;
-  if (patients.length > 0 || appointments.length > 0 || invoices.length > 0) {
+  // If we already have local data, push it (source of truth is local).
+  // Guard: never push if ALL arrays are empty — that would wipe a cloud backup.
+  var hasLocalData = patients.length > 0 || appointments.length > 0 || invoices.length > 0;
+  if (hasLocalData) {
     await pushToSupabase(); return;
   }
   try {
@@ -3700,8 +3703,10 @@ async function lsEmailNext() {
   }
 
   // Found — proceed to PIN entry
-  localStorage.setItem('df3_last_email', email);
+  // ── CRITICAL: set clinicId BEFORE any _k() call so the cloud_row cache
+  // is written under the correct scoped key, not 'default_cloud_row'. ──
   clinicId = btoa(email).replace(/=/g, '');
+  localStorage.setItem('df3_last_email', email);
   document.getElementById('ls-clinic-label').textContent = clinicName;
   document.getElementById('ls-email-label').textContent = email;
   document.getElementById('ls-email-step').classList.remove('active');
@@ -3858,12 +3863,15 @@ function checkPIN() {
     console.log('[DF:checkPIN] after load: patients=' + patients.length + ' appts=' + appointments.length);
     // Derive AES-GCM key from email + PIN, then sync
     initEncKey(_lsClinicEmail, enteredPin).then(async () => {
-      // Check if we have a cached cloud row to restore (new device login)
-      const cachedRow = localStorage.getItem(_k('cloud_row'));
-      if (cachedRow && patients.length === 0) {
+      // Check if we have a cached cloud row to restore (new device login).
+      // Fall back to 'default_cloud_row' to rescue clinics that were affected
+      // by the clinicId-not-set bug where the key was written under the wrong prefix.
+      var cachedRowStr = localStorage.getItem(_k('cloud_row')) || localStorage.getItem('default_cloud_row');
+      if (cachedRowStr && patients.length === 0) {
+        localStorage.removeItem('default_cloud_row'); // clean up legacy key
         try {
-          const row = JSON.parse(cachedRow);
-          localStorage.removeItem(_k('cloud_row')); // consume it
+          const row = JSON.parse(cachedRowStr);
+          localStorage.removeItem(_k('cloud_row')); // consume scoped key too
           if (row.enc_check && row.enc_check !== 'unencrypted') {
             const sentinel = await _tryDecrypt(_encKey, row.enc_check);
             if (sentinel === 'dentaflow-ok') {
