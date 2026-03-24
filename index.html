@@ -1568,8 +1568,11 @@ function persist(){
   }catch(e){}
 }
 function loadStorage(){
+  console.log('[DF:loadStorage] clinicId="' + clinicId + '" prefix="' + _k('pts') + '"');
   try{
-    const p=localStorage.getItem(_k('pts'));if(p)patients=JSON.parse(p);
+    const p=localStorage.getItem(_k('pts'));
+    console.log('[DF:loadStorage] pts raw:', p ? p.slice(0,80) : 'NULL');
+    if(p)patients=JSON.parse(p);
     const a=localStorage.getItem(_k('appts'));if(a)appointments=JSON.parse(a);
     const i=localStorage.getItem(_k('inv'));if(i)inventory=JSON.parse(i);
     const o=localStorage.getItem(_k('odo'));if(o)odontograms=JSON.parse(o);
@@ -1580,7 +1583,8 @@ function loadStorage(){
     const l=localStorage.getItem(_k('lab'));if(l)labJobs=JSON.parse(l);
     const f=localStorage.getItem(_k('fees'));if(f)feeSchedule=JSON.parse(f);
     const rc=localStorage.getItem(_k('receiptC'));if(rc)receiptC=parseInt(rc);
-  }catch(e){}
+    console.log('[DF:loadStorage] loaded: patients=' + patients.length + ' appts=' + appointments.length + ' invoices=' + invoices.length);
+  }catch(e){ console.error('[DF:loadStorage] ERROR:', e); }
 }
 
 // ==================== OFFLINE ====================
@@ -3568,9 +3572,11 @@ function lsInit() {
     // Previously, missing clinicName caused clinicId to stay '' so _k() fell
     // back to 'default_*' keys, making every clinic share the same data.
     const session = JSON.parse(localStorage.getItem('df3_session') || 'null');
+    console.log('[DF:lsInit] session:', JSON.stringify(session));
     if (session && session.email) {
       _lsClinicEmail = session.email;
       clinicId = btoa(session.email).replace(/=/g,'');
+      console.log('[DF:lsInit] clinicId set to:', clinicId);
       // Show PIN step directly if we have a clinic name to display
       if (session.clinicName) {
         document.getElementById('ls-email-step').classList.remove('active');
@@ -3796,9 +3802,16 @@ function checkPIN() {
     } catch(e) {}
     // Migrate any data that was written to 'default_*' keys during the broken period,
     // then reload storage so the correct scoped data is in memory before rendering.
+    console.log('[DF:checkPIN] clinicId before migration:', clinicId);
+    // Dump all localStorage keys so we can see what prefix is actually stored
+    try {
+      var allKeys = Object.keys(localStorage).filter(k => k.includes('_pts') || k.includes('_appts') || k.includes('df3_'));
+      console.log('[DF:checkPIN] relevant localStorage keys:', allKeys);
+    } catch(e) {}
     migrateDefaultKeys();
     loadStorage();
     resyncCounters();
+    console.log('[DF:checkPIN] after load: patients=' + patients.length + ' appts=' + appointments.length);
     // Derive AES-GCM key from email + PIN, then sync
     initEncKey(_lsClinicEmail, enteredPin).then(async () => {
       // Check if we have a cached cloud row to restore (new device login)
