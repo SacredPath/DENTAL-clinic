@@ -2,56 +2,29 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DentaFlow">
-<meta name="application-name" content="DentaFlow">
-<meta name="theme-color" content="#0d0f14">
-<meta name="description" content="Dental clinic management — appointments, HMO, invoices, reminders">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DentaFlow — Clinic Management</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230d0f14'/><path d='M32 10c-5.5 0-10 2.8-12 7-1.5 3-1.8 6.5-1.2 10l2.5 16c.4 2.5 2.5 4 4.5 3.5 1.5-.4 2.5-1.8 2.8-3.5l1.4-8h4l1.4 8c.3 1.7 1.3 3.1 2.8 3.5 2 .5 4.1-1 4.5-3.5l2.5-16c.6-3.5.3-7-1.2-10-2-4.2-6.5-7-12-7z' fill='%2300d4a0'/><circle cx='26' cy='22' r='2.5' fill='%230d0f14'/><circle cx='38' cy='22' r='2.5' fill='%230d0f14'/></svg>">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%230d0f14'/><path d='M90 28c-15.5 0-28 7.8-33.5 19.5-4.2 8.5-5 18.2-3.4 28l7 44.8c1.1 7 7 11.2 12.5 9.8 4.2-1.1 7-5 7.8-9.8l4-22.3h11.2l4 22.3c.8 4.8 3.6 8.7 7.8 9.8 5.5 1.4 11.4-2.8 12.5-9.8l7-44.8c1.6-9.8.8-19.5-3.4-28C118 35.8 105.5 28 90 28z' fill='%2300d4a0'/><circle cx='73' cy='62' r='7' fill='%230d0f14'/><circle cx='107' cy='62' r='7' fill='%230d0f14'/></svg>">
-<link rel="manifest" id="pwa-manifest">
 <style>
 /* System font stack — fully offline, zero external requests */
 :root{
   --font-sans:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;
   --font-display:'Syne','Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
 }
-:root{--bg:#0d0f14;--surface:#141720;--surface2:#1c2030;--surface3:#242840;--border:#2a2f45;--accent:#00d4a0;--accent2:#7c6af7;--yellow:#f0a500;--red:#f04a4a;--blue:#4a9ff0;--text:#e8eaf2;--text2:#8b91aa;--text3:#555d7a;--radius:12px;--radius-sm:8px;}
-
-/* ── LIGHT MODE ───────────────────────────────────────────── */
-body.light{
-  --bg:#f0f4f8;
-  --surface:#ffffff;
-  --surface2:#e8eef5;
-  --surface3:#dde5ef;
-  --border:#c8d4e0;
-  --text:#1a2332;
-  --text2:#4a5568;
-  --text3:#8a9ab0;
-  --accent:#009e78;
-  --accent2:#5a48d4;
-  --yellow:#c47d00;
-  --red:#d03030;
-  --blue:#2a7fd4;
+/* Dark theme (default) */
+:root{--bg:#0d0f14;--surface:#141720;--surface2:#1c2030;--surface3:#242840;--border:#2a2f45;--accent:#00d4a0;--accent2:#7c6af7;--yellow:#f0a500;--red:#f04a4a;--blue:#4a9ff0;--text:#e8eaf2;--text2:#8b91aa;--text3:#555d7a;--radius:12px;--radius-sm:8px;--topbar-bg:rgba(13,15,20,.95);}
+/* Light theme */
+[data-theme="light"]{--bg:#f0f2f7;--surface:#ffffff;--surface2:#f5f6fa;--surface3:#eceef5;--border:#d8dbe8;--accent:#00a87e;--accent2:#6254e0;--yellow:#c47f00;--red:#d63030;--blue:#2e7fd6;--text:#1a1d2e;--text2:#4a506a;--text3:#8890aa;--topbar-bg:rgba(240,242,247,.95);}
+/* System preference — applied before JS loads to avoid flash */
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){--bg:#f0f2f7;--surface:#ffffff;--surface2:#f5f6fa;--surface3:#eceef5;--border:#d8dbe8;--accent:#00a87e;--accent2:#6254e0;--yellow:#c47f00;--red:#d63030;--blue:#2e7fd6;--text:#1a1d2e;--text2:#4a506a;--text3:#8890aa;--topbar-bg:rgba(240,242,247,.95);}
 }
-body.light .sidebar{box-shadow:2px 0 12px rgba(0,0,0,.08);}
-body.light .topbar{background:rgba(240,244,248,.96);}
-body.light .tbl-wrap{box-shadow:0 1px 4px rgba(0,0,0,.06);}
-body.light .stat-card,body.light .chart-card,body.light .s-card,body.light .rev-card,body.light .util-card{box-shadow:0 1px 6px rgba(0,0,0,.07);}
-body.light .modal{box-shadow:0 8px 40px rgba(0,0,0,.18);}
-body.light .pin-screen,body.light .login-screen{background:var(--bg);}
-body.light ::-webkit-scrollbar-thumb{background:var(--border);}
-/* Keep invoice always white regardless of theme */
-body.light .invoice-preview{background:#fff;}
-/* Theme toggle button */
-.theme-btn{background:none;border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .2s;display:flex;align-items:center;gap:5px;font-family:var(--font-sans);}
-.theme-btn:hover{background:var(--surface2);color:var(--text);}
 
+/* THEME TOGGLE BUTTON */
+.theme-toggle{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:14px;line-height:1;color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:5px;}
+.theme-toggle:hover{background:var(--surface3);color:var(--text);}
+.theme-toggle .tt-label{font-size:11px;font-weight:500;font-family:var(--font-sans);}
+@media (max-width:480px){.theme-toggle .tt-label{display:none;}}
 *{margin:0;padding:0;box-sizing:border-box;}
 
 /* ROOT LAYOUT — flex row, full viewport height, no overflow lock */
@@ -88,9 +61,6 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:
 /* Tooltip on collapsed icons — desktop only */
 .sidebar.collapsed .nav-item::after{content:attr(data-label);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--surface3);color:var(--text);font-size:12px;font-weight:500;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3);}
 .sidebar.collapsed .nav-item:hover::after{opacity:1;}
-.sidebar.collapsed .nav-sync-btn{position:relative;}
-.sidebar.collapsed .nav-sync-btn::after{content:attr(data-label);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--surface3);color:var(--text);font-size:12px;font-weight:500;padding:5px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3);}
-.sidebar.collapsed .nav-sync-btn:hover::after{opacity:1;}
 .sidebar-foot{padding:10px;border-top:1px solid var(--border);overflow:hidden;}
 .clinic-badge{background:var(--surface2);border-radius:var(--radius-sm);padding:9px 11px;transition:opacity .15s;}
 .sidebar.collapsed .clinic-badge{opacity:0;pointer-events:none;height:0;padding:0;margin:0;}
@@ -102,7 +72,7 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:
 
 /* MAIN — fills remaining width, scrolls vertically, topbar sticks inside it */
 .main{flex:1;min-width:0;height:100vh;overflow-y:auto;overflow-x:hidden;}
-.topbar{position:sticky;top:0;background:rgba(13,15,20,.95);border-bottom:1px solid var(--border);padding:12px 26px;display:flex;align-items:center;justify-content:space-between;z-index:5;backdrop-filter:blur(10px);flex-wrap:wrap;gap:8px;}
+.topbar{position:sticky;top:0;background:var(--topbar-bg);border-bottom:1px solid var(--border);padding:12px 26px;display:flex;align-items:center;justify-content:space-between;z-index:5;backdrop-filter:blur(10px);flex-wrap:wrap;gap:8px;}
 .page-title{font-family:var(--font-display);font-weight:700;font-size:17px;}
 .topbar-right{display:flex;align-items:center;gap:8px;}
 .date-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:12px;color:var(--text2);}
@@ -428,60 +398,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 .ob-spotlight{position:fixed;box-shadow:0 0 0 4000px rgba(0,0,0,.75);border-radius:10px;border:2px solid var(--accent);z-index:498;pointer-events:none;transition:all .35s cubic-bezier(.4,0,.2,1);display:none;}
 .ob-spotlight.show{display:block;}
 
-/* ============ LOGIN SCREEN ============ */
-.login-screen{position:fixed;inset:0;background:var(--bg);z-index:700;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow-y:auto;padding:20px;}
-.login-screen.hidden{display:none;}
-.login-logo{font-family:var(--font-display);font-weight:800;font-size:28px;color:var(--accent);margin-bottom:4px;}
-.login-tagline{font-size:12px;color:var(--text3);margin-bottom:36px;text-transform:uppercase;letter-spacing:1px;}
-.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:30px 32px;width:360px;max-width:92vw;}
-.login-card-title{font-family:var(--font-display);font-weight:800;font-size:18px;margin-bottom:4px;}
-.login-card-sub{font-size:12px;color:var(--text3);margin-bottom:22px;line-height:1.5;}
-.login-step{display:none;}
-.login-step.active{display:block;}
-.login-err{background:rgba(240,74,74,.1);border:1px solid rgba(240,74,74,.3);border-radius:var(--radius-sm);padding:8px 11px;font-size:12px;color:var(--red);margin-bottom:12px;display:none;}
-.login-err.show{display:block;}
-
-/* ============ CHART CONTAINERS ============ */
-.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
-.chart-title{font-family:var(--font-display);font-weight:700;font-size:13px;margin-bottom:12px;}
-.chart-wrap{position:relative;height:220px;}
-.chart-wrap-tall{position:relative;height:280px;}
-.charts-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
-@media(max-width:768px){.charts-2col{grid-template-columns:1fr;}}
-
-/* WhatsApp send button */
-.wa-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.3);border-radius:var(--radius-sm);color:#25d366;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .12s;font-family:var(--font-sans);}
-.wa-btn:hover{background:rgba(37,211,102,.22);}
-
-/* Supabase sync badge */
-.supa-badge{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--text3);margin-left:4px;}
-.supa-badge.synced{background:rgba(0,212,160,.08);border-color:rgba(0,212,160,.2);color:var(--accent);}
-.supa-badge.syncing{background:rgba(240,165,0,.08);border-color:rgba(240,165,0,.2);color:var(--yellow);}
-.supa-badge.error{background:rgba(240,74,74,.08);border-color:rgba(240,74,74,.2);color:var(--red);}
-
-/* NAV SYNC BUTTON */
-.nav-sync-btn{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:var(--radius-sm);border:none;background:none;width:100%;text-align:left;cursor:pointer;font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--text2);transition:background .12s,color .12s;margin-top:2px;}
-.nav-sync-btn:hover{background:var(--surface2);color:var(--text);}
-.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s;}
-.sync-dot.online{background:var(--accent);}
-.sync-dot.syncing{background:var(--yellow);animation:sync-pulse .9s ease-in-out infinite;}
-.sync-dot.offline{background:var(--text3);}
-.sync-dot.error{background:var(--red);}
-@keyframes sync-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
-.sync-nav-label{overflow:hidden;white-space:nowrap;flex:1;transition:opacity .15s,width .22s;}
-.sidebar.collapsed .sync-nav-label{opacity:0;width:0;pointer-events:none;}
-.sidebar.collapsed #nav-sync-time{opacity:0;width:0;}
-
-/* PWA install banner animation */
-@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-
-/* Safe area insets for notched phones (PWA standalone mode) */
-@supports(padding:max(0px)){
-  .topbar{padding-top:max(12px,env(safe-area-inset-top));}
-  .sidebar{padding-top:env(safe-area-inset-top);}
-  body{padding-bottom:env(safe-area-inset-bottom);}
-}
-
+/* ============ RESPONSIVE BREAKPOINTS ============ */
 /* Medium desktop — sidebar gets tight */
 @media (max-width:1100px){
   .stats-row{grid-template-columns:repeat(3,minmax(0,1fr));}
@@ -525,8 +442,6 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
   .topbar{padding:10px 14px;}
   .page-title{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .date-pill{display:none;}
-  .theme-btn #theme-label{display:none;}
-  .theme-btn{padding:4px 7px;}
   .page{padding:12px;}
 
   .stats-row{grid-template-columns:1fr 1fr;}
@@ -568,108 +483,36 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 </head>
 <body>
 
-<!-- ============ LOGIN SCREEN (Step 1: Email) ============ -->
-<div class="login-screen" id="login-screen">
-  <div class="login-logo">🦷 DentaFlow</div>
-  <div class="login-tagline">Dental Clinic Management</div>
-  <div class="login-card">
-    <!-- Step 1: Email -->
-    <div class="login-step active" id="ls-email-step">
-      <div class="login-card-title">Welcome back</div>
-      <div class="login-card-sub">Enter your clinic email to continue</div>
-      <div class="login-err" id="ls-email-err"></div>
-      <div class="field">
-        <label>Clinic Email</label>
-        <input type="email" id="ls-email" placeholder="clinic@example.com" autocomplete="email"
-          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--text);font-family:var(--font-sans);outline:none;transition:border-color .12s;"
-          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-          onkeydown="if(event.key==='Enter')lsEmailNext()">
-      </div>
-      <button class="btn btn-primary" style="width:100%;margin-top:4px;padding:10px" onclick="lsEmailNext()">Continue →</button>
-      <div style="margin-top:18px;text-align:center;font-size:12px;color:var(--text3)">New clinic? <a href="#" style="color:var(--accent);text-decoration:none" onclick="lsShowRegister()">Register here</a></div>
-    </div>
-
-    <!-- Step 2: PIN -->
-    <div class="login-step" id="ls-pin-step">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-        <button onclick="lsBackToEmail()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:0 4px">←</button>
-        <div>
-          <div class="login-card-title" style="font-size:15px" id="ls-clinic-label">Your Clinic</div>
-          <div style="font-size:11px;color:var(--text3)" id="ls-email-label">—</div>
-        </div>
-      </div>
-      <div class="login-err" id="ls-pin-err"></div>
-      <div class="pin-role-tabs" style="margin-bottom:18px;">
-        <button class="pin-role-tab active" id="pin-tab-dentist" onclick="selectPinRole('dentist')">👨‍⚕️ Dentist</button>
-        <button class="pin-role-tab" id="pin-tab-receptionist" onclick="selectPinRole('receptionist')">🧑‍💼 Receptionist</button>
-      </div>
-      <div class="pin-dots" id="pin-dots">
-        <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
-        <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
-      </div>
-      <div class="pin-keypad">
-        <button class="pin-key" onclick="pinPress('1')">1</button><button class="pin-key" onclick="pinPress('2')">2</button><button class="pin-key" onclick="pinPress('3')">3</button>
-        <button class="pin-key" onclick="pinPress('4')">4</button><button class="pin-key" onclick="pinPress('5')">5</button><button class="pin-key" onclick="pinPress('6')">6</button>
-        <button class="pin-key" onclick="pinPress('7')">7</button><button class="pin-key" onclick="pinPress('8')">8</button><button class="pin-key" onclick="pinPress('9')">9</button>
-        <button class="pin-key empty"></button><button class="pin-key" onclick="pinPress('0')">0</button><button class="pin-key del" onclick="pinDel()">⌫</button>
-      </div>
-      <div class="pin-hint" id="pin-hint">Default dentist PIN: <strong>1234</strong></div>
-    </div>
-
-    <!-- Step 3: Register -->
-    <div class="login-step" id="ls-reg-step">
-      <div class="login-card-title">Register Clinic</div>
-      <div class="login-card-sub">Create your clinic account. Each device saves data locally and syncs to the cloud.</div>
-      <div class="login-err" id="ls-reg-err"></div>
-      <div class="field"><label>Clinic Name</label>
-        <input type="text" id="reg-clinic" placeholder="e.g. Bright Smile Dental" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
-      </div>
-      <div class="field"><label>Clinic Email</label>
-        <input type="email" id="reg-email" placeholder="clinic@example.com" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
-      </div>
-      <div class="field"><label>Dentist Name</label>
-        <input type="text" id="reg-dentist" placeholder="Dr. Adaeze Okafor" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="field"><label>Dentist PIN (4 digits)</label>
-          <input type="password" id="reg-dpin" maxlength="4" placeholder="e.g. 1234" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:16px;color:var(--text);font-family:var(--font-sans);outline:none;letter-spacing:6px;">
-        </div>
-        <div class="field"><label>Receptionist PIN</label>
-          <input type="password" id="reg-rpin" maxlength="4" placeholder="e.g. 0000" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;font-size:16px;color:var(--text);font-family:var(--font-sans);outline:none;letter-spacing:6px;">
-        </div>
-      </div>
-      <button class="btn btn-primary" style="width:100%;padding:10px;margin-top:4px" onclick="lsRegister()">Create Clinic Account</button>
-      <div style="margin-top:12px;padding:10px 12px;background:rgba(0,212,160,.06);border:1px solid rgba(0,212,160,.15);border-radius:var(--radius-sm);">
-        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:11px;color:var(--text2);line-height:1.6;">
-          <input type="checkbox" id="reg-consent" style="accent-color:var(--accent);flex-shrink:0;margin-top:2px;">
-          <span>I agree to the storage and processing of clinic and patient data in accordance with the <strong style="color:var(--accent)">Nigerian Data Protection Regulation (NDPR)</strong>. Patient data is encrypted before storage. I understand I can request full data deletion at any time from Settings.</span>
-        </label>
-      </div>
-      <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--text3)"><a href="#" style="color:var(--accent);text-decoration:none" onclick="lsShowEmail()">← Back to login</a></div>
-    </div>
-  </div>
-</div>
-
-<!-- PIN LOCK SCREEN (shown when locking mid-session, email already known) -->
-<div class="pin-screen hidden" id="pin-screen">
+<!-- PIN LOCK SCREEN -->
+<div class="pin-screen" id="pin-screen">
   <div class="pin-logo">🦷 DentaFlow</div>
-  <div class="pin-sub" id="pin-screen-sub">Enter your PIN to continue</div>
+  <div class="pin-sub">Enter your PIN to continue</div>
   <div class="pin-card">
     <div class="pin-role-tabs">
-      <button class="pin-role-tab active" id="pinlock-tab-dentist" onclick="selectPinRole('dentist')">👨‍⚕️ Dentist</button>
-      <button class="pin-role-tab" id="pinlock-tab-receptionist" onclick="selectPinRole('receptionist')">🧑‍💼 Receptionist</button>
+      <button class="pin-role-tab active" id="pin-tab-dentist" onclick="selectPinRole('dentist')">👨‍⚕️ Dentist</button>
+      <button class="pin-role-tab" id="pin-tab-receptionist" onclick="selectPinRole('receptionist')">🧑‍💼 Receptionist</button>
     </div>
-    <div class="pin-dots" id="pinlock-dots">
-      <div class="pin-dot" id="pld0"></div><div class="pin-dot" id="pld1"></div>
-      <div class="pin-dot" id="pld2"></div><div class="pin-dot" id="pld3"></div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
     </div>
     <div class="pin-keypad">
-      <button class="pin-key" onclick="pinPress('1')">1</button><button class="pin-key" onclick="pinPress('2')">2</button><button class="pin-key" onclick="pinPress('3')">3</button>
-      <button class="pin-key" onclick="pinPress('4')">4</button><button class="pin-key" onclick="pinPress('5')">5</button><button class="pin-key" onclick="pinPress('6')">6</button>
-      <button class="pin-key" onclick="pinPress('7')">7</button><button class="pin-key" onclick="pinPress('8')">8</button><button class="pin-key" onclick="pinPress('9')">9</button>
-      <button class="pin-key empty"></button><button class="pin-key" onclick="pinPress('0')">0</button><button class="pin-key del" onclick="pinDel()">⌫</button>
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key empty"></button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
     </div>
-    <div class="pin-hint" id="pin-hint">Default dentist PIN: <strong>1234</strong></div>
+    <div class="pin-hint" id="pin-hint">Default dentist PIN: <strong>1234</strong> · receptionist: <strong>0000</strong></div>
   </div>
 </div>
 
@@ -705,21 +548,11 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <button class="nav-item" data-label="Lab Work" onclick="go('lab')"><span class="nav-icon">🔬</span><span class="nav-label"> Lab Work</span></button>
     <button class="nav-item" data-label="Settings" onclick="go('settings')"><span class="nav-icon">⚙️</span><span class="nav-label"> Settings</span></button>
   </nav>
-  <div style="padding:6px 8px 2px;border-top:1px solid var(--border);">
-    <button class="nav-sync-btn" id="nav-sync-btn" data-label="Sync" onclick="navSyncClick()" title="Cloud sync status">
-      <span class="sync-dot online" id="nav-sync-dot"></span>
-      <span class="sync-nav-label" id="nav-sync-label">Synced</span>
-      <span id="nav-sync-time" style="font-size:10px;color:var(--text3);flex-shrink:0;overflow:hidden;white-space:nowrap;transition:opacity .15s;"></span>
-    </button>
-  </div>
   <div class="sidebar-foot">
     <div class="clinic-badge">
-      <div class="clinic-name" id="sb-clinic">Your Clinic</div>
-      <div class="clinic-sub" id="sb-dentist">—</div>
+      <div class="clinic-name" id="sb-clinic">Bright Smile Dental</div>
+      <div class="clinic-sub" id="sb-dentist">Dr. Adaeze Okafor</div>
     </div>
-    <button id="sidebar-install-btn" onclick="installPWA()" style="display:none;width:100%;margin-top:8px;background:rgba(0,212,160,.1);border:1px solid rgba(0,212,160,.2);border-radius:var(--radius-sm);padding:7px 12px;font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;font-family:var(--font-sans);transition:background .12s;text-align:left;" onmouseenter="this.style.background='rgba(0,212,160,.2)'" onmouseleave="this.style.background='rgba(0,212,160,.1)'">
-      📲 Install App
-    </button>
     <div class="offline-pill" id="offline-pill">📴 Offline — saved locally</div>
   </div>
 </aside>
@@ -733,7 +566,6 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     </div>
     <div class="topbar-right">
       <div class="date-pill" id="date-pill">📅 Today</div>
-      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">☀️ <span id="theme-label">Light</span></button>
       <div class="sync-pill" id="sync-pill" onclick="toggleOffline()" title="Click to simulate offline">🟢 Online</div>
       <span id="role-badge" class="pin-role-badge role-dentist" style="font-size:11px">👨‍⚕️ Dentist</span>
       <button class="btn btn-ghost btn-sm" onclick="lockApp()" title="Lock / switch user" style="font-size:13px">🔒</button>
@@ -745,14 +577,16 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
           <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 15px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)">
             <div style="font-family:var(--font-display);font-weight:700;font-size:14px">🔔 Notifications</div>
             <div style="display:flex;gap:6px">
-              <button class="btn btn-ghost btn-sm" onclick="markAllRead()" style="font-size:11px">Mark read</button>
-              <button class="btn btn-danger btn-sm" onclick="clearAllNotifs()" style="font-size:11px">Clear all</button>
+              <button class="btn btn-ghost btn-sm" onclick="markAllRead()" style="font-size:11px">Mark all read</button>
               <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()">✕</button>
             </div>
           </div>
           <div id="notif-list" style="padding:8px"></div>
         </div>
       </div>
+      <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark mode">
+        <span id="tt-icon">🌙</span><span class="tt-label" id="tt-label">Dark</span>
+      </button>
       <button class="btn btn-primary" onclick="openBooking()">+ Book Patient</button>
     </div>
   </div>
@@ -771,7 +605,11 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div class="stat-card c-red"><div class="stat-label">Recall Due</div><div class="stat-val" id="s-recall">0</div><div class="stat-sub">overdue patients</div></div>
     </div>
 
-    <!-- rev summary moved to charts above -->
+    <div class="rev-row" id="dash-rev-row">
+      <div class="rev-card"><div class="rev-label">This Month Revenue</div><div class="rev-val" id="d-month-rev">₦0</div><div class="rev-sub" id="d-month-count">0 attended visits</div></div>
+      <div class="rev-card"><div class="rev-label">Cash Collections</div><div class="rev-val" id="d-cash-rev">₦0</div><div class="rev-sub">direct payments</div></div>
+      <div class="rev-card"><div class="rev-label">HMO Claims Due</div><div class="rev-val" id="d-hmo-due" style="color:var(--accent2)">₦0</div><div class="rev-sub">pending submission</div></div>
+    </div>
 
     <div class="util-card">
       <div class="util-head">
@@ -783,17 +621,6 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       </div>
       <div class="util-bar-bg"><div class="util-bar-fill" id="util-fill" style="width:0%"></div></div>
       <div class="util-labels"><span>0%</span><span id="util-booked-lbl">—</span><span>100%</span></div>
-    </div>
-
-    <div class="charts-2col" id="dash-rev-row" style="margin-bottom:16px;">
-      <div class="chart-card">
-        <div class="chart-title">📈 Revenue This Month (Daily)</div>
-        <div class="chart-wrap"><canvas id="chart-dash-revenue"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">📊 Today's Appointments by Status</div>
-        <div class="chart-wrap"><canvas id="chart-dash-appts"></canvas></div>
-      </div>
     </div>
 
     <div class="sec-head">
@@ -808,16 +635,6 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
   <!-- ============ APPOINTMENTS ============ -->
   <div class="page" id="page-appointments">
-    <div class="charts-2col">
-      <div class="chart-card">
-        <div class="chart-title">📊 Appointments by Status</div>
-        <div class="chart-wrap"><canvas id="chart-appt-status"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">📅 Bookings This Week (by day)</div>
-        <div class="chart-wrap"><canvas id="chart-appt-week"></canvas></div>
-      </div>
-    </div>
     <div class="appt-filters">
       <button class="f-btn active" onclick="filterA('all',this)">All</button>
       <button class="f-btn" onclick="filterA('upcoming',this)">Upcoming</button>
@@ -847,8 +664,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
   <!-- ============ REMINDERS ============ -->
   <div class="page" id="page-reminders">
-    <div style="margin-bottom:12px;padding:10px 14px;background:rgba(37,211,102,.07);border:1px solid rgba(37,211,102,.2);border-radius:var(--radius);font-size:12px;color:var(--text2);line-height:1.6;">
-      📲 <strong style="color:#25d366">Tomorrow's WhatsApp reminders.</strong> Click <strong>Send on WhatsApp</strong> — it opens with the message ready. Patient just needs to tap Send.
+    <div style="margin-bottom:12px;padding:10px 14px;background:rgba(0,212,160,.07);border:1px solid rgba(0,212,160,.2);border-radius:var(--radius);font-size:12px;color:var(--text2);line-height:1.6;">
+      📲 <strong style="color:var(--accent)">Tomorrow's reminder list.</strong> Copy each message → paste into WhatsApp chat. Done in 5 minutes.
     </div>
     <div class="rem-list" id="rem-list"></div>
   </div>
@@ -894,17 +711,6 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div class="stat-card c-green"><div class="stat-label">Claims Paid</div><div class="stat-val" id="hmo-paid">₦0</div><div class="stat-sub">this month</div></div>
     </div>
 
-    <div class="charts-2col" style="margin-bottom:16px;">
-      <div class="chart-card">
-        <div class="chart-title">🏥 Patients by HMO Provider</div>
-        <div class="chart-wrap"><canvas id="chart-hmo-providers"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">💜 Claims: Pending vs Paid</div>
-        <div class="chart-wrap"><canvas id="chart-hmo-claims"></canvas></div>
-      </div>
-    </div>
-
     <div class="sec-head" style="margin-bottom:10px;">
       <div class="sec-title">HMO Provider Management</div>
       <button class="btn btn-ghost btn-sm" onclick="openAddHmoModal()">+ Add Provider</button>
@@ -916,7 +722,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 
     <div class="sec-head">
       <div class="sec-title">HMO Visit Log</div>
-      <button class="btn btn-primary btn-sm" onclick="exportHMOClaims()">🖨 Print Claims Report</button>
+      <button class="btn btn-primary btn-sm" onclick="exportHMOClaims()">⬇ Export Claims (CSV)</button>
     </div>
     <div class="tbl-wrap">
       <table><thead><tr><th>Date</th><th>Patient</th><th>HMO</th><th>Treatment</th><th>Claim Value (₦)</th><th>Copay (₦)</th><th>Status</th></tr></thead>
@@ -932,16 +738,6 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <button class="f-btn" onclick="filterRev('all',this)">All Time</button>
     </div>
     <div class="rev-row" id="rev-summary-cards"></div>
-    <div class="charts-2col">
-      <div class="chart-card">
-        <div class="chart-title">💰 Revenue by Treatment</div>
-        <div class="chart-wrap-tall"><canvas id="chart-rev-treatment"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">📈 Cash vs HMO Trend (Monthly)</div>
-        <div class="chart-wrap-tall"><canvas id="chart-rev-trend"></canvas></div>
-      </div>
-    </div>
     <div class="sec-head"><div class="sec-title">Revenue by Treatment</div></div>
     <div class="tbl-wrap" style="margin-bottom:18px;">
       <table><thead><tr><th>Treatment</th><th>Visits</th><th>Total Revenue (₦)</th><th>HMO Portion (₦)</th><th>Cash Portion (₦)</th></tr></thead>
@@ -1050,17 +846,10 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div class="settings-grid">
       <div class="s-card">
         <div class="s-title">🏥 Clinic Info</div>
-        <div class="field"><label>Clinic Name</label><input type="text" id="s-clinic" value="" placeholder="e.g. Bright Smile Dental"></div>
-        <div class="field"><label>Dentist Name</label><input type="text" id="s-dentist" value="" placeholder="e.g. Dr. Adaeze Okafor"></div>
-        <div class="field"><label>Phone</label><input type="text" id="s-phone" value="" placeholder="e.g. 0801 234 5678"></div>
-        <div class="field"><label>Address</label><input type="text" id="s-address" value="" placeholder="e.g. 23 Rumuola Road, Port Harcourt"></div>
-        <div class="field">
-          <label>Clinic Email <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:rgba(0,212,160,.1);color:var(--accent);border:1px solid rgba(0,212,160,.2);margin-left:4px;vertical-align:middle;">REGISTERED</span></label>
-          <input type="email" id="s-email" readonly
-            style="opacity:.7;cursor:not-allowed;background:var(--surface3);"
-            title="Email is set at registration and cannot be changed">
-          <div style="font-size:10px;color:var(--text3);margin-top:4px">🔒 Login email — cannot be changed after registration</div>
-        </div>
+        <div class="field"><label>Clinic Name</label><input type="text" id="s-clinic" value="Bright Smile Dental"></div>
+        <div class="field"><label>Dentist Name</label><input type="text" id="s-dentist" value="Dr. Adaeze Okafor"></div>
+        <div class="field"><label>Phone</label><input type="text" id="s-phone" value="0801 234 5678"></div>
+        <div class="field"><label>Address</label><input type="text" id="s-address" value="23 Rumuola Road, Port Harcourt"></div>
       </div>
       <div class="s-card">
         <div class="s-title">🪑 Chairs & Hours</div>
@@ -1097,29 +886,11 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
         <div style="margin-top:10px;font-size:11px;color:var(--text3)">PINs are stored locally on this device only.</div>
       </div>
       <div class="s-card">
-        <div class="s-title">☁️ Cloud Sync</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">Your data syncs automatically across all devices. No setup needed.</div>
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);">
-          <span id="cloud-sync-dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
-          <div>
-            <div style="font-size:12px;font-weight:600" id="cloud-sync-label">Auto-sync active</div>
-            <div style="font-size:11px;color:var(--text3)" id="cloud-sync-sub">Last synced: —</div>
-          </div>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="forcePushToSupabase()">Sync Now</button>
-        </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--text3)" id="supa-status-txt"></div>
-      </div>
-      <div class="s-card">
-        <div class="s-title">📁 Data & Backup</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">Export a full backup of your clinic data at any time.</div>
-        <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export Data Backup</button>
+        <div class="s-title">📴 Offline & Data</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">All data saved to browser localStorage — works fully offline. Export JSON backup regularly.</div>
+        <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export JSON Backup</button>
         <div style="margin-top:8px;font-size:11px;color:var(--text3)">Last saved: <span id="last-saved">—</span></div>
         <div style="margin-top:12px" id="data-summary"></div>
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
-          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;">🔐 NDPR — Right to Erasure</div>
-          <div style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:10px;">Permanently delete all clinic data from this device and the cloud. This action is irreversible.</div>
-          <button class="btn btn-danger btn-sm" onclick="eraseClinicData()">🗑 Delete All Data</button>
-        </div>
       </div>
     </div>
     <div style="margin-top:12px;text-align:right;"><button class="btn btn-primary" onclick="saveSettings()">Save All Settings</button></div>
@@ -1422,57 +1193,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 <div class="toast" id="toast"></div>
 
 <script>
-/*
- * ============================================================
- * SUPABASE SETUP — Run this SQL in your Supabase SQL editor:
- * ============================================================
- * create table dentaflow_clinics (
- *   clinic_id text primary key,
- *   data      text,
- *   updated_at timestamptz default now()
- * );
- * -- Enable Row Level Security and allow all operations (data is already
- * -- scoped per clinic_id so no user-level auth is needed):
- * alter table dentaflow_clinics enable row level security;
- * create policy "open" on dentaflow_clinics for all using (true) with check (true);
- * ============================================================
- */
+// ==================== HELPERS (must come first) ====================
 function today(){return new Date().toISOString().split('T')[0];}
-
-// ==================== THEME ====================
-function initTheme() {
-  var saved = localStorage.getItem('df3_theme');
-  var isLight;
-  if (saved) {
-    isLight = saved === 'light';
-  } else {
-    // Auto: light 6am–7pm, dark otherwise
-    var h = new Date().getHours();
-    isLight = h >= 6 && h < 19;
-  }
-  applyTheme(isLight, false);
-}
-function applyTheme(isLight, save) {
-  document.body.classList.toggle('light', isLight);
-  var btn = document.getElementById('theme-btn');
-  var lbl = document.getElementById('theme-label');
-  if (btn) btn.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
-  if (btn) btn.childNodes[0].textContent = isLight ? '🌙 ' : '☀️ ';
-  if (lbl) lbl.textContent = isLight ? 'Dark' : 'Light';
-  // Update PWA theme-color meta
-  var meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = isLight ? '#f0f4f8' : '#0d0f14';
-  // Re-render charts so they pick up new CSS variable colours
-  Object.keys(_charts || {}).forEach(function(id) {
-    try { if (_charts[id]) _charts[id].update(); } catch(e) {}
-  });
-  if (save) localStorage.setItem('df3_theme', isLight ? 'light' : 'dark');
-}
-function toggleTheme() {
-  var isLight = !document.body.classList.contains('light');
-  applyTheme(isLight, true);
-}
-
 function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0];}
 function dOff(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
 function fmtDate(s){return new Date(s+'T12:00:00').toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'});}
@@ -1489,174 +1211,139 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ==================== STATE ====================
-var S={clinicName:'',dentistName:'',phone:'',address:'',openTime:'08:00',closeTime:'17:00',slotDuration:45,numChairs:2,chairNames:['Chair 1','Chair 2']};
+var S={clinicName:'Bright Smile Dental',dentistName:'Dr. Adaeze Okafor',phone:'0801 234 5678',address:'23 Rumuola Road, Port Harcourt',openTime:'08:00',closeTime:'17:00',slotDuration:45,numChairs:2,chairNames:['Chair 1','Chair 2']};
 var isOffline=false,pendingChanges=0;
 var activeDashChair='all';
 var invCatFilter='All';
 var currentInvId=null,currentApptFilter='all',selPtForDetail=null;
 var currentOdontoPt=null,currentPerioPt=null,activeTool='healthy';
 var invFilterStr='all',revFilter='month';
-var pidC=1,aidC=1,iidC=1,lidC=1,invC=1;
+var pidC=6,aidC=8,iidC=11,lidC=1,invC=5;
 // receiptC loaded from storage — never reset so numbers are always unique
 var receiptC=1001;
 var currentInvoiceId=null;
-// Supabase and login state (_db created in Supabase section)
-var clinicId='',syncBusy=false,_supaDebounce=null;
-var _lsClinicEmail='';
 
-// All arrays start empty — populated from localStorage or cloud on login
-var hmoProviders=[];
-var patients=[];
+var hmoProviders=[
+  {id:'H001',name:'Hygeia HMO',plan:'Capitation',capitation:18000,status:'active'},
+  {id:'H002',name:'Avon HMO',plan:'Fee-for-service',capitation:0,status:'active'},
+  {id:'H003',name:'Reliance HMO',plan:'Capitation',capitation:12000,status:'active'},
+];
+
+var patients=[
+  {id:'P001',name:'Ngozi Eze',phone:'0803 456 7890',age:34,gender:'Female',payType:'cash',hmoId:'',nextVisit:dOff(1),odonto_notes:'',visits:[
+    {date:dOff(-30),treatment:'Cleaning / Scaling',note:'Mild tartar.'},
+    {date:dOff(-90),treatment:'Consultation',note:'Initial visit.'}]},
+  {id:'P002',name:'Emeka Okonkwo',phone:'0812 234 5678',age:42,gender:'Male',payType:'hmo',hmoId:'H001',nextVisit:dOff(1),odonto_notes:'',visits:[
+    {date:dOff(-14),treatment:'Extraction',note:'Lower right molar removed.'}]},
+  {id:'P003',name:'Fatima Bello',phone:'0901 123 4567',age:28,gender:'Female',payType:'transfer',hmoId:'',nextVisit:dOff(14),odonto_notes:'',visits:[
+    {date:dOff(-7),treatment:'Filling',note:'Composite upper left premolar.'}]},
+  {id:'P004',name:'Chidi Obi',phone:'0706 789 0123',age:55,gender:'Male',payType:'hmo',hmoId:'H002',nextVisit:dOff(7),odonto_notes:'',visits:[
+    {date:dOff(-3),treatment:'Root Canal',note:'Session 1.'}]},
+  {id:'P005',name:'Aisha Musa',phone:'0818 345 6789',age:19,gender:'Female',payType:'cash',hmoId:'',nextVisit:dOff(-10),odonto_notes:'',visits:[]},
+];
+
 var feeSchedule={
   'Consultation':5000,'Cleaning / Scaling':20000,'Extraction':15000,'Filling':25000,
   'Root Canal':90000,'Crown / Bridge':120000,'Whitening':45000,'X-Ray':8000,'Follow-up':3000
 };
-var appointments=[];
+
+var appointments=[
+  {id:'A001',patientId:'P001',date:today(),time:'09:00',chair:'Chair 1',treatment:'Cleaning / Scaling',payType:'cash',hmoId:'',fee:20000,status:'upcoming',notes:''},
+  {id:'A002',patientId:'P002',date:today(),time:'09:00',chair:'Chair 2',treatment:'Follow-up',payType:'hmo',hmoId:'H001',fee:3000,status:'upcoming',notes:''},
+  {id:'A003',patientId:'P003',date:today(),time:'10:30',chair:'Chair 1',treatment:'Filling',payType:'transfer',hmoId:'',fee:25000,status:'upcoming',notes:''},
+  {id:'A004',patientId:'P004',date:today(),time:'11:00',chair:'Chair 2',treatment:'Root Canal',payType:'hmo',hmoId:'H002',fee:90000,status:'upcoming',notes:'Session 2'},
+  {id:'A005',patientId:'P005',date:tomorrow(),time:'09:00',chair:'Chair 1',treatment:'Consultation',payType:'cash',hmoId:'',fee:5000,status:'upcoming',notes:''},
+  {id:'A006',patientId:'P001',date:tomorrow(),time:'11:00',chair:'Chair 1',treatment:'Consultation',payType:'cash',hmoId:'',fee:5000,status:'upcoming',notes:''},
+  {id:'A007',patientId:'P002',date:tomorrow(),time:'13:30',chair:'Chair 2',treatment:'Follow-up',payType:'hmo',hmoId:'H001',fee:3000,status:'upcoming',notes:''},
+];
+
 var invoices=[];
-var labJobs=[];
+
+var labJobs=[
+  {id:'L001',patientId:'P002',treatment:'Full Crown #26',labName:'PhCity Dental Lab',sentDate:dOff(-5),dueDate:dOff(2),fee:45000,status:'pending',notes:'Shade A2'},
+  {id:'L002',patientId:'P004',treatment:'Partial Denture (lower)',labName:'Dent-Pro Lab PH',sentDate:dOff(-3),dueDate:dOff(4),fee:80000,status:'pending',notes:''},
+  {id:'L003',patientId:'P001',treatment:'Porcelain Crown #11',labName:'PhCity Dental Lab',sentDate:dOff(-14),dueDate:dOff(-2),fee:55000,status:'completed',notes:'Delivered'},
+];
+
 var odontograms={};
 var perioCharts={};
-var inventory=[];
+var inventory=[
+  {id:'I001',name:'Composite Resin A2',category:'Restorative',unit:'syringe',qty:12,minQty:5,lastUsed:dOff(-1)},
+  {id:'I002',name:'Lidocaine 2% Cartridges',category:'Anaesthetic',unit:'cartridge',qty:3,minQty:10,lastUsed:today()},
+  {id:'I003',name:'Extraction Forceps (upper)',category:'Surgical / Extraction',unit:'piece',qty:6,minQty:2,lastUsed:dOff(-3)},
+  {id:'I004',name:'Prophylaxis Paste',category:'Preventive',unit:'jar',qty:2,minQty:4,lastUsed:dOff(-2)},
+  {id:'I005',name:'Nitrile Gloves (M)',category:'PPE',unit:'box (100)',qty:8,minQty:3,lastUsed:today()},
+  {id:'I006',name:'Surgical Masks',category:'PPE',unit:'box (50)',qty:1,minQty:5,lastUsed:today()},
+  {id:'I007',name:'Alginate Impression',category:'Impression',unit:'pouch',qty:9,minQty:4,lastUsed:dOff(-5)},
+  {id:'I008',name:'Gutta Percha Points #30',category:'Endodontic',unit:'box',qty:0,minQty:3,lastUsed:dOff(-10)},
+  {id:'I009',name:'Dental Floss Rolls',category:'Preventive',unit:'roll',qty:25,minQty:10,lastUsed:dOff(-1)},
+  {id:'I010',name:'Temp Filling Material',category:'Restorative',unit:'tube',qty:4,minQty:3,lastUsed:dOff(-4)},
+];
 
 // ==================== PERSIST / STORAGE ====================
-// ── Storage key scoped per clinic so multiple clinics on same device stay isolated ──
-function _k(key) { return (clinicId || 'default') + '_' + key; }
-
-// ── One-time migration: copy data from broken 'default_*' keys to correct scoped keys ──
-// The light/dark mode update caused all clinics to write to 'default_*' for a period.
-// On first login after the fix, we detect this and migrate the data automatically.
-function migrateDefaultKeys() {
-  if (!clinicId || clinicId === 'default') return;
-  var migrationKey = 'df3_migrated_v3_' + clinicId; // v3: handles df3_cloud_row + relaxed ownership
-  if (localStorage.getItem(migrationKey)) return;
-
-  var DATA_KEYS = ['pts','appts','inv','odo','perio','set','hmo','invoices','lab','fees','receiptC','pins'];
-
-  // ── df3_* migration (original unscoped format) ──────────────────────────────
-  // df3_* keys are device-global — they belong to whoever first registered on
-  // this device. We only migrate them to the CURRENT clinic if:
-  //   (a) no other clinic has already claimed them (df3_legacy_claimed is unset), AND
-  //   (b) the email stored in df3_set.clinicName or df3_last_email matches this clinic.
-  // This prevents Clinic B on the same device from inheriting Clinic A's data.
-  var df3Claimed = localStorage.getItem('df3_legacy_claimed');
-  var canClaimDf3 = false;
-  try {
-    var df3Email = localStorage.getItem('df3_last_email') || '';
-    var df3Session = JSON.parse(localStorage.getItem('df3_session') || 'null');
-    var sessionEmail = (df3Session && df3Session.email) ? df3Session.email : df3Email;
-    var expectedId = sessionEmail ? btoa(sessionEmail).replace(/=/g, '') : '';
-    // Can claim if: email matches this clinic, OR this clinic already claimed it before
-    canClaimDf3 = (expectedId === clinicId) || (df3Claimed === clinicId);
-    console.log('[DF:migrate] v3 check — sessionEmail:', sessionEmail, 'canClaim:', canClaimDf3);
-  } catch(e) { canClaimDf3 = false; }
-
-  var hadData = false;
-  DATA_KEYS.forEach(function(k) {
-    var scopedKey = clinicId + '_' + k;
-    if (localStorage.getItem(scopedKey)) return; // scoped key already has data — skip
-
-    // Priority 1: default_* (broken-period fallback — always safe, was written with this clinicId='' bug)
-    var defaultVal = localStorage.getItem('default_' + k);
-    if (defaultVal) {
-      localStorage.setItem(scopedKey, defaultVal);
-      hadData = true;
-      console.log('[DF:migrate] default_' + k + ' → ' + scopedKey);
-      return;
-    }
-
-    // Priority 2: df3_* (original unscoped — only if this clinic owns it)
-    if (canClaimDf3) {
-      var df3Val = localStorage.getItem('df3_' + k);
-      if (df3Val) {
-        localStorage.setItem(scopedKey, df3Val);
-        hadData = true;
-        console.log('[DF:migrate] df3_' + k + ' → ' + scopedKey);
-      }
-    }
-  });
-
-  // Migrate the unscoped cloud_row cache (written before clinicId-first fix)
-  if (canClaimDf3 && !localStorage.getItem(clinicId + '_cloud_row')) {
-    var legacyCR = localStorage.getItem('df3_cloud_row');
-    if (legacyCR) {
-      localStorage.setItem(clinicId + '_cloud_row', legacyCR);
-      hadData = true;
-      console.log('[DF:migrate] df3_cloud_row → ' + clinicId + '_cloud_row');
-    }
-  }
-
-  if (canClaimDf3) {
-    localStorage.setItem('df3_legacy_claimed', clinicId);
-  }
-
-  localStorage.setItem(migrationKey, '1');
-  console.log('[DF:migrate] v3 done for', clinicId, 'hadData:', hadData);
-  if (hadData) showToast('✓ Your clinic data has been restored');
-}
-
 function persist(){
   try{
-    // Guard: never write to storage unless clinicId is set and matches the loaded session
-    if (!clinicId || clinicId === 'default') {
-      console.warn('[DF:persist] Blocked — clinicId not set, refusing to write');
-      return;
-    }
-    var savedAt = new Date().toISOString(); // ISO for reliable cross-device comparison
-    localStorage.setItem(_k('pts'),JSON.stringify(patients));
-    localStorage.setItem(_k('appts'),JSON.stringify(appointments));
-    localStorage.setItem(_k('inv'),JSON.stringify(inventory));
-    localStorage.setItem(_k('odo'),JSON.stringify(odontograms));
-    localStorage.setItem(_k('perio'),JSON.stringify(perioCharts));
-    localStorage.setItem(_k('set'),JSON.stringify(S));
-    localStorage.setItem(_k('hmo'),JSON.stringify(hmoProviders));
-    localStorage.setItem(_k('invoices'),JSON.stringify(invoices));
-    localStorage.setItem(_k('lab'),JSON.stringify(labJobs));
-    localStorage.setItem(_k('fees'),JSON.stringify(feeSchedule));
-    localStorage.setItem(_k('saved'), savedAt); // ISO timestamp — source of truth for sync arbitration
-    localStorage.setItem(_k('receiptC'), receiptC);
+    localStorage.setItem('df3_pts',JSON.stringify(patients));
+    localStorage.setItem('df3_appts',JSON.stringify(appointments));
+    localStorage.setItem('df3_inv',JSON.stringify(inventory));
+    localStorage.setItem('df3_odo',JSON.stringify(odontograms));
+    localStorage.setItem('df3_perio',JSON.stringify(perioCharts));
+    localStorage.setItem('df3_set',JSON.stringify(S));
+    localStorage.setItem('df3_hmo',JSON.stringify(hmoProviders));
+    localStorage.setItem('df3_invoices',JSON.stringify(invoices));
+    localStorage.setItem('df3_lab',JSON.stringify(labJobs));
+    localStorage.setItem('df3_fees',JSON.stringify(feeSchedule));
+    localStorage.setItem('df3_saved',new Date().toLocaleString('en-NG'));
+    localStorage.setItem('df3_receiptC', receiptC);
     if(isOffline)pendingChanges++;
-    scheduleSupaSync();
   }catch(e){}
 }
 function loadStorage(){
-  // ── CRITICAL CLINIC ISOLATION GUARD ──────────────────────────────────────────
-  // Before loading ANY data, verify that clinicId is set and that the stored
-  // settings record actually belongs to this clinic. If the check fails, we
-  // refuse to load anything — an empty state is safer than showing wrong data.
-  if (!clinicId || clinicId === 'default') {
-    console.warn('[DF:loadStorage] Blocked — clinicId not set');
-    return;
-  }
-  console.log('[DF:loadStorage] clinicId="' + clinicId + '" prefix="' + _k('pts') + '"');
   try{
-    // Validate that stored settings match the expected clinicId before loading
-    const stRaw = localStorage.getItem(_k('set'));
-    if (stRaw) {
+    const p=localStorage.getItem('df3_pts');if(p)patients=JSON.parse(p);
+    const a=localStorage.getItem('df3_appts');if(a)appointments=JSON.parse(a);
+    const i=localStorage.getItem('df3_inv');if(i)inventory=JSON.parse(i);
+    const o=localStorage.getItem('df3_odo');if(o)odontograms=JSON.parse(o);
+    const pe=localStorage.getItem('df3_perio');if(pe)perioCharts=JSON.parse(pe);
+    const st=localStorage.getItem('df3_set');if(st)S=JSON.parse(st);
+    const h=localStorage.getItem('df3_hmo');if(h)hmoProviders=JSON.parse(h);
+    const iv=localStorage.getItem('df3_invoices');if(iv)invoices=JSON.parse(iv);
+    const l=localStorage.getItem('df3_lab');if(l)labJobs=JSON.parse(l);
+    const f=localStorage.getItem('df3_fees');if(f)feeSchedule=JSON.parse(f);
+    const rc=localStorage.getItem('df3_receiptC');if(rc)receiptC=parseInt(rc);
+
+    // ── DATA MIGRATION ──
+    // Strip the old hardcoded mock invoice (RCP-101 for A003/P003) that
+    // shipped in earlier versions. Real invoices only exist when the dentist
+    // explicitly marks an appointment as attended.
+    const MOCK_IDS = ['R101'];
+    const MOCK_RECEIPT_NUMS = ['RCP-101'];
+    const before = invoices.length;
+    invoices = invoices.filter(i =>
+      !MOCK_IDS.includes(i.id) && !MOCK_RECEIPT_NUMS.includes(i.receiptNum)
+    );
+    // Also fix any stored A003 that was incorrectly marked 'attended' by old
+    // seed data — reset it to 'upcoming' so it doesn't ghost a receipt.
+    const a003 = appointments.find(a => a.id === 'A003');
+    if (a003 && a003.status === 'attended') {
+      a003.status = 'upcoming';
+      // Remove any visit entry on P003 that came from A003
+      const p003 = patients.find(p => p.id === 'P003');
+      if (p003) {
+        p003.visits = p003.visits.filter(v =>
+          !(v.treatment === 'Filling' && v.date === a003.date && v.note === '')
+        );
+      }
+    }
+    // Persist cleaned data if anything changed
+    if (invoices.length !== before || a003) {
       try {
-        const stCheck = JSON.parse(stRaw);
-        // If a clinicEmail is stored in settings and it doesn't match, reject
-        if (stCheck._clinicId && stCheck._clinicId !== clinicId) {
-          console.error('[DF:loadStorage] ISOLATION: stored _clinicId mismatch — refusing to load');
-          return;
-        }
+        localStorage.setItem('df3_invoices', JSON.stringify(invoices));
+        localStorage.setItem('df3_appts', JSON.stringify(appointments));
+        localStorage.setItem('df3_pts', JSON.stringify(patients));
       } catch(e) {}
     }
-
-    const p=localStorage.getItem(_k('pts'));
-    console.log('[DF:loadStorage] pts raw:', p ? p.slice(0,80) : 'NULL');
-    if(p)patients=JSON.parse(p);
-    const a=localStorage.getItem(_k('appts'));if(a)appointments=JSON.parse(a);
-    const i=localStorage.getItem(_k('inv'));if(i)inventory=JSON.parse(i);
-    const o=localStorage.getItem(_k('odo'));if(o)odontograms=JSON.parse(o);
-    const pe=localStorage.getItem(_k('perio'));if(pe)perioCharts=JSON.parse(pe);
-    if(stRaw)S=JSON.parse(stRaw);
-    const h=localStorage.getItem(_k('hmo'));if(h)hmoProviders=JSON.parse(h);
-    const iv=localStorage.getItem(_k('invoices'));if(iv)invoices=JSON.parse(iv);
-    const l=localStorage.getItem(_k('lab'));if(l)labJobs=JSON.parse(l);
-    const f=localStorage.getItem(_k('fees'));if(f)feeSchedule=JSON.parse(f);
-    const rc=localStorage.getItem(_k('receiptC'));if(rc)receiptC=parseInt(rc);
-    console.log('[DF:loadStorage] loaded: patients=' + patients.length + ' appts=' + appointments.length + ' invoices=' + invoices.length);
-  }catch(e){ console.error('[DF:loadStorage] ERROR:', e); }
+  }catch(e){}
 }
 
 // ==================== OFFLINE ====================
@@ -1670,7 +1357,8 @@ function updateOfflineUI(){
   if(isOffline){btn.textContent=`📴 Offline${pendingChanges?` ·${pendingChanges}`:''}`;btn.classList.add('off');badge.classList.add('show');if(panel)panel.classList.add('show');}
   else{btn.textContent='🟢 Online';btn.classList.remove('off');badge.classList.remove('show');if(panel)panel.classList.remove('show');}
 }
-// Online/offline UI handled in Supabase section above
+window.addEventListener('online',()=>{isOffline=false;updateOfflineUI();showToast('🟢 Internet restored');});
+window.addEventListener('offline',()=>{isOffline=true;updateOfflineUI();showToast('📴 Offline — saving locally');});
 
 // ==================== NAV ====================
 var PAGE_MAP={dashboard:'Dashboard',appointments:'Appointments',patients:'Patients',reminders:'Reminders',recall:'Recall List',invoices:'Invoices',hmo:'HMO / Insurance',revenue:'Revenue & Fees',odontogram:'Odontogram',perio:'Perio Charting',inventory:'Inventory',lab:'Lab Work',settings:'Settings'};
@@ -1711,10 +1399,21 @@ function renderDash(){
   if(isDentist){
     const todayRev=appointments.filter(a=>a.date===td&&a.status==='attended'&&a.payType!=='hmo').reduce((s,a)=>s+(a.fee||0),0);
     const hmoToday=todayA.filter(a=>a.payType==='hmo').length;
+    const mStart=thisMonthStart();
+    const monthA=appointments.filter(a=>a.date>=mStart&&a.status==='attended');
+    const monthRev=monthA.reduce((s,a)=>s+(a.payType!=='hmo'?a.fee||0:0),0);
+    const cashRev=appointments.filter(a=>a.date>=mStart&&a.status==='attended'&&a.payType!=='hmo').reduce((s,a)=>s+(a.fee||0),0);
+    const hmoUnpaid=invoices.filter(i=>i.payType==='hmo'&&!i.paid&&i.date>=mStart).reduce((s,i)=>s+(i.amount||0),0);
     document.getElementById('s-rev').textContent=fmtMoney(todayRev);
     document.getElementById('s-hmo').textContent=hmoToday;
     document.getElementById('s-recall').textContent=recallDue;
-    // Show revenue stat cards for dentist
+    document.getElementById('d-month-rev').textContent=fmtMoney(monthRev);
+    document.getElementById('d-month-count').textContent=`${monthA.length} attended visits`;
+    document.getElementById('d-cash-rev').textContent=fmtMoney(cashRev);
+    document.getElementById('d-hmo-due').textContent=fmtMoney(hmoUnpaid);
+    // Show revenue row for dentist
+    document.getElementById('dash-rev-row').style.display='grid';
+    // Stat cards — show all
     document.getElementById('s-rev-card').style.display='';
     document.getElementById('s-hmo-card').style.display='';
   } else {
@@ -1762,8 +1461,6 @@ function renderDash(){
     });
   });
   updateOfflineUI();
-  // Render dashboard charts
-  setTimeout(renderDashCharts, 0);
 }
 function setDashChair(c){activeDashChair=c;renderDash();}
 function getChairColor(chair){const colors=['#00d4a0','#7c6af7','#f0a500','#4a9ff0'];const i=getChairs().indexOf(chair);return colors[i%colors.length]||'#00d4a0';}
@@ -1786,7 +1483,7 @@ function renderAppts(){
     const pc=a.status==='attended'?'pill-att':a.status==='cancelled'?'pill-can':'pill-up';
     const ptc=a.payType==='hmo'?'pill-hmo':a.payType==='transfer'?'pill-pending':'pill-cash';
     const cc=getChairColor(a.chair);
-    return`<tr data-id="${a.id}">
+    return`<tr>
       <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:${cc}22;color:${cc}">${a.chair}</span></td>
       <td><strong>${fmtTime(a.time)}</strong><div style="font-size:10px;color:var(--text3)">${fmtDate(a.date)}</div></td>
       <td>${pt?pt.name:'—'}</td>
@@ -1799,33 +1496,16 @@ function renderAppts(){
       <td><div style="display:flex;gap:3px">${a.status==='upcoming'?`<button class="btn btn-ghost btn-sm" onclick="markAttended('${a.id}')">✓</button><button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">✕</button>`:''}</div></td>
     </tr>`;
   }).join('');
-  // Render appointment charts
-  setTimeout(renderApptCharts, 0);
 }
 function markAttended(id){
-  const a=appointments.find(x=>x.id===id);if(!a||a.status==='attended')return;
-  // Guard: prevent duplicate invoice for same appointment
-  if(invoices.find(i=>i.apptId===a.id)){
-    a.status='attended';
-    persist();renderAppts();renderDash();showToast('✓ Marked attended (receipt already exists)');return;
-  }
-  a.status='attended';
+  const a=appointments.find(x=>x.id===id);if(!a)return;a.status='attended';
   const pt=getPt(a.patientId);if(pt)pt.visits.unshift({date:a.date,treatment:a.treatment,note:a.notes||''});
+  // Auto-create invoice
   const inv={id:`R${receiptC}`,apptId:a.id,patientId:a.patientId,date:a.date,treatment:a.treatment,amount:a.fee||0,payType:a.payType,hmoId:a.hmoId||'',copay:0,paid:a.payType!=='hmo',receiptNum:`RCP-${receiptC}`};
   invoices.push(inv);receiptC++;
   persist();renderAppts();renderDash();showToast('✓ Attended — receipt created');runNotifChecks();
 }
-function cancelAppt(id){
-  if(!confirm('Cancel this appointment?'))return;
-  const a=appointments.find(x=>x.id===id);
-  if(!a)return;
-  a.status='cancelled';
-  persist();
-  // Immediately re-render so cancellation is reflected at once
-  renderAppts();
-  renderDash();
-  showToast('✗ Appointment cancelled');
-}
+function cancelAppt(id){if(!confirm('Cancel this appointment?'))return;appointments.find(x=>x.id===id).status='cancelled';persist();renderAppts();renderDash();}
 
 // ==================== BOOKING ====================
 function openBooking(prefillTime,prefillChair){
@@ -1870,30 +1550,13 @@ function saveBooking(){
   const payType=document.getElementById('bk-paytype').value,hmoId=payType==='hmo'?document.getElementById('bk-hmo').value:'';
   const nt=document.getElementById('bk-notes').value;
   if(!d||!t||!c){alert('Date, time and chair required');return;}
-
-  // Block duplicate chair/time booking
-  const slotConflict=appointments.find(a=>a.date===d&&a.time===t&&a.chair===c&&a.status!=='cancelled');
-  if(slotConflict){document.getElementById('dbl-warn').classList.add('show');return;}
-
   let pid;
   if(ps==='new'){
     const n=document.getElementById('bk-name').value.trim(),ph=document.getElementById('bk-phone').value.trim();
     if(!n||!ph){alert('Name and phone required');return;}
-    // Check if patient with same phone already exists — prevent duplicates
-    const existPt=patients.find(p=>p.phone.replace(/\D/g,'')=== ph.replace(/\D/g,''));
-    if(existPt){
-      if(!confirm(`A patient with this phone already exists: ${existPt.name}. Book for them instead?`))return;
-      pid=existPt.id;
-    } else {
-      const npt={id:`P${String(pidC).padStart(3,'0')}`,name:n,phone:ph,age:document.getElementById('bk-age').value||'—',gender:'—',payType:document.getElementById('bk-new-paytype').value,hmoId:document.getElementById('bk-new-paytype').value==='hmo'?document.getElementById('bk-new-hmo').value:'',nextVisit:'',odonto_notes:'',visits:[]};
-      patients.push(npt);pidC++;pid=npt.id;
-    }
-  }else{
-    pid=ps;
-    // Block same patient booked twice on same day (different time is fine, same time is a dupe)
-    const ptSameSlot=appointments.find(a=>a.patientId===pid&&a.date===d&&a.time===t&&a.status!=='cancelled');
-    if(ptSameSlot){showToast('⚠ This patient already has an appointment at this time');return;}
-  }
+    const npt={id:`P${String(pidC).padStart(3,'0')}`,name:n,phone:ph,age:document.getElementById('bk-age').value||'—',gender:'—',payType:document.getElementById('bk-new-paytype').value,hmoId:document.getElementById('bk-new-paytype').value==='hmo'?document.getElementById('bk-new-hmo').value:'',nextVisit:'',odonto_notes:'',visits:[]};
+    patients.push(npt);pidC++;pid=npt.id;
+  }else pid=ps;
   appointments.push({id:`A${String(aidC).padStart(3,'0')}`,patientId:pid,date:d,time:t,chair:c,treatment:tr,payType,hmoId,fee,status:'upcoming',notes:nt});
   aidC++;closeModal('booking-modal');persist();renderDash();showToast('✓ Appointment booked!');runNotifChecks();
 }
@@ -2012,48 +1675,19 @@ function goOdonto(){closeModal('pt-detail-modal');go('odontogram');setTimeout(()
 function goPerio(){closeModal('pt-detail-modal');go('perio');setTimeout(()=>{document.getElementById('perio-sel').value=selPtForDetail;loadPerio();},50);}
 
 // ==================== REMINDERS ====================
-function buildReminderMsg(a) {
-  const pt = getPt(a.patientId); if (!pt) return '';
-  const hmo = a.hmoId ? getHMO(a.hmoId) : null;
-  return `Hello ${pt.name.split(' ')[0]} 👋\n\nReminder from *${S.clinicName}*.\n\nYour appointment with *${S.dentistName}* is *tomorrow* at *${fmtTime(a.time)}* (${a.chair}).\n\nTreatment: ${a.treatment}${hmo ? `\nInsurance: ${hmo.name}` : ''}\n\nPlease arrive 5 minutes early. Reply to reschedule.\n\nThank you 🦷`;
-}
-function waLink(phone, msg) {
-  const clean = phone.replace(/\D/g,'').replace(/^0/, '234');
-  return `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
-}
 function renderReminders(){
-  const tom = tomorrow();
-  const list = appointments.filter(a => a.date === tom && a.status === 'upcoming');
-  const el = document.getElementById('rem-list');
-  if (!list.length) { el.innerHTML = `<div class="empty-state"><div class="empty-icon">💬</div><div>No appointments tomorrow</div></div>`; return; }
-  el.innerHTML = list.map((a, i) => {
-    const pt = getPt(a.patientId); if (!pt) return '';
-    const msg = buildReminderMsg(a);
-    const url = waLink(pt.phone, msg);
-    return `<div class="rem-card">
-      <div class="rem-av">${initials(pt.name)}</div>
-      <div class="rem-body">
-        <div class="rem-name">${pt.name} ${a.payType==='hmo'?'<span class="pill pill-hmo" style="font-size:10px">HMO</span>':''}</div>
-        <div class="rem-det">${fmtTime(a.time)} · ${a.chair} · ${a.treatment} · ${pt.phone}</div>
-        <div class="msg-preview" style="white-space:pre-line">${msg}</div>
-        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-          <a href="${url}" target="_blank" rel="noopener" class="wa-btn">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            Send on WhatsApp
-          </a>
-          <button class="copy-btn" id="cb-${i}" onclick="copyMsg(${i},\`${msg.replace(/`/g,'\\`')}\`)">📋 Copy</button>
-        </div>
-      </div>
-    </div>`;
+  const tom=tomorrow();
+  const list=appointments.filter(a=>a.date===tom&&a.status==='upcoming');
+  const el=document.getElementById('rem-list');
+  if(!list.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">💬</div><div>No appointments tomorrow</div></div>`;return;}
+  el.innerHTML=list.map((a,i)=>{
+    const pt=getPt(a.patientId);if(!pt)return'';
+    const hmo=a.hmoId?getHMO(a.hmoId):null;
+    const msg=`Hello ${pt.name.split(' ')[0]} 👋\n\nReminder from *${S.clinicName}*.\n\nYour appointment with *${S.dentistName}* is *tomorrow* at *${fmtTime(a.time)}* (${a.chair}).\n\nTreatment: ${a.treatment}${hmo?`\nInsurance: ${hmo.name}`:''}\n\nPlease arrive 5 minutes early. Reply to reschedule.\n\nThank you 🦷`;
+    return`<div class="rem-card"><div class="rem-av">${initials(pt.name)}</div><div class="rem-body"><div class="rem-name">${pt.name} ${a.payType==='hmo'?'<span class="pill pill-hmo" style="font-size:10px">HMO</span>':''}</div><div class="rem-det">${fmtTime(a.time)} · ${a.chair} · ${a.treatment} · ${pt.phone}</div><div class="msg-preview">${msg.replace(/\n/g,'<br>')}</div><button class="copy-btn" id="cb-${i}" onclick="copyMsg(${i},\`${msg.replace(/`/g,'\\`')}\`)">📋 Copy to WhatsApp</button></div></div>`;
   }).join('');
 }
-function copyMsg(i, msg) {
-  navigator.clipboard.writeText(msg).then(() => {
-    const b = document.getElementById(`cb-${i}`);
-    if (b) { b.textContent = '✓ Copied!'; b.classList.add('copied'); setTimeout(() => { b.textContent = '📋 Copy'; b.classList.remove('copied'); }, 2000); }
-    showToast('Copied!');
-  });
-}
+function copyMsg(i,msg){navigator.clipboard.writeText(msg).then(()=>{const b=document.getElementById(`cb-${i}`);b.textContent='✓ Copied!';b.classList.add('copied');setTimeout(()=>{b.textContent='📋 Copy to WhatsApp';b.classList.remove('copied');},2000);showToast('Copied!')});}
 
 // ==================== RECALL ====================
 function renderRecall(){
@@ -2073,11 +1707,7 @@ function renderRecall(){
         <div class="rem-det">${p.phone} · Overdue by <strong style="color:var(--yellow)">${daysOver} day${daysOver!==1?'s':''}</strong> · Last: ${lv?lv.treatment:'No visits'}</div>
         <div class="msg-preview">${msg.replace(/\n/g,'<br>')}</div>
         <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-          <a href="${waLink(p.phone, msg)}" target="_blank" rel="noopener" class="wa-btn" style="font-size:11px">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            Send Recall on WhatsApp
-          </a>
-          <button class="copy-btn" id="rcb-${i}" onclick="copyMsg('r${i}',\`${msg.replace(/`/g,'\\`')}\`)">📋 Copy</button>
+          <button class="copy-btn" id="rcb-${i}" onclick="copyMsg('r${i}',\`${msg.replace(/`/g,'\\`')}\`)">📋 Copy Recall Message</button>
           <button class="btn btn-ghost btn-sm" onclick="closeRecallAndBook('${p.id}')">+ Book Now</button>
         </div>
       </div>
@@ -2417,8 +2047,6 @@ function renderHMO(){
     const inv=invoices.find(i=>i.apptId===a.id);
     return`<tr><td style="font-size:11px">${fmtDate(a.date)}</td><td>${pt?pt.name:'—'}</td><td style="color:var(--accent2)">${hmo?hmo.name:'—'}</td><td>${a.treatment}</td><td style="font-weight:600">${fmtMoney(a.fee)}</td><td>${fmtMoney(a.copay||0)}</td><td><span class="pill ${inv&&inv.paid?'pill-att':'pill-pending'}">${inv&&inv.paid?'Claimed':'Pending'}</span></td></tr>`;
   }).join(''):`<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3)">No HMO visits yet</td></tr>`;
-  // Render HMO charts
-  setTimeout(renderHMOCharts, 0);
 }
 function openAddHmoModal(){['hmo-name','hmo-plan','hmo-cap'].forEach(id=>document.getElementById(id).value='');document.getElementById('add-hmo-modal').classList.add('open');}
 function saveHMO(){
@@ -2433,147 +2061,15 @@ function quickAddHMO(){
   persist();populateHMOSelects();showToast('✓ HMO provider added!');
 }
 function exportHMOClaims(){
-  const allHmoAppts = appointments.filter(a=>a.payType==='hmo'&&a.status==='attended')
-    .sort((a,b)=>b.date.localeCompare(a.date));
-  if(!allHmoAppts.length){showToast('No HMO claims to export');return;}
-
-  const totalClaim = allHmoAppts.reduce((s,a)=>s+(a.fee||0),0);
-  const totalCopay = allHmoAppts.reduce((s,a)=>s+(a.copay||0),0);
-  const pending = allHmoAppts.filter(a=>{const inv=invoices.find(i=>i.apptId===a.id);return !inv||!inv.paid;}).length;
-  const claimed = allHmoAppts.length - pending;
-  const mStart = thisMonthStart();
-  const monthCount = allHmoAppts.filter(a=>a.date>=mStart).length;
-
-  // Group by provider
-  const byProvider = {};
-  allHmoAppts.forEach(a=>{
-    const h=getHMO(a.hmoId);const key=h?h.name:'Unknown';
-    if(!byProvider[key])byProvider[key]={visits:[],total:0,copay:0,pending:0,claimed:0};
-    byProvider[key].visits.push(a);byProvider[key].total+=(a.fee||0);byProvider[key].copay+=(a.copay||0);
-    const inv=invoices.find(i=>i.apptId===a.id);
-    if(inv&&inv.paid)byProvider[key].claimed++;else byProvider[key].pending++;
-  });
-
-  const rows = allHmoAppts.map(a=>{
+  const mStart=thisMonthStart();
+  const rows=[['Date','Patient','Phone','HMO','Treatment','Claim (₦)','Copay (₦)','Status']];
+  appointments.filter(a=>a.payType==='hmo'&&a.status==='attended').forEach(a=>{
     const pt=getPt(a.patientId),hmo=getHMO(a.hmoId),inv=invoices.find(i=>i.apptId===a.id);
-    const status=inv&&inv.paid?'Claimed':'Pending';
-    const statusColor=inv&&inv.paid?'#065f46':'#92400e';
-    const statusBg=inv&&inv.paid?'#d1fae5':'#fef3c7';
-    return`<tr>
-      <td>${fmtDate(a.date)}</td>
-      <td>${pt?pt.name:'—'}</td>
-      <td style="font-size:11px">${pt?pt.phone:'—'}</td>
-      <td><strong>${hmo?hmo.name:'—'}</strong></td>
-      <td>${a.treatment}</td>
-      <td style="text-align:right;font-weight:600">₦${Number(a.fee||0).toLocaleString('en-NG')}</td>
-      <td style="text-align:right">₦${Number(a.copay||0).toLocaleString('en-NG')}</td>
-      <td style="text-align:center"><span style="background:${statusBg};color:${statusColor};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700">${status}</span></td>
-    </tr>`;
-  }).join('');
-
-  const providerSummary = Object.entries(byProvider).map(([name,d])=>`
-    <tr>
-      <td><strong>${name}</strong></td>
-      <td style="text-align:center">${d.visits.length}</td>
-      <td style="text-align:right;font-weight:600;color:#00d4a0">₦${Number(d.total).toLocaleString('en-NG')}</td>
-      <td style="text-align:right">₦${Number(d.copay).toLocaleString('en-NG')}</td>
-      <td style="text-align:center"><span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${d.claimed} claimed</span></td>
-      <td style="text-align:center"><span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${d.pending} pending</span></td>
-    </tr>`).join('');
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HMO Claims Report — ${S.clinicName}</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'DM Sans',Arial,sans-serif;color:#1a1a2e;background:#fff;font-size:13px}
-  .header{background:linear-gradient(135deg,#0d0f14 0%,#141720 100%);padding:28px 36px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
-  .clinic-name{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#00d4a0;letter-spacing:-0.3px}
-  .clinic-meta{font-size:11px;color:#8b91aa;margin-top:5px;line-height:1.8}
-  .report-title{text-align:right;flex-shrink:0}
-  .report-label{font-size:9px;color:#555d7a;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
-  .report-name{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#fff}
-  .report-date{font-size:11px;color:#8b91aa;margin-top:4px}
-  .summary-band{background:#f8f9fc;border-bottom:1px solid #e8eaef;padding:18px 36px;display:flex;gap:24px;flex-wrap:wrap}
-  .kpi{flex:1;min-width:120px}
-  .kpi-val{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#1a1a2e}
-  .kpi-val.green{color:#00d4a0}.kpi-val.purple{color:#7c6af7}.kpi-val.yellow{color:#d97706}
-  .kpi-lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
-  .body{padding:24px 36px}
-  .section-head{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#1a1a2e;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #00d4a0;display:flex;align-items:center;gap:8px}
-  table{width:100%;border-collapse:collapse;margin-bottom:28px;font-size:12px}
-  thead th{background:#f8f9fc;padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #e8eaef}
-  tbody tr{border-bottom:1px solid #f0f0f0}
-  tbody tr:hover{background:#fafafa}
-  td{padding:9px 10px;vertical-align:middle}
-  .footer{background:#f8f9fc;border-top:1px solid #e8eaef;padding:14px 36px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#999}
-  .footer-brand{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:#00d4a0}
-  .total-row{background:#f0fdf9;font-weight:700}
-  .total-row td{border-top:2px solid #00d4a0;padding-top:10px}
-  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.no-print{display:none}}
-</style>
-</head>
-<body>
-<div class="header">
-  <div>
-    <div class="clinic-name">🦷 ${S.clinicName}</div>
-    <div class="clinic-meta">${S.address||''}<br>${S.phone||''}</div>
-  </div>
-  <div class="report-title">
-    <div class="report-label">Document</div>
-    <div class="report-name">HMO Claims Report</div>
-    <div class="report-date">Generated: ${new Date().toLocaleDateString('en-NG',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
-  </div>
-</div>
-
-<div class="summary-band">
-  <div class="kpi"><div class="kpi-val">${allHmoAppts.length}</div><div class="kpi-lbl">Total HMO Visits</div></div>
-  <div class="kpi"><div class="kpi-val">${monthCount}</div><div class="kpi-lbl">This Month</div></div>
-  <div class="kpi"><div class="kpi-val green">₦${Number(totalClaim).toLocaleString('en-NG')}</div><div class="kpi-lbl">Total Claim Value</div></div>
-  <div class="kpi"><div class="kpi-val purple">${claimed}</div><div class="kpi-lbl">Claimed</div></div>
-  <div class="kpi"><div class="kpi-val yellow">${pending}</div><div class="kpi-lbl">Pending Claim</div></div>
-  <div class="kpi"><div class="kpi-val">${S.dentistName}</div><div class="kpi-lbl">Treating Dentist</div></div>
-</div>
-
-<div class="body">
-  <div class="section-head">📊 Summary by HMO Provider</div>
-  <table>
-    <thead><tr><th>HMO Provider</th><th style="text-align:center">Visits</th><th style="text-align:right">Total (₦)</th><th style="text-align:right">Co-pay (₦)</th><th style="text-align:center">Claimed</th><th style="text-align:center">Pending</th></tr></thead>
-    <tbody>
-      ${providerSummary}
-      <tr class="total-row">
-        <td><strong>TOTAL</strong></td>
-        <td style="text-align:center"><strong>${allHmoAppts.length}</strong></td>
-        <td style="text-align:right"><strong>₦${Number(totalClaim).toLocaleString('en-NG')}</strong></td>
-        <td style="text-align:right"><strong>₦${Number(totalCopay).toLocaleString('en-NG')}</strong></td>
-        <td style="text-align:center"><strong>${claimed}</strong></td>
-        <td style="text-align:center"><strong>${pending}</strong></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="section-head">📋 Detailed Visit Log</div>
-  <table>
-    <thead><tr><th>Date</th><th>Patient</th><th>Phone</th><th>HMO Provider</th><th>Treatment</th><th style="text-align:right">Claim (₦)</th><th style="text-align:right">Co-pay (₦)</th><th style="text-align:center">Status</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
-</div>
-
-<div class="footer">
-  <div class="footer-brand">🦷 ${S.clinicName}</div>
-  <div>This report is computer-generated · ${new Date().toLocaleDateString('en-NG')} · DentaFlow</div>
-  <button class="no-print" onclick="window.print()" style="background:#00d4a0;color:#0d0f14;border:none;padding:6px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">🖨 Print / Save PDF</button>
-</div>
-</body>
-</html>`;
-
-  const win = window.open('', '_blank');
-  if (win) { win.document.write(html); win.document.close(); }
-  showToast('✓ HMO Claims Report opened — Print or Save as PDF');
+    rows.push([a.date,pt?pt.name:'—',pt?pt.phone:'—',hmo?hmo.name:'—',a.treatment,a.fee||0,a.copay||0,inv&&inv.paid?'Claimed':'Pending']);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`hmo-claims-${today()}.csv`;link.click();
+  showToast('✓ CSV exported!');
 }
 
 // ==================== REVENUE ====================
@@ -2595,8 +2091,6 @@ function renderRevenue(){
   document.getElementById('rev-by-treatment').innerHTML=sorted.length?sorted.map(([t,v])=>`<tr><td><strong>${t}</strong></td><td style="color:var(--text3)">${v.visits}</td><td style="font-family:var(--font-display);font-weight:700;color:var(--accent)">${fmtMoney(v.total)}</td><td style="color:var(--accent2)">${fmtMoney(v.hmo)}</td><td style="color:var(--accent)">${fmtMoney(v.cash)}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">No attended appointments in this period</td></tr>`;
   // Fee schedule
   document.getElementById('fee-grid').innerHTML=Object.entries(feeSchedule).map(([t,p])=>`<div class="fee-card"><span class="fee-name">${t}</span><input class="fee-input" type="number" id="fee-${t.replace(/\s+/g,'-').replace(/\//g,'')}" value="${p}" placeholder="0"></div>`).join('');
-  // Render revenue charts
-  setTimeout(renderRevCharts, 0);
 }
 function saveFees(){
   Object.keys(feeSchedule).forEach(t=>{const el=document.getElementById(`fee-${t.replace(/\s+/g,'-').replace(/\//g,'')}`);if(el)feeSchedule[t]=parseFloat(el.value)||0;});
@@ -2666,7 +2160,7 @@ function renderInventory(){
   tb.innerHTML=list.map(i=>{
     const st=i.qty===0?{cls:'pill-out',l:'Out'}:i.qty<=i.minQty?{cls:'pill-low',l:'Low'}:{cls:'pill-ok',l:'OK'};
     const qc=i.qty===0?'var(--red)':i.qty<=i.minQty?'var(--yellow)':'var(--text)';
-    return`<tr data-id="${i.id}"><td><strong>${i.name}</strong></td><td style="font-size:11px;color:var(--text3)">${i.category}</td><td style="font-size:11px;color:var(--text2)">${i.unit}</td><td><span style="font-family:var(--font-display);font-weight:700;color:${qc}">${i.qty}</span></td><td style="font-size:11px;color:var(--text3)">${i.minQty}</td><td><span class="pill ${st.cls}">${st.l}</span></td><td style="font-size:11px;color:var(--text3)">${i.lastUsed?fmtDate(i.lastUsed):'—'}</td><td><div style="display:flex;gap:3px"><button class="btn btn-ghost btn-sm" onclick="openUse('${i.id}')">Use</button><button class="btn btn-primary btn-sm" onclick="openRS('${i.id}')">+Stock</button></div></td></tr>`;
+    return`<tr><td><strong>${i.name}</strong></td><td style="font-size:11px;color:var(--text3)">${i.category}</td><td style="font-size:11px;color:var(--text2)">${i.unit}</td><td><span style="font-family:var(--font-display);font-weight:700;color:${qc}">${i.qty}</span></td><td style="font-size:11px;color:var(--text3)">${i.minQty}</td><td><span class="pill ${st.cls}">${st.l}</span></td><td style="font-size:11px;color:var(--text3)">${i.lastUsed?fmtDate(i.lastUsed):'—'}</td><td><div style="display:flex;gap:3px"><button class="btn btn-ghost btn-sm" onclick="openUse('${i.id}')">Use</button><button class="btn btn-primary btn-sm" onclick="openRS('${i.id}')">+Stock</button></div></td></tr>`;
   }).join('');
 }
 function setIC(c){invCatFilter=c;renderInventory();}
@@ -2697,7 +2191,7 @@ function renderLab(){
     const dueToday=l.status!=='completed'&&l.dueDate===td;
     const stCls=l.status==='completed'?'pill-lab-done':overdue?'pill-lab-late':'pill-lab-wait';
     const stLbl=l.status==='completed'?'Completed':overdue?'OVERDUE':dueToday?'Due Today':'At Lab';
-    return`<tr data-id="${l.id}" style="${overdue?'background:rgba(240,74,74,.03)':''}">
+    return`<tr style="${overdue?'background:rgba(240,74,74,.03)':''}">
       <td>${pt?pt.name:'—'}</td>
       <td>${l.treatment}</td>
       <td style="font-size:11px;color:var(--text2)">${l.labName}</td>
@@ -2724,25 +2218,11 @@ function markLabDone(id){labJobs.find(l=>l.id===id).status='completed';persist()
 
 // ==================== SETTINGS ====================
 function renderSettings(){
-  document.getElementById('s-clinic').value=S.clinicName||'';
-  const emailEl=document.getElementById('s-email');if(emailEl)emailEl.value=_lsClinicEmail||'';
-  document.getElementById('s-dentist').value=S.dentistName||'';
-  document.getElementById('s-phone').value=S.phone||'';
-  document.getElementById('s-address').value=S.address||'';
-  document.getElementById('s-open').value=S.openTime||'08:00';
-  document.getElementById('s-close').value=S.closeTime||'17:00';
-  document.getElementById('s-slot').value=S.slotDuration||45;
-  document.getElementById('s-chairs').value=S.numChairs||2;
+  document.getElementById('s-clinic').value=S.clinicName;document.getElementById('s-dentist').value=S.dentistName;document.getElementById('s-phone').value=S.phone;document.getElementById('s-address').value=S.address||'';
+  document.getElementById('s-open').value=S.openTime;document.getElementById('s-close').value=S.closeTime;document.getElementById('s-slot').value=S.slotDuration;document.getElementById('s-chairs').value=S.numChairs;
   renderChairNameFields();
-  // Keep sidebar in sync
-  const sbCl=document.getElementById('sb-clinic');
-  const sbDr=document.getElementById('sb-dentist');
-  if(sbCl)sbCl.textContent=S.clinicName||'Your Clinic';
-  if(sbDr)sbDr.textContent=S.dentistName||'—';
-  const ls=localStorage.getItem(_k('saved'));
-  document.getElementById('last-saved').textContent=ls||'Not saved yet';
+  const ls=localStorage.getItem('df3_saved');document.getElementById('last-saved').textContent=ls||'Not saved yet';
   document.getElementById('data-summary').innerHTML=`<div style="font-size:12px;color:var(--text2);line-height:2">👥 ${patients.length} patients · 📅 ${appointments.length} appointments<br>🧾 ${invoices.length} invoices · 🏥 ${hmoProviders.length} HMO providers<br>🔬 ${labJobs.length} lab jobs · 📦 ${inventory.length} inventory items</div>`;
-  updateCloudUI();
 }
 function renderChairNameFields(){
   const n=parseInt(document.getElementById('s-chairs').value)||2;S.numChairs=n;
@@ -2757,42 +2237,8 @@ function saveSettings(){
   document.getElementById('sb-clinic').textContent=S.clinicName;document.getElementById('sb-dentist').textContent=S.dentistName;persist();showToast('✓ Settings saved!');
 }
 function exportData(){
-  const payload = {
-    meta: {
-      clinic: S.clinicName,
-      dentist: S.dentistName,
-      address: S.address,
-      phone: S.phone,
-      exportedAt: new Date().toISOString(),
-      exportedBy: 'DentaFlow Clinic Management',
-      version: '3.0',
-      counts: {
-        patients: patients.length,
-        appointments: appointments.length,
-        invoices: invoices.length,
-        hmoProviders: hmoProviders.length,
-        labJobs: labJobs.length,
-        inventoryItems: inventory.length
-      }
-    },
-    settings: S,
-    patients,
-    appointments,
-    invoices,
-    hmoProviders,
-    labJobs,
-    inventory,
-    odontograms,
-    perioCharts,
-    feeSchedule
-  };
-  const json = JSON.stringify(payload, null, 2);
-  const blob = new Blob([json], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${S.clinicName.replace(/\s+/g,'-')}-backup-${today()}.json`;
-  a.click();
-  showToast('✓ Backup exported!');
+  const blob=new Blob([JSON.stringify({S,patients,appointments,invoices,hmoProviders,labJobs,inventory,odontograms,perioCharts,feeSchedule,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dentaflow-v3-backup-${today()}.json`;a.click();showToast('✓ Exported!');
 }
 
 
@@ -2809,13 +2255,12 @@ var pushPermission = 'default'; // 'granted' | 'denied' | 'default'
 // lab_overdue          — fires at 8 AM when a lab job passes its due date
 // appointment_soon     — fires 1 hour before each booked appointment
 
-function addNotif(type, title, body, action, actionLabel, urgent, targetId) {
+function addNotif(type, title, body, action, actionLabel, urgent) {
   const id = notifIdCounter++;
   notifications.unshift({
     id, type, title, body,
     action: action || null,
     actionLabel: actionLabel || null,
-    targetId: targetId || null,
     urgent: !!urgent,
     read: false,
     time: new Date().toISOString()
@@ -2827,33 +2272,13 @@ function addNotif(type, title, body, action, actionLabel, urgent, targetId) {
   // Push to browser if permitted
   if (pushPermission === 'granted') {
     try {
-      const bn = new Notification(title, {
+      new Notification(title, {
         body,
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="28" font-size="28">🦷</text></svg>',
         tag: `dentaflow-${type}-${id}`
       });
-      bn.onclick = () => { window.focus(); handleNotifClick(id); };
     } catch(e) {}
   }
-}
-
-// Flash-highlight a table row or card after navigation
-function highlightNotifTarget(type, targetId) {
-  let el = null;
-  // Try to find a row in the active page's table by data attribute
-  el = document.querySelector(`[data-id="${targetId}"]`);
-  // Fallback: search tbody rows for matching text content (appointment ID, etc.)
-  if (!el) {
-    document.querySelectorAll('tbody tr').forEach(row => {
-      if (row.textContent.includes(targetId)) el = row;
-    });
-  }
-  if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  const orig = el.style.background;
-  el.style.transition = 'background 0.3s';
-  el.style.background = 'rgba(0,212,160,0.18)';
-  setTimeout(() => { el.style.background = orig; }, 1800);
 }
 
 function updateNotifBadge() {
@@ -2943,64 +2368,19 @@ function renderNotifList() {
   el.innerHTML = notifications.map(n => {
     const icon = NOTIF_ICONS[n.type] || '💡';
     const col = NOTIF_COLORS[n.type] || 'var(--accent)';
-    const isClickable = !!n.action;
-    return `<div
-      data-notif-id="${n.id}"
-      onclick="handleNotifClick(${n.id})"
-      style="
-        display:flex;gap:10px;padding:12px 14px;border-radius:var(--radius-sm);
-        background:${n.read ? 'transparent' : 'rgba(255,255,255,.04)'};
-        border-left:3px solid ${n.read ? 'transparent' : col};
-        margin-bottom:3px;transition:background .12s;
-        ${isClickable ? 'cursor:pointer;' : ''}
-      "
-      ${isClickable ? `onmouseenter="this.style.background='rgba(255,255,255,.07)'" onmouseleave="this.style.background='${n.read ? 'transparent' : 'rgba(255,255,255,.04)'}'"` : ''}
-    >
-      <div style="font-size:20px;flex-shrink:0;margin-top:1px">${icon}</div>
+    return `<div style="display:flex;gap:10px;padding:11px 12px;border-radius:var(--radius-sm);background:${n.read?'transparent':'rgba(255,255,255,.03)'};border-left:3px solid ${n.read?'transparent':col};margin-bottom:4px;transition:background .12s" onmouseenter="markRead(${n.id})">
+      <div style="font-size:18px;flex-shrink:0;margin-top:1px">${icon}</div>
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-          <div style="font-weight:600;font-size:13px;color:${n.read ? 'var(--text2)' : 'var(--text)'};flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.title}</div>
-          ${n.urgent ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:rgba(240,74,74,.15);color:var(--red);flex-shrink:0">URGENT</span>` : ''}
-        </div>
-        <div style="font-size:11px;color:var(--text3);line-height:1.5;white-space:pre-line">${n.body}</div>
-        ${isClickable ? `<div style="margin-top:5px;font-size:11px;color:${col};font-weight:600;display:flex;align-items:center;gap:4px">
-          ${n.actionLabel || 'View'} →
-        </div>` : ''}
+        <div style="font-weight:600;font-size:13px;color:${n.read?'var(--text2)':'var(--text)'};margin-bottom:2px">${n.title}</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.5">${n.body}</div>
+        ${n.action ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:11px" onclick="${n.action};toggleNotifPanel()">${n.actionLabel||'View'}</button>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-        <div style="font-size:10px;color:var(--text3);white-space:nowrap">${timeAgo(n.time)}</div>
-        <button onclick="event.stopPropagation();dismissNotif(${n.id})"
-          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;line-height:1;transition:color .1s"
-          onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='var(--text3)'"
-          title="Dismiss">✕</button>
+        <div style="font-size:10px;color:var(--text3)">${timeAgo(n.time)}</div>
+        <button onclick="dismissNotif(${n.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:2px 4px">✕</button>
       </div>
     </div>`;
   }).join('');
-}
-
-function clearAllNotifs() {
-  notifications = [];
-  firedNotifs = {}; // reset so checks can re-fire if conditions still exist
-  updateNotifBadge();
-  renderNotifList();
-  showToast('Notifications cleared');
-}
-
-function handleNotifClick(id) {
-  const n = notifications.find(x => x.id === id);
-  if (!n) return;
-  // Auto-remove the notification once the user acts on it
-  notifications = notifications.filter(x => x.id !== id);
-  updateNotifBadge();
-  // Close panel
-  notifPanelOpen = false;
-  const panel = document.getElementById('notif-panel');
-  if (panel) panel.style.display = 'none';
-  // Navigate
-  if (!n.action) return;
-  try { eval(n.action); } catch(e) { console.error('Notif action error:', e); }
-  // Highlight target row if available
-  if (n.targetId) setTimeout(() => highlightNotifTarget(n.type, n.targetId), 120);
 }
 
 // ---- AUTOMATED CHECKS ----
@@ -3011,38 +2391,9 @@ function runNotifChecks() {
   const td = today();
   const tom = tomorrow();
   const now = new Date();
+  const hhmm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-  // ── Auto-remove stale notifications ──
-  // Remove notifications whose underlying condition is no longer true
-  notifications = notifications.filter(n => {
-    if (n.type === 'appointment_soon') {
-      // Remove if the appointment has been attended or cancelled
-      const appt = appointments.find(a => a.id === n.targetId);
-      if (appt && appt.status !== 'upcoming') return false;
-    }
-    if (n.type === 'low_stock') {
-      // Remove if stock has been restocked above minimum
-      const item = inventory.find(i => i.id === n.targetId);
-      if (item && item.qty > item.minQty) return false;
-    }
-    if (n.type === 'lab_overdue') {
-      // Remove if lab job has been completed
-      const job = labJobs.find(l => l.id === n.targetId);
-      if (job && job.status === 'completed') return false;
-    }
-    if (n.type === 'recall_due') {
-      // Remove if all overdue patients now have upcoming appointments
-      const stillOverdue = patients.filter(p =>
-        p.nextVisit && p.nextVisit < td &&
-        !appointments.find(a => a.patientId === p.id && a.status === 'upcoming' && a.date >= td)
-      );
-      if (stillOverdue.length === 0) return false;
-    }
-    return true;
-  });
-  updateNotifBadge();
-
-  // 1. APPOINTMENT REMINDERS — tomorrow's appointments → go to Reminders page
+  // 1. APPOINTMENT REMINDERS — for tomorrow's appointments (fire once per session at startup + 8am check)
   const tomAppts = appointments.filter(a => a.date === tom && a.status === 'upcoming');
   if (tomAppts.length > 0) {
     const key = `rem_${tom}`;
@@ -3053,16 +2404,15 @@ function runNotifChecks() {
         `${tomAppts.length} appointment${tomAppts.length>1?'s':''} tomorrow`,
         tomAppts.map(a => {
           const pt = getPt(a.patientId);
-          return `${fmtTime(a.time)} — ${pt ? pt.name : '?'} (${a.chair})`;
+          return `${fmtTime(a.time)} — ${pt?pt.name:'?'} (${a.chair})`;
         }).join('\n'),
         "go('reminders')",
-        'Open Reminders →',
-        false
+        'Send Reminders'
       );
     }
   }
 
-  // 2. APPOINTMENT SOON — 1 hour before → go to Appointments and highlight row
+  // 2. APPOINTMENT SOON — 1 hour before each today's appointment
   const todayAppts = appointments.filter(a => a.date === td && a.status === 'upcoming');
   todayAppts.forEach(a => {
     const [ah, am] = a.time.split(':').map(Number);
@@ -3076,18 +2426,17 @@ function runNotifChecks() {
         const pt = getPt(a.patientId);
         addNotif(
           'appointment_soon',
-          `⏰ In ${diff} min: ${pt ? pt.name : '?'}`,
+          `⏰ Coming up in ${diff} min: ${pt ? pt.name : '?'}`,
           `${a.treatment} · ${a.chair} at ${fmtTime(a.time)}`,
-          `go('appointments');filterA('upcoming',document.querySelector('.appt-filters .f-btn'))`,
-          'View Appointment →',
-          true,
-          a.id
+          "go('appointments')",
+          'View Schedule',
+          true
         );
       }
     }
   });
 
-  // 3. RECALL DUE → go to Recall List
+  // 3. RECALL DUE — overdue patients with no upcoming appointment
   const overdue = patients.filter(p =>
     p.nextVisit && p.nextVisit < td &&
     !appointments.find(a => a.patientId === p.id && a.status === 'upcoming' && a.date >= td)
@@ -3101,30 +2450,28 @@ function runNotifChecks() {
         `${overdue.length} patient${overdue.length>1?'s':''} overdue for recall`,
         overdue.slice(0, 3).map(p => p.name).join(', ') + (overdue.length > 3 ? ` +${overdue.length-3} more` : ''),
         "go('recall')",
-        'Open Recall List →',
-        false
+        'View Recall List'
       );
     }
   }
 
-  // 4. LOW STOCK → go to Inventory, highlight the item row
+  // 4. LOW STOCK alerts
   inventory.filter(i => i.qty <= i.minQty).forEach(item => {
     const key = `stock_${item.id}_${item.qty}`;
     if (!firedNotifs[key]) {
       firedNotifs[key] = true;
       addNotif(
         'low_stock',
-        item.qty === 0 ? `🚨 OUT OF STOCK: ${item.name}` : `📦 Low stock: ${item.name}`,
-        `${item.qty} ${item.unit} left (minimum: ${item.minQty})`,
-        `go('inventory')`,
-        'Go to Inventory →',
-        item.qty === 0,
-        item.id
+        item.qty === 0 ? `OUT OF STOCK: ${item.name}` : `Low stock: ${item.name}`,
+        `Only ${item.qty} ${item.unit} remaining (min: ${item.minQty})`,
+        "go('inventory')",
+        'View Inventory',
+        item.qty === 0
       );
     }
   });
 
-  // 5. LAB OVERDUE → go to Lab Work page, highlight the overdue row
+  // 5. LAB OVERDUE
   const lateJobs = labJobs.filter(l => l.status !== 'completed' && l.dueDate < td);
   lateJobs.forEach(l => {
     const key = `lab_late_${l.id}`;
@@ -3134,12 +2481,11 @@ function runNotifChecks() {
       const daysLate = Math.floor((new Date(td) - new Date(l.dueDate + 'T00:00:00')) / 86400000);
       addNotif(
         'lab_overdue',
-        `🔬 Lab overdue: ${l.treatment}`,
-        `${pt ? pt.name : '?'} · ${l.labName} · ${daysLate} day${daysLate !== 1 ? 's' : ''} late`,
+        `Lab job overdue: ${l.treatment}`,
+        `${pt ? pt.name : '?'} — ${l.labName} · ${daysLate} day${daysLate !== 1 ? 's' : ''} late`,
         "go('lab')",
-        'Go to Lab Work →',
-        true,
-        l.id
+        'View Lab Jobs',
+        true
       );
     }
   });
@@ -3353,650 +2699,15 @@ function maybeShowOnboarding() {
 }
 
 
-// ==================== SUPABASE ====================
-// Uses XMLHttpRequest only -- no SDK, no fetch(), no Headers objects.
-// XHR has zero postMessage/DataCloneError issues.
-// Every request sends X-Clinic-Id header so Supabase RLS
-// enforces per-clinic isolation at the database level.
-
-const _SUPA_URL   = 'https://bmyifrkiccrkmxvbdmri.supabase.co';
-const _SUPA_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJteWlmcmtpY2Nya214dmJkbXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMjcyNzcsImV4cCI6MjA4OTcwMzI3N30.o0Hw-c4zrGVvqPEyXJZfrW6y0Efn3BBsgaVY42iotmQ';
-const _SUPA_RPC   = _SUPA_URL + '/rest/v1/rpc/';
-
-// XHR helper -- zero Headers objects, no postMessage, no DataCloneError
-function _xhr(method, url, body) {
-  return new Promise(function(resolve, reject) {
-    var x = new XMLHttpRequest();
-    x.open(method, url, true);
-    x.setRequestHeader('Content-Type', 'application/json');
-    x.setRequestHeader('apikey', _SUPA_KEY);
-    x.setRequestHeader('Authorization', 'Bearer ' + _SUPA_KEY);
-    x.timeout = 15000;
-    x.onload = function() {
-      if (x.status >= 200 && x.status < 300) {
-        var d = null;
-        try { if (x.responseText) d = JSON.parse(x.responseText); } catch(e) {}
-        resolve({ ok: true, data: d });
-      } else {
-        reject(new Error('HTTP ' + x.status + ': ' + x.responseText.slice(0, 300)));
-      }
-    };
-    x.onerror   = function() { reject(new Error('Network error')); };
-    x.ontimeout = function() { reject(new Error('Request timed out')); };
-    x.send(body !== null ? JSON.stringify(body) : null);
-  });
-}
-
-// Convenience: call a Supabase SECURITY DEFINER RPC function
-// These functions enforce per-clinic isolation in server-side Postgres code.
-// The anon key can call the functions but cannot touch the table directly.
-function _rpc(fnName, params) {
-  return _xhr('POST', _SUPA_RPC + fnName, params);
-}
-
-// ==================== AES-GCM ENCRYPTION ====================
-// Patient data is encrypted client-side before leaving the browser.
-// The encryption key is derived from the clinic's email + dentist PIN
-// using PBKDF2. Supabase only ever stores ciphertext -- it cannot
-// read patient records even with direct database access.
-
-var _encKey = null; // CryptoKey object, set after login
-
-async function _deriveKey(email, pin) {
-  var enc = new TextEncoder();
-  var keyMaterial = await crypto.subtle.importKey(
-    'raw', enc.encode(email + ':' + pin), 'PBKDF2', false, ['deriveKey']
-  );
-  return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: enc.encode(email), iterations: 100000, hash: 'SHA-256' },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
-}
-
-async function _encrypt(key, plaintext) {
-  var enc = new TextEncoder();
-  var iv = crypto.getRandomValues(new Uint8Array(12));
-  var ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(plaintext));
-  // Prepend IV to ciphertext, base64 encode the whole thing
-  var combined = new Uint8Array(iv.length + ct.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(ct), iv.length);
-  return btoa(String.fromCharCode.apply(null, combined));
-}
-
-async function _decrypt(key, b64) {
-  var combined = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
-  var iv = combined.slice(0, 12);
-  var ct = combined.slice(12);
-  var pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ct);
-  return new TextDecoder().decode(pt);
-}
-
-// Try to decrypt -- returns null if key is wrong (wrong PIN)
-async function _tryDecrypt(key, b64) {
-  try { return await _decrypt(key, b64); } catch(e) { return null; }
-}
-
-// Derive and store the encryption key after successful PIN entry
-async function initEncKey(email, pin) {
-  try {
-    _encKey = await _deriveKey(email, pin);
-  } catch(e) {
-    console.error('Key derivation failed:', e);
-    _encKey = null;
-  }
-}
-
-// ==================== SYNC STATE UI ====================
-function loadSupaConfig() {
-  var lastPush = localStorage.getItem(_k('last_push'));
-  var timePart = lastPush ? (lastPush.split(',')[1] || '').trim() : '';
-  setNavSync(navigator.onLine ? 'online' : 'offline',
-             navigator.onLine ? (lastPush ? 'Synced' : 'Not synced yet') : 'Offline',
-             timePart);
-  updateCloudUI();
-}
-function saveSupaConfig() { showToast('Cloud sync active'); }
-function updateCloudUI() {
-  var lastPush = localStorage.getItem(_k('last_push'));
-  var lbl = document.getElementById('cloud-sync-label');
-  var sub = document.getElementById('cloud-sync-sub');
-  var dot = document.getElementById('cloud-sync-dot');
-  if (lbl) lbl.textContent = navigator.onLine ? 'Auto-sync active' : 'Offline - saved locally';
-  if (sub) sub.textContent = lastPush ? 'Last synced: ' + lastPush : 'Not yet synced this session';
-  if (dot) dot.style.background = navigator.onLine ? 'var(--accent)' : 'var(--text3)';
-}
-function setSupaBadge() { updateCloudUI(); }
-
-var _syncState = 'idle';
-function setNavSync(state, labelText, timeText) {
-  _syncState = state;
-  var dot = document.getElementById('nav-sync-dot');
-  var lbl = document.getElementById('nav-sync-label');
-  var tim = document.getElementById('nav-sync-time');
-  if (!dot) return;
-  var stateMap = { syncing: 'syncing', error: 'error', offline: 'offline' };
-  dot.className = 'sync-dot ' + (stateMap[state] || 'online');
-  if (lbl) lbl.textContent = labelText || 'Synced';
-  if (tim) tim.textContent = timeText || '';
-  var sdot = document.getElementById('cloud-sync-dot');
-  if (sdot) sdot.style.background = state === 'error' ? 'var(--red)' : state === 'offline' ? 'var(--text3)' : 'var(--accent)';
-}
-function navSyncClick() { syncBusy = false; pushToSupabase(); }
-
-// ==================== PUSH / PULL ====================
-// LOCAL IS ALWAYS SOURCE OF TRUTH.
-// Full encrypted snapshot pushed via df_upsert_clinic() RPC.
-// Table is locked — only accessible through SECURITY DEFINER functions.
-
-var _hasEncCheckCol = true; // RPC functions always include enc_check
-
-async function pushToSupabase() {
-  if (!clinicId || !navigator.onLine) {
-    setNavSync('offline', 'Offline', ''); return;
-  }
-  if (syncBusy) return;
-  syncBusy = true;
-  setNavSync('syncing', 'Syncing...', '');
-  try {
-    var localSavedAt = localStorage.getItem(_k('saved')) || new Date().toISOString();
-    var plaintext = JSON.stringify({
-      S, patients, appointments, invoices, hmoProviders,
-      labJobs, inventory, odontograms, perioCharts, feeSchedule,
-      pins: getPINs(),
-      savedAt: localSavedAt
-    });
-
-    var encData, encCheck;
-    if (_encKey) {
-      encData  = await _encrypt(_encKey, plaintext);
-      encCheck = await _encrypt(_encKey, 'dentaflow-ok');
-    } else {
-      encData  = btoa(unescape(encodeURIComponent(plaintext)));
-      encCheck = 'unencrypted';
-    }
-
-    // Call SECURITY DEFINER function -- enforces isolation server-side
-    await _rpc('df_upsert_clinic', {
-      p_clinic_id:  clinicId,
-      p_data:       encData,
-      p_enc_check:  encCheck,
-      p_updated_at: localSavedAt // use local savedAt so server timestamp matches
-    });
-
-    var now = new Date().toLocaleString('en-NG');
-    localStorage.setItem(_k('last_push'), now);
-    var t = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
-    setNavSync('online', 'Synced', t);
-    updateCloudUI();
-  } catch(e) {
-    var msg = (e && e.message) ? e.message : String(e);
-    console.error('Supabase push error:', msg);
-    setNavSync('error', 'Sync error', '');
-    var stxt = document.getElementById('supa-status-txt');
-    if (stxt) stxt.textContent = msg;
-  }
-  syncBusy = false;
-}
-
-// ── CORE SYNC FUNCTION ───────────────────────────────────────────────────────
-// Compares local savedAt vs cloud savedAt.
-// Newer timestamp wins and becomes the source of truth.
-// If local is newer → push to cloud.
-// If cloud is newer → pull and overwrite local.
-// If equal → no-op.
-// opts.forceCloud = true → always use cloud (new device first login)
-// opts.forcePush  = true → always push (legacy path)
-async function syncWithCloud(opts) {
-  opts = opts || {};
-  if (!clinicId || !navigator.onLine) {
-    setNavSync('offline', 'Offline', ''); return;
-  }
-  if (syncBusy && !opts.forceCloud) return;
-  syncBusy = true;
-  setNavSync('syncing', 'Syncing...', '');
-
-  try {
-    // ── Step 1: Fetch cloud row ─────────────────────────────────────────────
-    var res = await _rpc('df_get_clinic', { p_clinic_id: clinicId });
-    var cloudRow = (res.data && res.data.length) ? res.data[0] : null;
-
-    if (!cloudRow) {
-      // No cloud data — push local data up
-      console.log('[DF:sync] No cloud row — pushing local data up');
-      syncBusy = false;
-      await pushToSupabase();
-      return;
-    }
-
-    // ── Step 2: Decrypt cloud payload to read its savedAt ──────────────────
-    var cloudPlaintext = null;
-    var encCheck = cloudRow.enc_check || 'unencrypted';
-
-    if (_encKey && encCheck !== 'unencrypted') {
-      var sentinel = await _tryDecrypt(_encKey, encCheck);
-      if (sentinel !== 'dentaflow-ok') {
-        // Try stored dentist PIN as fallback (receptionist login)
-        var fallbackPin = getPINs().dentist;
-        if (fallbackPin) {
-          var fbKey = await _deriveKey(_lsClinicEmail, fallbackPin).catch(() => null);
-          if (fbKey) { sentinel = await _tryDecrypt(fbKey, encCheck); if (sentinel === 'dentaflow-ok') _encKey = fbKey; }
-        }
-      }
-      if (sentinel === 'dentaflow-ok') {
-        cloudPlaintext = await _tryDecrypt(_encKey, cloudRow.data);
-      } else {
-        console.warn('[DF:sync] Could not decrypt cloud row — skipping cloud comparison');
-        syncBusy = false; setNavSync('error', 'Decrypt error', ''); return;
-      }
-    } else if (encCheck === 'unencrypted') {
-      try { cloudPlaintext = decodeURIComponent(escape(atob(cloudRow.data))); } catch(e) { cloudPlaintext = cloudRow.data; }
-    }
-
-    if (!cloudPlaintext) {
-      console.warn('[DF:sync] Empty cloud plaintext'); syncBusy = false; return;
-    }
-
-    var cloudData;
-    try { cloudData = JSON.parse(cloudPlaintext); } catch(e) {
-      console.warn('[DF:sync] Cloud JSON parse error'); syncBusy = false; return;
-    }
-
-    // ── Step 3: Compare timestamps ─────────────────────────────────────────
-    var localSavedAt  = localStorage.getItem(_k('saved')) || '';
-    var cloudSavedAt  = cloudData.savedAt || cloudRow.updated_at || '';
-
-    // Parse dates — treat missing/invalid as epoch so the other side always wins
-    var localTs = localSavedAt  ? new Date(localSavedAt).getTime()  : 0;
-    var cloudTs = cloudSavedAt  ? new Date(cloudSavedAt).getTime()  : 0;
-    if (isNaN(localTs)) localTs = 0;
-    if (isNaN(cloudTs)) cloudTs = 0;
-
-    console.log('[DF:sync] local=' + localSavedAt + ' (' + localTs + ') cloud=' + cloudSavedAt + ' (' + cloudTs + ')');
-
-    if (opts.forceCloud || cloudTs > localTs) {
-      // ── Cloud is newer (or forced) → overwrite local ────────────────────
-      console.log('[DF:sync] Cloud wins — applying cloud data');
-      if (cloudData.S) S = cloudData.S;
-      if (cloudData.patients) patients = cloudData.patients;
-      if (cloudData.appointments) appointments = cloudData.appointments;
-      if (cloudData.invoices) invoices = cloudData.invoices;
-      if (cloudData.hmoProviders) hmoProviders = cloudData.hmoProviders;
-      if (cloudData.labJobs) labJobs = cloudData.labJobs;
-      if (cloudData.inventory) inventory = cloudData.inventory;
-      if (cloudData.odontograms) odontograms = cloudData.odontograms;
-      if (cloudData.perioCharts) perioCharts = cloudData.perioCharts;
-      if (cloudData.feeSchedule) feeSchedule = cloudData.feeSchedule;
-      if (cloudData.pins) localStorage.setItem(_k('pins'), JSON.stringify(cloudData.pins));
-
-      // Write cloud data to local storage (including cloud's savedAt so we
-      // don't re-fetch it again on the next comparison)
-      localStorage.setItem(_k('saved'), cloudSavedAt || new Date().toISOString());
-      localStorage.setItem(_k('pts'), JSON.stringify(patients));
-      localStorage.setItem(_k('appts'), JSON.stringify(appointments));
-      localStorage.setItem(_k('inv'), JSON.stringify(inventory));
-      localStorage.setItem(_k('odo'), JSON.stringify(odontograms));
-      localStorage.setItem(_k('perio'), JSON.stringify(perioCharts));
-      localStorage.setItem(_k('set'), JSON.stringify(S));
-      localStorage.setItem(_k('hmo'), JSON.stringify(hmoProviders));
-      localStorage.setItem(_k('invoices'), JSON.stringify(invoices));
-      localStorage.setItem(_k('lab'), JSON.stringify(labJobs));
-      localStorage.setItem(_k('fees'), JSON.stringify(feeSchedule));
-      if (cloudData.receiptC) localStorage.setItem(_k('receiptC'), cloudData.receiptC);
-      else { const rc = localStorage.getItem(_k('receiptC')); if (!rc) localStorage.setItem(_k('receiptC'), receiptC); }
-
-      resyncCounters();
-      renderDash(); populateHMOSelects(); renderSettings();
-      document.getElementById('sb-clinic').textContent = S.clinicName || '';
-      document.getElementById('sb-dentist').textContent = S.dentistName || '';
-
-      var t = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
-      localStorage.setItem(_k('last_push'), new Date().toLocaleString('en-NG'));
-      setNavSync('online', 'Synced', t); updateCloudUI();
-      if (opts.forceCloud) showToast('✓ Data loaded from cloud');
-      else showToast('✓ Updated from another device');
-
-    } else if (localTs > cloudTs) {
-      // ── Local is newer → push up ────────────────────────────────────────
-      console.log('[DF:sync] Local wins — pushing to cloud');
-      syncBusy = false;
-      await pushToSupabase();
-      return;
-
-    } else {
-      // ── Equal → no-op ───────────────────────────────────────────────────
-      console.log('[DF:sync] Timestamps equal — no sync needed');
-      var t2 = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
-      setNavSync('online', 'Synced', t2); updateCloudUI();
-    }
-
-  } catch(e) {
-    var msg = (e && e.message) ? e.message : String(e);
-    console.error('[DF:sync] Error:', msg);
-    setNavSync('error', 'Sync error', '');
-  }
-  syncBusy = false;
-}
-
-async function pullFromSupabase() {
-  // Legacy entry point — now delegates to syncWithCloud
-  await syncWithCloud({});
-}
-
-async function checkClinicInCloud(email) {
-  if (!navigator.onLine) return null;
-  try {
-    var cid = btoa(email).replace(/=/g, '');
-    var res = await _rpc('df_get_clinic', { p_clinic_id: cid });
-    if (!res.data || !res.data.length) return null;
-    return res.data[0];
-  } catch(e) { return null; }
-}
-
-// NDPR Right to Erasure
-async function eraseClinicData() {
-  if (!confirm('PERMANENT DELETE: This will erase ALL clinic data from this device and the cloud.\nThis cannot be undone.')) return;
-  var confirmEmail = prompt('Enter your clinic email to confirm:');
-  if (!confirmEmail || confirmEmail.trim().toLowerCase() !== _lsClinicEmail) {
-    showToast('Email did not match -- deletion cancelled'); return;
-  }
-  try {
-    if (navigator.onLine) await _rpc('df_erase_clinic', { p_clinic_id: clinicId });
-  } catch(e) { console.warn('Cloud erasure error:', e.message); }
-  // Wipe only this clinic's scoped keys from localStorage
-  ['pts','appts','inv','odo','perio','set','hmo','invoices','lab','fees',
-   'saved','receiptC','last_push','pins','cloud_row'].forEach(function(k) {
-    localStorage.removeItem(_k(k));
-  });
-  // Also wipe global session keys for this email
-  localStorage.removeItem('df3_session');
-  localStorage.removeItem('df3_last_email');
-  showToast('All data erased. Reloading...');
-  setTimeout(function() { location.reload(); }, 1800);
-}
-
-function forcePushToSupabase() { syncBusy = false; return pushToSupabase(); }
-
-function scheduleSupaSync() {
-  clearTimeout(_supaDebounce);
-  _supaDebounce = setTimeout(pushToSupabase, 2500);
-}
-
-window.addEventListener('online', function() {
-  isOffline = false; updateOfflineUI();
-  setNavSync('online', 'Back online', '');
-  scheduleSupaSync();
-  showToast('Internet restored - syncing...');
-});
-window.addEventListener('offline', function() {
-  isOffline = true; updateOfflineUI();
-  setNavSync('offline', 'Offline', '');
-  showToast('Offline - saving locally');
-});
-
-// ==================== LOGIN SYSTEM ====================
-function lsInit() {
-  // Auto-fill email if this device has logged in before
-  try {
-    const saved = localStorage.getItem('df3_last_email');
-    if (saved) {
-      document.getElementById('ls-email').value = saved;
-    }
-    // Set clinicId from email alone — clinicName must NOT be required.
-    const session = JSON.parse(localStorage.getItem('df3_session') || 'null');
-    const lastEmail = localStorage.getItem('df3_last_email') || '';
-    const email = (session && session.email) ? session.email : lastEmail;
-    console.log('[DF:lsInit] session:', JSON.stringify(session), 'lastEmail:', lastEmail);
-    if (email) {
-      _lsClinicEmail = email;
-      clinicId = btoa(email).replace(/=/g,'');
-      console.log('[DF:lsInit] clinicId set to:', clinicId);
-      // Show PIN step directly if we have a clinic name
-      const clinicName = (session && session.clinicName) ? session.clinicName : null;
-      if (clinicName) {
-        document.getElementById('ls-email').value = email;
-        document.getElementById('ls-email-step').classList.remove('active');
-        document.getElementById('ls-pin-step').classList.add('active');
-        document.getElementById('ls-clinic-label').textContent = clinicName;
-        document.getElementById('ls-email-label').textContent = email;
-      }
-    }
-  } catch(e) {}
-}
-
-// Called after lsInit+loadStorage — if the clinic is already authenticated on this
-// device, compare local vs cloud timestamps and resolve which is source of truth.
-// This runs in the background; the UI is immediately usable with local data.
-async function _postInitSync() {
-  if (!clinicId || !navigator.onLine) return;
-  // Only run if the clinic already has a stored key (i.e. was previously logged in)
-  // _encKey is null here — we need it before we can decrypt cloud data.
-  // We resolve it from the stored dentist PIN, which was saved at login.
-  const storedPins = getPINs();
-  const dentistPin = storedPins.dentist;
-  if (!dentistPin || dentistPin === PIN_DEFAULTS.dentist) return; // no real key available — skip
-  try {
-    await initEncKey(_lsClinicEmail, dentistPin);
-    var hasLocalData = patients.length > 0 || appointments.length > 0 || invoices.length > 0;
-    await syncWithCloud({ forceCloud: !hasLocalData });
-  } catch(e) { console.warn('[DF:postInitSync]', e && e.message); }
-}
-
-function lsShowEmail() {
-  document.querySelectorAll('.login-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('ls-email-step').classList.add('active');
-}
-function lsShowRegister() {
-  document.querySelectorAll('.login-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('ls-reg-step').classList.add('active');
-}
-function lsBackToEmail() {
-  document.querySelectorAll('.login-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('ls-email-step').classList.add('active');
-}
-
-async function lsEmailNext() {
-  const email = document.getElementById('ls-email').value.trim().toLowerCase();
-  const errEl = document.getElementById('ls-email-err');
-  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
-    errEl.textContent = 'Please enter a valid email address.'; errEl.classList.add('show'); return;
-  }
-  errEl.classList.remove('show');
-  _lsClinicEmail = email;
-  // ── Set clinicId NOW so every _k() call uses the right prefix ──────────────
-  clinicId = btoa(email).replace(/=/g, '');
-
-  // 1. Check local session for a previously stored clinic name (offline-friendly)
-  let clinicName = null;
-  try {
-    const sess = JSON.parse(localStorage.getItem('df3_session') || 'null');
-    if (sess && sess.email === email) clinicName = sess.clinicName;
-  } catch(e) {}
-
-  // 2. Always attempt a cloud check when online so we get a fresh cloud_row.
-  // This is the ONLY way a new device can bootstrap PINs and data.
-  // We always overwrite the cached cloud_row so it stays current.
-  if (navigator.onLine) {
-    try {
-      const row = await checkClinicInCloud(email);
-      if (row) {
-        // Cache the full encrypted row for post-PIN decryption
-        localStorage.setItem(_k('cloud_row'), JSON.stringify(row));
-
-        if (row.enc_check === 'unencrypted') {
-          // Legacy unencrypted row — extract name + PINs immediately
-          try {
-            const d = JSON.parse(decodeURIComponent(escape(atob(row.data))));
-            clinicName = d.S?.clinicName || clinicName || email;
-            if (d.pins) localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
-          } catch(e) { clinicName = clinicName || email; }
-        } else {
-          // ── NEW-DEVICE PIN BOOTSTRAP ─────────────────────────────────────
-          // Encrypted row: we don't know the PIN yet, so we can't decrypt
-          // the full payload. BUT we can brute-try common PINs (0000–9999
-          // would be too slow; instead we try the locally-stored PINs first,
-          // then fall back to the two defaults so a fresh device can always
-          // log in with the correct registered PINs).
-          //
-          // Real strategy: derive a key from email + each candidate PIN and
-          // test it against enc_check. The first one that produces
-          // 'dentaflow-ok' is the real dentist PIN. Store it so getPINs()
-          // returns it before the user even types anything.
-          //
-          // This loop runs at most ~4 candidates and takes < 1 second.
-          const localPins = getPINs();
-          const candidates = [
-            localPins.dentist,
-            localPins.receptionist,
-            PIN_DEFAULTS.dentist,
-            PIN_DEFAULTS.receptionist
-          ].filter((p, i, a) => p && a.indexOf(p) === i); // deduplicate
-
-          let discoveredDentistPin = null;
-          let discoveredReceptPin  = null;
-
-          for (const candidate of candidates) {
-            try {
-              const testKey = await _deriveKey(email, candidate);
-              const sentinel = await _tryDecrypt(testKey, row.enc_check);
-              if (sentinel === 'dentaflow-ok') {
-                // This candidate IS the dentist PIN — decrypt payload for pins + name
-                const plaintext = await _tryDecrypt(testKey, row.data);
-                if (plaintext) {
-                  const d = JSON.parse(plaintext);
-                  clinicName = d.S?.clinicName || clinicName || email;
-                  if (d.pins) {
-                    // Save the real PINs to localStorage NOW so checkPIN() can compare them
-                    localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
-                    discoveredDentistPin = d.pins.dentist;
-                    discoveredReceptPin  = d.pins.receptionist;
-                    console.log('[DF:lsEmailNext] ✓ Real PINs bootstrapped from cloud on new device');
-                  }
-                }
-                break; // found — no need to try more candidates
-              }
-            } catch(e) { /* key derivation or decryption error — try next */ }
-          }
-
-          // If we still couldn't bootstrap PINs (e.g. clinic used a custom PIN
-          // that isn't in our candidates list), we leave the cloud_row cached.
-          // checkPIN() will derive the key from whatever the user types and
-          // attempt decryption — correct PIN → 'dentaflow-ok' sentinel matches
-          // → login succeeds and real PINs are saved then.
-          if (!discoveredDentistPin) {
-            console.warn('[DF:lsEmailNext] Could not bootstrap PINs from candidates — user must enter correct PIN; cloud data will decrypt post-login.');
-          }
-
-          clinicName = clinicName || email;
-        }
-
-        // Persist session with at minimum the email
-        try {
-          const prev = JSON.parse(localStorage.getItem('df3_session') || '{}');
-          const name = clinicName || prev.clinicName || email;
-          localStorage.setItem('df3_session', JSON.stringify({ ...prev, email, clinicName: name }));
-          clinicName = name;
-        } catch(e) {}
-      }
-    } catch(e) { console.warn('[DF:lsEmailNext] cloud check failed:', e.message); }
-  }
-
-  // 3. No clinic found anywhere — tell user to register
-  if (!clinicName) {
-    errEl.textContent = 'No clinic found for this email. Please register first.';
-    errEl.classList.add('show'); return;
-  }
-
-  // Found — proceed to PIN entry
-  localStorage.setItem('df3_last_email', email);
-  document.getElementById('ls-clinic-label').textContent = clinicName;
-  document.getElementById('ls-email-label').textContent = email;
-  document.getElementById('ls-email-step').classList.remove('active');
-  document.getElementById('ls-pin-step').classList.add('active');
-  pinEntry = '';
-  updatePinDots();
-}
-
-function resyncCounters() {
-  if (patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
-  if (appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
-  if (inventory.length) iidC = Math.max(iidC, ...inventory.map(i=>parseInt(i.id.slice(1))||0)) + 1;
-  if (labJobs.length) lidC = Math.max(lidC, ...labJobs.map(l=>parseInt(l.id.slice(1))||0)) + 1;
-  if (invoices.length) {
-    const nums = invoices.map(i=>parseInt(i.receiptNum?.replace('RCP-','')||0)).filter(n=>!isNaN(n));
-    if (nums.length) receiptC = Math.max(receiptC, ...nums) + 1;
-  }
-}
-
-async function lsRegister() {
-  const clinic  = document.getElementById('reg-clinic').value.trim();
-  const email   = document.getElementById('reg-email').value.trim().toLowerCase();
-  const dentist = document.getElementById('reg-dentist').value.trim();
-  const dpin    = document.getElementById('reg-dpin').value.trim();
-  const rpin    = document.getElementById('reg-rpin').value.trim();
-  const consent = document.getElementById('reg-consent')?.checked;
-  const errEl   = document.getElementById('ls-reg-err');
-
-  if (!clinic || !email || !dentist) { errEl.textContent = 'Clinic name, email and dentist name are required.'; errEl.classList.add('show'); return; }
-  if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; errEl.classList.add('show'); return; }
-  if (!dpin || !/^\d{4}$/.test(dpin)) { errEl.textContent = 'Dentist PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
-  if (!rpin || !/^\d{4}$/.test(rpin)) { errEl.textContent = 'Receptionist PIN must be exactly 4 digits.'; errEl.classList.add('show'); return; }
-  if (!consent) { errEl.textContent = 'You must accept the data processing terms to register.'; errEl.classList.add('show'); return; }
-  errEl.classList.remove('show');
-
-  // Reset to clean slate — new clinic gets empty data
-  patients = []; appointments = []; invoices = []; labJobs = [];
-  inventory = []; hmoProviders = []; odontograms = {}; perioCharts = {};
-  pidC = 1; aidC = 1; iidC = 1; lidC = 1; receiptC = 1001;
-
-  S.clinicName = clinic;
-  S.dentistName = dentist;
-  _lsClinicEmail = email;
-  clinicId = btoa(email).replace(/=/g, '');
-
-  const pins = { dentist: dpin, receptionist: rpin };
-  localStorage.setItem(_k('pins'), JSON.stringify(pins));
-  localStorage.setItem('df3_last_email', email);
-  localStorage.setItem('df3_session', JSON.stringify({
-    email, clinicName: clinic,
-    ndprConsentAt: new Date().toISOString() // NDPR: log consent timestamp
-  }));
-
-  // Derive encryption key from email + dentist PIN
-  await initEncKey(email, dpin);
-
-  persist();
-
-  // Push encrypted data to cloud in background
-  if (navigator.onLine) {
-    pushToSupabase().catch(e => console.warn('Cloud push after register failed:', e));
-  }
-
-  currentRole = 'dentist';
-  applyRoleMode();
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('sb-clinic').textContent = S.clinicName;
-  document.getElementById('sb-dentist').textContent = S.dentistName;
-  showToast('Welcome, ' + dentist + '! Your clinic is ready.');
-  renderDash();
-  setTimeout(startOnboarding, 600);
-}
-
 // ==================== PIN LOCK SYSTEM ====================
-var currentRole = 'dentist';
+var currentRole = 'dentist'; // 'dentist' | 'receptionist'
 var pinEntry = '';
 var pinSelectedRole = 'dentist';
 var PIN_DEFAULTS = { dentist: '1234', receptionist: '0000' };
-var _pinContext = 'login'; // 'login' | 'lock'
 
 function getPINs() {
   try {
-    var v = localStorage.getItem(_k('pins'))
-         || localStorage.getItem('df3_pins');   // legacy unscoped fallback
-    return (v ? JSON.parse(v) : null) || PIN_DEFAULTS;
+    return JSON.parse(localStorage.getItem('df3_pins') || 'null') || PIN_DEFAULTS;
   } catch(e) { return PIN_DEFAULTS; }
 }
 function savePINs() {
@@ -4006,19 +2717,17 @@ function savePINs() {
   if (rp && !/^\d{4}$/.test(rp)) { showToast('⚠ Receptionist PIN must be 4 digits'); return; }
   const current = getPINs();
   const pins = { dentist: dp || current.dentist, receptionist: rp || current.receptionist };
-  localStorage.setItem(_k('pins'), JSON.stringify(pins));
+  localStorage.setItem('df3_pins', JSON.stringify(pins));
   document.getElementById('s-dentist-pin').value = '';
   document.getElementById('s-recept-pin').value = '';
-  scheduleSupaSync();
   showToast('✓ PINs updated!');
 }
 function selectPinRole(role) {
   pinSelectedRole = role;
   pinEntry = '';
   updatePinDots();
-  // Update tabs in both screens
-  ['pin-tab-dentist','pinlock-tab-dentist'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.toggle('active', role==='dentist'); });
-  ['pin-tab-receptionist','pinlock-tab-receptionist'].forEach(id => { const el=document.getElementById(id); if(el) el.classList.toggle('active', role==='receptionist'); });
+  document.getElementById('pin-tab-dentist').classList.toggle('active', role === 'dentist');
+  document.getElementById('pin-tab-receptionist').classList.toggle('active', role === 'receptionist');
   document.getElementById('pin-hint').innerHTML = role === 'dentist'
     ? 'Default dentist PIN: <strong>1234</strong>'
     : 'Default receptionist PIN: <strong>0000</strong>';
@@ -4029,190 +2738,66 @@ function pinPress(digit) {
   updatePinDots();
   if (pinEntry.length === 4) setTimeout(checkPIN, 120);
 }
-function pinDel() { pinEntry = pinEntry.slice(0, -1); updatePinDots(); }
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+}
 function updatePinDots(error) {
-  // Update login screen dots (pd0–pd3)
   for (let i = 0; i < 4; i++) {
     const dot = document.getElementById('pd' + i);
-    if (dot) dot.className = 'pin-dot' + (i < pinEntry.length ? (error ? ' error' : ' filled') : '');
-  }
-  // Update lock screen dots (pld0–pld3)
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('pld' + i);
-    if (dot) dot.className = 'pin-dot' + (i < pinEntry.length ? (error ? ' error' : ' filled') : '');
+    dot.className = 'pin-dot' + (i < pinEntry.length ? (error ? ' error' : ' filled') : '');
   }
 }
 function checkPIN() {
   const pins = getPINs();
   const correct = pins[pinSelectedRole];
-
-  // ── NEW-DEVICE CUSTOM-PIN FALLBACK ───────────────────────────────────────
-  // If this device has no real PINs yet (still showing defaults) AND there is
-  // a cached cloud_row, try to validate the entered PIN cryptographically:
-  // derive a key from email + entered PIN and test it against enc_check.
-  // If it decrypts to 'dentaflow-ok', the PIN is correct regardless of what
-  // getPINs() returned. This covers clinics that set a custom PIN that wasn't
-  // in our bootstrap candidate list.
-  const isUsingDefault = (pins.dentist === PIN_DEFAULTS.dentist && pins.receptionist === PIN_DEFAULTS.receptionist);
-  const cachedRowStr = localStorage.getItem(_k('cloud_row'));
-
-  if (isUsingDefault && cachedRowStr && pinEntry.length === 4) {
-    // Run async validation — show a brief loading state on the dots
-    (async function() {
-      let row;
-      try { row = JSON.parse(cachedRowStr); } catch(e) { row = null; }
-
-      if (row && row.enc_check && row.enc_check !== 'unencrypted') {
-        try {
-          const testKey = await _deriveKey(_lsClinicEmail, pinEntry);
-          const sentinel = await _tryDecrypt(testKey, row.enc_check);
-
-          if (sentinel === 'dentaflow-ok') {
-            // Correct PIN — decrypt payload to get real PINs
-            const plaintext = await _tryDecrypt(testKey, row.data);
-            if (plaintext) {
-              const d = JSON.parse(plaintext);
-              if (d.pins) {
-                localStorage.setItem(_k('pins'), JSON.stringify(d.pins));
-                console.log('[DF:checkPIN] ✓ Custom PIN validated via enc_check; real PINs saved');
-              }
-            }
-            // Now proceed with the actual login using the role the user selected
-            // (dentist PIN = dentist role; receptionist PIN needs re-check below)
-            const realPins = getPINs();
-            const roleForPin = pinEntry === realPins.dentist ? 'dentist'
-                             : pinEntry === realPins.receptionist ? 'receptionist'
-                             : 'dentist'; // enc_check passed so it must be dentist
-            pinSelectedRole = roleForPin;
-            _proceedWithLogin(pinEntry);
-            return;
-          }
-        } catch(e) { /* decryption error — fall through to standard wrong-PIN flow */ }
-      }
-
-      // Sentinel check failed — wrong PIN
-      _wrongPIN();
-    })();
-    return; // async path handles everything
-  }
-
-  // ── STANDARD PATH (local PINs already known) ─────────────────────────────
   if (pinEntry === correct) {
-    _proceedWithLogin(pinEntry);
-  } else {
-    _wrongPIN();
-  }
-}
-
-function _wrongPIN() {
-  updatePinDots(true);
-  document.getElementById('pin-hint').innerHTML = '<span style="color:var(--red)">Wrong PIN — try again</span>';
-  setTimeout(() => {
-    pinEntry = ''; updatePinDots();
-    document.getElementById('pin-hint').innerHTML = pinSelectedRole === 'dentist'
-      ? 'Default dentist PIN: <strong>1234</strong>'
-      : 'Default receptionist PIN: <strong>0000</strong>';
-  }, 900);
-}
-
-function _proceedWithLogin(enteredPin) {
     currentRole = pinSelectedRole;
     applyRoleMode();
-    document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('pin-screen').classList.add('hidden');
-    // Persist session so lsInit can restore clinicId on next page load
-    try {
-      const existing = JSON.parse(localStorage.getItem('df3_session') || '{}');
-      const clinicName = existing.clinicName || S.clinicName || _lsClinicEmail;
-      localStorage.setItem('df3_session', JSON.stringify({ ...existing, email: _lsClinicEmail, clinicName }));
-    } catch(e) {}
-    console.log('[DF:checkPIN] clinicId before migration:', clinicId);
-    try {
-      var allKeys = Object.keys(localStorage).filter(k => k.includes('_pts') || k.includes('_appts') || k.includes('df3_'));
-      console.log('[DF:checkPIN] relevant localStorage keys:', allKeys);
-    } catch(e) {}
-    migrateDefaultKeys();
-    loadStorage();
-    resyncCounters();
-    console.log('[DF:checkPIN] after load: patients=' + patients.length + ' appts=' + appointments.length);
-
-    // ── Encryption key derivation ────────────────────────────────────────────
-    // Data is ALWAYS encrypted with the DENTIST PIN (set at registration).
-    // If a receptionist logs in, their PIN unlocks the app but the encryption
-    // key must still use the dentist PIN to read/write cloud data.
-    // ────────────────────────────────────────────────────────────────────────
-    async function resolveEncKeyAndSync() {
-      // Try entered PIN first (dentist login path)
-      await initEncKey(_lsClinicEmail, enteredPin);
-
-      // If enc key doesn't work (receptionist login), fall back to stored dentist PIN
-      var cachedRowStr = localStorage.getItem(_k('cloud_row'))
-                       || localStorage.getItem('df3_cloud_row');
-      localStorage.removeItem('df3_cloud_row'); // clean up legacy key
-
-      if (cachedRowStr) {
-        try {
-          const row = JSON.parse(cachedRowStr);
-          if (row.enc_check && row.enc_check !== 'unencrypted') {
-            let sentinel = await _tryDecrypt(_encKey, row.enc_check);
-            if (sentinel !== 'dentaflow-ok') {
-              const storedPins = getPINs();
-              const dentistPin = storedPins.dentist;
-              if (dentistPin && dentistPin !== enteredPin) {
-                await initEncKey(_lsClinicEmail, dentistPin);
-                sentinel = await _tryDecrypt(_encKey, row.enc_check);
-              }
-            }
-          }
-        } catch(e) { console.warn('[DF:checkPIN] cloud row key probe failed:', e); }
-        // Consume the cached row — syncWithCloud will re-fetch fresh data
-        localStorage.removeItem(_k('cloud_row'));
-      } else {
-        // No cached row — try to derive key via stored dentist PIN as fallback
-        const storedPins = getPINs();
-        if (storedPins.dentist && storedPins.dentist !== enteredPin) {
-          const testKey = await _deriveKey(_lsClinicEmail, storedPins.dentist).catch(() => null);
-          if (testKey) _encKey = testKey;
-        }
-      }
-
-      // ── Timestamp-based sync ─────────────────────────────────────────────────
-      // The rule:
-      //   • Online + local has data  → compare timestamps; winner is source of truth
-      //   • Online + no local data   → force-pull from cloud (new device)
-      //   • Offline                  → use local data as-is
-      if (navigator.onLine) {
-        var hasLocalData = patients.length > 0 || appointments.length > 0 || invoices.length > 0;
-        var forceCloud = !hasLocalData; // brand-new device: always take cloud
-        syncWithCloud({ forceCloud: forceCloud });
-      }
-      // If offline, local data is already loaded — nothing more to do
-    }
-    resolveEncKeyAndSync();
-    renderDash();
-    showToast('Welcome' + (currentRole === 'dentist' ? ', Doctor' : ' back') + '!');
+    showToast(`✓ Welcome${currentRole === 'dentist' ? ', Doctor' : ' back'}!`);
+  } else {
+    updatePinDots(true);
+    document.getElementById('pin-hint').innerHTML = '<span style="color:var(--red)">Wrong PIN — try again</span>';
+    setTimeout(() => { pinEntry = ''; updatePinDots(); document.getElementById('pin-hint').innerHTML = pinSelectedRole === 'dentist' ? 'Default dentist PIN: <strong>1234</strong>' : 'Default receptionist PIN: <strong>0000</strong>'; }, 900);
+  }
 }
 function applyRoleMode() {
   const isReceptionist = currentRole === 'receptionist';
   const badge = document.getElementById('role-badge');
+
   if (isReceptionist) {
-    document.body.classList.add('receptionist-mode'); document.body.classList.remove('dentist-mode');
+    document.body.classList.add('receptionist-mode');
+    document.body.classList.remove('dentist-mode');
     if (badge) { badge.className = 'pin-role-badge role-receptionist'; badge.textContent = '🧑‍💼 Receptionist'; }
   } else {
-    document.body.classList.remove('receptionist-mode'); document.body.classList.add('dentist-mode');
+    document.body.classList.remove('receptionist-mode');
+    document.body.classList.add('dentist-mode');
     if (badge) { badge.className = 'pin-role-badge role-dentist'; badge.textContent = '👨‍⚕️ Dentist'; }
   }
+
+  // Hide/show fee field in booking modal
   const feeField = document.getElementById('bk-fee');
   if (feeField) feeField.closest('.field').style.display = isReceptionist ? 'none' : '';
+
+  // Hide/show invoices tab in patient detail
   const invTab = document.getElementById('pd-inv-tab-btn');
   if (invTab) invTab.style.display = isReceptionist ? 'none' : '';
+
+  // If on a restricted page, bounce to dashboard
   if (isReceptionist && DENTIST_ONLY_PAGES.some(p => document.getElementById(`page-${p}`)?.classList.contains('active'))) {
-    go('dashboard'); return;
+    go('dashboard');
+    return; // go() calls renderDash already
   }
+
+  // Always re-render whatever page is currently active so role changes take effect immediately
   const activePage = document.querySelector('.page.active');
   if (activePage) {
     const pageId = activePage.id.replace('page-', '');
-    const fn = {dashboard:renderDash,appointments:renderAppts,patients:renderPatients,reminders:renderReminders,recall:renderRecall,invoices:renderInvoices,hmo:renderHMO,revenue:renderRevenue,odontogram:renderOdontoPage,perio:renderPerioPage,inventory:renderInventory,lab:renderLab,settings:renderSettings};
+    const fn = {dashboard:renderDash, appointments:renderAppts, patients:renderPatients,
+                reminders:renderReminders, recall:renderRecall, invoices:renderInvoices,
+                hmo:renderHMO, revenue:renderRevenue, odontogram:renderOdontoPage,
+                perio:renderPerioPage, inventory:renderInventory, lab:renderLab, settings:renderSettings};
     if (fn[pageId]) fn[pageId]();
   }
 }
@@ -4220,247 +2805,7 @@ function lockApp() {
   pinEntry = '';
   selectPinRole('dentist');
   updatePinDots();
-  // Show the mid-session lock screen (not the full login)
   document.getElementById('pin-screen').classList.remove('hidden');
-}
-
-// ==================== CHARTS ====================
-var _charts = {};
-function destroyChart(id) { if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; } }
-
-const CHART_DEFAULTS = {
-  color: { accent: '#00d4a0', accent2: '#7c6af7', yellow: '#f0a500', red: '#f04a4a', blue: '#4a9ff0' },
-  font: { family: 'DM Sans, system-ui, sans-serif', size: 11 },
-  // Read live from CSS so light/dark mode is always correct
-  get gridColor() { return document.body.classList.contains('light') ? 'rgba(200,212,224,0.7)' : 'rgba(42,47,69,0.8)'; },
-  get textColor() { return document.body.classList.contains('light') ? '#4a5568' : '#8b91aa'; },
-  get tooltipBg() { return document.body.classList.contains('light') ? '#ffffff' : '#1c2030'; },
-  get tooltipBorder() { return document.body.classList.contains('light') ? '#c8d4e0' : '#2a2f45'; },
-  get tooltipTitle() { return document.body.classList.contains('light') ? '#1a2332' : '#e8eaf2'; },
-  get tooltipBody() { return document.body.classList.contains('light') ? '#4a5568' : '#8b91aa'; }
-};
-
-function chartOpts(type) {
-  var gc = CHART_DEFAULTS.gridColor;
-  var tc = CHART_DEFAULTS.textColor;
-  var base = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { labels: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 11 }, boxWidth: 10 } },
-      tooltip: { backgroundColor: CHART_DEFAULTS.tooltipBg, borderColor: CHART_DEFAULTS.tooltipBorder, borderWidth: 1, titleColor: CHART_DEFAULTS.tooltipTitle, bodyColor: CHART_DEFAULTS.tooltipBody, titleFont: { family: CHART_DEFAULTS.font.family }, bodyFont: { family: CHART_DEFAULTS.font.family } }
-    },
-    scales: type !== 'pie' && type !== 'doughnut' ? {
-      x: { grid: { color: gc }, ticks: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 10 } } },
-      y: { grid: { color: gc }, ticks: { color: tc, font: { family: CHART_DEFAULTS.font.family, size: 10 } } }
-    } : {}
-  };
-  return base;
-}
-
-function renderDashCharts() {
-  // Chart 1: Daily revenue this month
-  const mStart = thisMonthStart();
-  const now = new Date();
-  const daysInMonth = now.getDate();
-  const labels = [], revData = [];
-  for (let i = 1; i <= daysInMonth; i++) {
-    const d = `${mStart.slice(0,8)}${String(i).padStart(2,'0')}`;
-    labels.push(i);
-    const dayRev = appointments.filter(a => a.date === d && a.status === 'attended' && a.payType !== 'hmo').reduce((s,a) => s + (a.fee||0), 0);
-    revData.push(dayRev);
-  }
-  destroyChart('chart-dash-revenue');
-  const ctx1 = document.getElementById('chart-dash-revenue');
-  if (ctx1) {
-    const opts = chartOpts('line');
-    opts.plugins.legend.display = false;
-    _charts['chart-dash-revenue'] = new Chart(ctx1, {
-      type: 'line',
-      data: { labels, datasets: [{ data: revData, borderColor: CHART_DEFAULTS.color.accent, backgroundColor: 'rgba(0,212,160,0.08)', fill: true, tension: 0.4, pointRadius: 3, pointHoverRadius: 5 }] },
-      options: opts
-    });
-  }
-
-  // Chart 2: Today's appointments by status
-  const td = today();
-  const todayAll = appointments.filter(a => a.date === td);
-  const upcoming = todayAll.filter(a => a.status === 'upcoming').length;
-  const attended = todayAll.filter(a => a.status === 'attended').length;
-  const cancelled = todayAll.filter(a => a.status === 'cancelled').length;
-  destroyChart('chart-dash-appts');
-  const ctx2 = document.getElementById('chart-dash-appts');
-  if (ctx2 && (upcoming + attended + cancelled) > 0) {
-    const opts = chartOpts('doughnut');
-    opts.cutout = '60%';
-    _charts['chart-dash-appts'] = new Chart(ctx2, {
-      type: 'doughnut',
-      data: {
-        labels: ['Upcoming', 'Attended', 'Cancelled'],
-        datasets: [{ data: [upcoming, attended, cancelled], backgroundColor: [CHART_DEFAULTS.color.yellow, CHART_DEFAULTS.color.accent, CHART_DEFAULTS.color.red], borderWidth: 0 }]
-      },
-      options: opts
-    });
-  } else if (ctx2) {
-    const opts = chartOpts('doughnut');
-    opts.cutout = '60%';
-    _charts['chart-dash-appts'] = new Chart(ctx2, {
-      type: 'doughnut',
-      data: { labels: ['No appointments today'], datasets: [{ data: [1], backgroundColor: ['#2a2f45'], borderWidth: 0 }] },
-      options: opts
-    });
-  }
-}
-
-function renderApptCharts() {
-  // Chart 1: All appointments by status
-  const upcoming = appointments.filter(a => a.status === 'upcoming').length;
-  const attended = appointments.filter(a => a.status === 'attended').length;
-  const cancelled = appointments.filter(a => a.status === 'cancelled').length;
-  destroyChart('chart-appt-status');
-  const ctx1 = document.getElementById('chart-appt-status');
-  if (ctx1) {
-    const opts = chartOpts('bar');
-    opts.plugins.legend.display = false;
-    opts.scales.x.grid.display = false;
-    _charts['chart-appt-status'] = new Chart(ctx1, {
-      type: 'bar',
-      data: {
-        labels: ['Upcoming', 'Attended', 'Cancelled'],
-        datasets: [{ data: [upcoming, attended, cancelled], backgroundColor: [CHART_DEFAULTS.color.yellow, CHART_DEFAULTS.color.accent, CHART_DEFAULTS.color.red], borderRadius: 6, borderSkipped: false }]
-      },
-      options: opts
-    });
-  }
-
-  // Chart 2: Bookings this week by day
-  const weekLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const wStart = thisWeekStart();
-  const wData = [0,0,0,0,0,0,0];
-  appointments.forEach(a => {
-    const d = new Date(a.date + 'T12:00:00');
-    const ws = new Date(wStart + 'T00:00:00');
-    const diff = Math.floor((d - ws) / 86400000);
-    if (diff >= 0 && diff < 7) wData[diff]++;
-  });
-  destroyChart('chart-appt-week');
-  const ctx2 = document.getElementById('chart-appt-week');
-  if (ctx2) {
-    const opts = chartOpts('bar');
-    opts.plugins.legend.display = false;
-    opts.scales.x.grid.display = false;
-    _charts['chart-appt-week'] = new Chart(ctx2, {
-      type: 'bar',
-      data: {
-        labels: weekLabels,
-        datasets: [{ data: wData, backgroundColor: 'rgba(124,106,247,0.7)', borderRadius: 6, borderSkipped: false }]
-      },
-      options: opts
-    });
-  }
-}
-
-function renderRevCharts() {
-  const startDate = revFilter === 'month' ? thisMonthStart() : revFilter === 'week' ? thisWeekStart() : '2000-01-01';
-  const attended = appointments.filter(a => a.status === 'attended' && a.date >= startDate);
-
-  // Chart 1: Revenue by treatment (horizontal bar)
-  const byTreatment = {};
-  attended.forEach(a => { if (!byTreatment[a.treatment]) byTreatment[a.treatment] = 0; byTreatment[a.treatment] += (a.fee||0); });
-  const sorted = Object.entries(byTreatment).sort((a,b) => b[1]-a[1]).slice(0,8);
-  destroyChart('chart-rev-treatment');
-  const ctx1 = document.getElementById('chart-rev-treatment');
-  if (ctx1) {
-    const opts = chartOpts('bar');
-    opts.indexAxis = 'y';
-    opts.plugins.legend.display = false;
-    opts.scales.x.grid.display = false;
-    _charts['chart-rev-treatment'] = new Chart(ctx1, {
-      type: 'bar',
-      data: {
-        labels: sorted.map(([t]) => t),
-        datasets: [{ data: sorted.map(([,v]) => v), backgroundColor: 'rgba(0,212,160,0.7)', borderRadius: 4 }]
-      },
-      options: opts
-    });
-  }
-
-  // Chart 2: Monthly trend cash vs HMO (last 6 months)
-  const trendLabels = [], cashData = [], hmoData = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const mLabel = d.toLocaleDateString('en-NG', { month: 'short', year: '2-digit' });
-    const mStart = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
-    const mEnd = new Date(d.getFullYear(), d.getMonth()+1, 0);
-    const mEndStr = mEnd.toISOString().split('T')[0];
-    const mAppts = appointments.filter(a => a.status === 'attended' && a.date >= mStart && a.date <= mEndStr);
-    trendLabels.push(mLabel);
-    cashData.push(mAppts.filter(a => a.payType !== 'hmo').reduce((s,a) => s+(a.fee||0), 0));
-    hmoData.push(mAppts.filter(a => a.payType === 'hmo').reduce((s,a) => s+(a.fee||0), 0));
-  }
-  destroyChart('chart-rev-trend');
-  const ctx2 = document.getElementById('chart-rev-trend');
-  if (ctx2) {
-    const opts = chartOpts('line');
-    opts.scales.x.grid.display = false;
-    _charts['chart-rev-trend'] = new Chart(ctx2, {
-      type: 'line',
-      data: {
-        labels: trendLabels,
-        datasets: [
-          { label: 'Cash', data: cashData, borderColor: CHART_DEFAULTS.color.accent, backgroundColor: 'rgba(0,212,160,0.08)', fill: true, tension: 0.4 },
-          { label: 'HMO', data: hmoData, borderColor: CHART_DEFAULTS.color.accent2, backgroundColor: 'rgba(124,106,247,0.08)', fill: true, tension: 0.4 }
-        ]
-      },
-      options: opts
-    });
-  }
-}
-
-function renderHMOCharts() {
-  // Chart 1: Patients by HMO provider
-  const providerData = hmoProviders.map(h => ({
-    name: h.name.replace(' HMO','').replace(' Insurance',''),
-    count: patients.filter(p => p.hmoId === h.id).length
-  })).filter(p => p.count > 0);
-  destroyChart('chart-hmo-providers');
-  const ctx1 = document.getElementById('chart-hmo-providers');
-  if (ctx1) {
-    const colors = [CHART_DEFAULTS.color.accent2, CHART_DEFAULTS.color.accent, CHART_DEFAULTS.color.blue, CHART_DEFAULTS.color.yellow, CHART_DEFAULTS.color.red];
-    const opts = chartOpts('doughnut');
-    opts.cutout = '55%';
-    _charts['chart-hmo-providers'] = new Chart(ctx1, {
-      type: 'doughnut',
-      data: {
-        labels: providerData.length ? providerData.map(p => p.name) : ['No HMO patients'],
-        datasets: [{ data: providerData.length ? providerData.map(p => p.count) : [1], backgroundColor: providerData.length ? colors.slice(0, providerData.length) : ['#2a2f45'], borderWidth: 0 }]
-      },
-      options: opts
-    });
-  }
-
-  // Chart 2: Claims pending vs paid per provider
-  const mStart = thisMonthStart();
-  const claimLabels = hmoProviders.map(h => h.name.replace(' HMO',''));
-  const pendingData = hmoProviders.map(h => invoices.filter(i => i.hmoId === h.id && !i.paid && i.date >= mStart).reduce((s,i) => s+(i.amount||0), 0));
-  const paidData = hmoProviders.map(h => invoices.filter(i => i.hmoId === h.id && i.paid && i.date >= mStart).reduce((s,i) => s+(i.amount||0), 0));
-  destroyChart('chart-hmo-claims');
-  const ctx2 = document.getElementById('chart-hmo-claims');
-  if (ctx2) {
-    const opts = chartOpts('bar');
-    opts.scales.x.grid.display = false;
-    _charts['chart-hmo-claims'] = new Chart(ctx2, {
-      type: 'bar',
-      data: {
-        labels: claimLabels.length ? claimLabels : ['No providers'],
-        datasets: [
-          { label: 'Pending (₦)', data: pendingData, backgroundColor: 'rgba(240,165,0,0.7)', borderRadius: 4 },
-          { label: 'Paid (₦)', data: paidData, backgroundColor: 'rgba(0,212,160,0.7)', borderRadius: 4 }
-        ]
-      },
-      options: opts
-    });
-  }
 }
 
 // ==================== MEDICAL HISTORY FORM ====================
@@ -4512,6 +2857,50 @@ function clearMedHistory() {
   ['ap-other-conditions','ap-medications','ap-allergies','ap-bp','ap-chief-complaint','ap-dob','ap-occupation','ap-address','ap-ec-name','ap-ec-phone'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['ap-sensitive','ap-bleeding-gums','ap-grinding','ap-consent'].forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
   if (document.getElementById('ap-blood')) document.getElementById('ap-blood').value = '';
+}
+
+// ==================== THEME TOGGLE ====================
+(function(){
+  // Resolve initial theme: stored preference > system preference > dark
+  function getSystemPref(){ return window.matchMedia && window.matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark'; }
+  var stored;
+  try { stored = localStorage.getItem('df3_theme'); } catch(e){}
+  var theme = stored || 'system';
+  applyTheme(theme);
+  updateToggleUI(theme === 'system' ? getSystemPref() : theme);
+
+  // Listen for system changes when in "system" mode
+  if(window.matchMedia){
+    window.matchMedia('(prefers-color-scheme:light)').addEventListener('change', function(e){
+      try { if(localStorage.getItem('df3_theme') === 'system' || !localStorage.getItem('df3_theme')) { applyTheme('system'); updateToggleUI(e.matches ? 'light' : 'dark'); } } catch(ex){}
+    });
+  }
+})();
+
+function applyTheme(pref){
+  var resolved;
+  if(pref === 'light'){ resolved = 'light'; }
+  else if(pref === 'dark'){ resolved = 'dark'; }
+  else { resolved = (window.matchMedia && window.matchMedia('(prefers-color-scheme:light)').matches) ? 'light' : 'dark'; }
+  document.documentElement.setAttribute('data-theme', resolved);
+}
+
+function updateToggleUI(resolved){
+  var icon = document.getElementById('tt-icon');
+  var label = document.getElementById('tt-label');
+  if(!icon || !label) return;
+  if(resolved === 'light'){ icon.textContent = '☀️'; label.textContent = 'Light'; }
+  else { icon.textContent = '🌙'; label.textContent = 'Dark'; }
+}
+
+function toggleTheme(){
+  var current;
+  try { current = localStorage.getItem('df3_theme'); } catch(e){}
+  var resolvedNow = document.documentElement.getAttribute('data-theme');
+  var next = (resolvedNow === 'light') ? 'dark' : 'light';
+  try { localStorage.setItem('df3_theme', next); } catch(e){}
+  applyTheme(next);
+  updateToggleUI(next);
 }
 
 // ==================== SIDEBAR COLLAPSE ====================
@@ -4572,140 +2961,26 @@ function restoreSidebarState() {
 
 // ==================== INIT ====================
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
-
-// ── CRITICAL: lsInit must be FIRST — it sets clinicId so every subsequent
-// _k() call (loadSupaConfig, loadStorage, etc.) uses the correct clinic prefix.
-// Moving it after loadSupaConfig/restoreSidebarState caused all clinics to
-// read/write the shared "default_*" keys, making every clinic see the same data.
-lsInit();              // sets clinicId from saved session
-migrateDefaultKeys();  // one-time: rescue data written to 'default_*' by the broken version
-
-loadSupaConfig();       // now uses correct clinicId
-restoreSidebarState();  // now uses correct clinicId
-initTheme();
-startNotifScheduler();
-
-loadStorage();  // reads from the right clinic's keys
-
-// Sync ID counters so new records never collide with existing ones
-resyncCounters();
+loadStorage();
+// Sync counters to actual data so nothing ever collides after data import
+if(patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
+if(appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
+if(inventory.length) iidC = Math.max(iidC, ...inventory.map(i=>parseInt(i.id.slice(1))||0)) + 1;
+if(labJobs.length) lidC = Math.max(lidC, ...labJobs.map(l=>parseInt(l.id.slice(1))||0)) + 1;
+if(invoices.length){
+  const nums = invoices.map(i=>parseInt(i.receiptNum?.replace('RCP-','')||0)).filter(n=>!isNaN(n));
+  if(nums.length) receiptC = Math.max(receiptC, ...nums) + 1;
+}
 populateHMOSelects();
 renderSettings();
-
-// Render dashboard behind the login screen (ready when user logs in)
 renderDash();
-
-// ── POST-INIT CLOUD SYNC ──────────────────────────────────────────────────────
-// If this clinic is already authenticated on this device (has a valid session
-// and stored PINs), compare local vs cloud timestamps in the background and
-// take the newer data as source of truth. This handles the case where another
-// device made changes while this device was offline / closed.
-_postInitSync();
-
-// ==================== PWA ====================
-(function() {
-  // All manifest URLs must be absolute — blob URLs have no base URL context
-  var origin = window.location.origin;
-  var base   = window.location.href.split('?')[0].replace(/\/$/, '');
-
-  // Inline SVG icon as data URI — works inside blob manifests
-  var iconSvg = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#0d0f14"/><path d="M256 80c-55 0-100 28-120 70-15 30-18 65-12 100l25 160c4 25 25 40 45 35 15-4 25-18 28-35l14-80h40l14 80c3 17 13 31 28 35 20 5 41-10 45-35l25-160c6-35 3-70-12-100-20-42-65-70-120-70z" fill="#00d4a0"/><circle cx="208" cy="210" r="22" fill="#0d0f14"/><circle cx="304" cy="210" r="22" fill="#0d0f14"/></svg>');
-  var iconUrl = 'data:image/svg+xml,' + iconSvg;
-
-  var manifest = {
-    name: 'DentaFlow \u2014 Clinic Management',
-    short_name: 'DentaFlow',
-    description: 'Dental clinic management \u2014 appointments, HMO, invoices, reminders',
-    start_url: base + '/?source=pwa',
-    scope: origin + '/',
-    display: 'standalone',
-    orientation: 'any',
-    background_color: '#0d0f14',
-    theme_color: '#0d0f14',
-    categories: ['medical', 'business', 'productivity'],
-    icons: [
-      { src: iconUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
-      { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
-    ],
-    shortcuts: [
-      { name: 'Book Appointment', short_name: 'Book',   description: 'Book a new patient appointment', url: base + '/?action=book',      icons: [{ src: iconUrl, sizes: '96x96' }] },
-      { name: 'Reminders',        short_name: 'Remind', description: 'Send WhatsApp reminders',        url: base + '/?action=reminders', icons: [{ src: iconUrl, sizes: '96x96' }] }
-    ]
-  };
-
-  var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-  var mUrl = URL.createObjectURL(blob);
-  var mLink = document.getElementById('pwa-manifest');
-  if (mLink) mLink.href = mUrl;
-  if ('serviceWorker' in navigator) {
-    // sw.js is served at /sw.js alongside index.html
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
-      .then(function(reg) {
-        console.log('[DentaFlow PWA] Service worker registered');
-        // Check for URL shortcut actions on launch
-        var params = new URLSearchParams(location.search);
-        var action = params.get('action');
-        if (action === 'book') setTimeout(openBooking, 800);
-        if (action === 'reminders') setTimeout(function() { go('reminders'); }, 800);
-      })
-      .catch(function(err) {
-        // SW failed — app still works fully, just no offline caching
-        console.warn('[DentaFlow PWA] Service worker not available:', err.message);
-      });
-
-    // Prompt "Add to Home Screen" after 30 seconds if not already installed
-    var deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', function(e) {
-      e.preventDefault();
-      deferredPrompt = e;
-      // Show sidebar install button immediately
-      var sib = document.getElementById('sidebar-install-btn');
-      if (sib) sib.style.display = 'block';
-      // Show floating banner after 3 seconds
-      setTimeout(function() {
-        if (deferredPrompt) showInstallBanner();
-      }, 3000);
-    });
-
-    window.addEventListener('appinstalled', function() {
-      deferredPrompt = null;
-      // Hide all install UI
-      var banner = document.getElementById('pwa-install-banner');
-      if (banner) banner.remove();
-      var sib = document.getElementById('sidebar-install-btn');
-      if (sib) sib.style.display = 'none';
-      showToast('DentaFlow installed! Open from your home screen.');
-    });
-
-    window.installPWA = function() {
-      if (!deferredPrompt) {
-        showToast('Already installed or not available in this browser');
-        return;
-      }
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function(choice) {
-        deferredPrompt = null;
-        var banner = document.getElementById('pwa-install-banner');
-        if (banner) banner.remove();
-        var sib = document.getElementById('sidebar-install-btn');
-        if (choice.outcome === 'accepted') {
-          if (sib) sib.style.display = 'none';
-        }
-      });
-    };
-  }
-
-  function showInstallBanner() {
-    if (document.getElementById('pwa-install-banner')) return;
-    // Don't show if already running as standalone (already installed)
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-    var banner = document.createElement('div');
-    banner.id = 'pwa-install-banner';
-    banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#141720;border:1px solid #2a2f45;border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,.5);font-family:DM Sans,system-ui,sans-serif;max-width:340px;width:calc(100% - 32px);animation:slideUp .3s ease';
-    banner.innerHTML = '<span style="font-size:26px;flex-shrink:0">🦷</span><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#e8eaf2;margin-bottom:2px">Install DentaFlow</div><div style="font-size:11px;color:#8b91aa">Add to home screen for faster access &amp; offline use</div></div><button onclick="installPWA()" style="background:#00d4a0;color:#0d0f14;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">Install</button><button onclick="this.closest(\'#pwa-install-banner\').remove()" style="background:none;border:none;color:#8b91aa;cursor:pointer;font-size:18px;padding:0 4px;flex-shrink:0">✕</button>';
-    document.body.appendChild(banner);
-  }
-})();
+restoreSidebarState();
+startNotifScheduler();
+maybeShowOnboarding();
+// Render settings PIN fields
+(function(){ const p=getPINs(); })();
+// Show PIN screen on first load (skip if already set to bypass for demo — remove this line in production)
+// lockApp(); // Uncomment to enforce PIN on every load
 </script>
 </body>
 </html>
