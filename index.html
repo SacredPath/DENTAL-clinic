@@ -2971,7 +2971,21 @@ var accountUsers = [];
 function loadUsers() {
   try {
     var stored = localStorage.getItem('df3_users');
-    if (stored) { accountUsers = JSON.parse(stored); return; }
+    if (stored) {
+      accountUsers = JSON.parse(stored);
+      // Migration: ensure owner account exists and has a distinct PIN
+      var ownerUser = accountUsers.find(function(u){ return u.role === 'owner'; });
+      var needsSave = false;
+      if (!ownerUser) {
+        accountUsers.unshift({id:'U001', name: S.dentistName || 'Dr. Adaeze Okafor', role:'owner', pin:'9999', color:'#f0a500'});
+        needsSave = true;
+      } else if (ownerUser.pin === '1234' || ownerUser.pin === '0000') {
+        ownerUser.pin = '9999';
+        needsSave = true;
+      }
+      if (needsSave) saveUsers();
+      return;
+    }
   } catch(e) {}
   // Default seed — 3 roles
   accountUsers = [
@@ -3066,28 +3080,7 @@ function resetUserPin(id) {
   auditLog('edit', `Reset PIN for user: ${u.name}`);
   showToast(`✓ PIN updated for ${u.name}`);
 }
-// Override getPINs to use unified user accounts
-function getPINs() {
-  loadUsers();
-  var owner = accountUsers.find(u => u.role === 'owner') || accountUsers.find(u => u.role === 'dentist');
-  var recept = accountUsers.find(u => u.role === 'receptionist');
-  return {
-    dentist: owner ? owner.pin : '1234',
-    receptionist: recept ? recept.pin : '0000'
-  };
-}
-// Enhance checkPIN to set currentUser name for audit log
-var currentUserName = '';
-var _origCheckPIN = null;
-function checkPINWithUserLookup() {
-  loadUsers();
-  var matchedUser = accountUsers.find(u => {
-    if (pinSelectedRole === 'dentist') return (u.role === 'owner' || u.role === 'dentist') && u.pin === pinEntry;
-    return u.role === 'receptionist' && u.pin === pinEntry;
-  });
-  if (matchedUser) currentUserName = matchedUser.name;
-  else currentUserName = pinSelectedRole === 'dentist' ? (S.dentistName || 'Dentist') : 'Receptionist';
-}
+
 
 // ==================== BACKUP & RECOVERY ====================
 var backupSnapshots = [];
@@ -3434,7 +3427,7 @@ function maybeShowOnboarding() {
 var currentRole = 'owner'; // 'owner' | 'dentist' | 'receptionist'
 var currentUserName = '';
 var pinEntry = '';
-var pinSelectedRole = 'dentist';
+var pinSelectedRole = 'owner'; // matches the active tab shown in PIN screen HTML
 var PIN_DEFAULTS = { dentist: '1234', receptionist: '0000' };
 
 var PIN_DEFAULTS_3 = { owner: '9999', dentist: '1234', receptionist: '0000' };
