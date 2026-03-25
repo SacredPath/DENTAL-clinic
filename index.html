@@ -373,28 +373,57 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;backdrop-filter:blur(2px);}
 .sidebar-overlay.show{display:block;}
 
-/* ============ ONBOARDING TUTORIAL ============ */
+/* ============ ONBOARDING SETUP WIZARD ============ */
 .ob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;overflow-y:auto;}
 .ob-overlay.show{display:flex;}
-.ob-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:520px;max-width:100%;max-height:calc(100vh - 32px);overflow:hidden;display:flex;flex-direction:column;margin:auto;}
-.ob-header{padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;}
-.ob-progress{display:flex;gap:5px;padding:0 24px;margin-top:14px;}
-.ob-step-dot{flex:1;height:3px;border-radius:2px;background:var(--surface3);transition:background .25s;}
-.ob-step-dot.done{background:var(--accent);}
-.ob-step-dot.active{background:var(--accent2);}
-.ob-body{padding:20px 24px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-.ob-icon{font-size:40px;margin-bottom:14px;display:block;}
-.ob-title{font-family:var(--font-display);font-weight:800;font-size:20px;margin-bottom:8px;}
-.ob-desc{font-size:14px;color:var(--text2);line-height:1.7;}
-.ob-features{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
-.ob-feat{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);}
-.ob-feat-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
-.ob-feat-text{font-size:13px;color:var(--text2);line-height:1.5;}
-.ob-feat-text strong{color:var(--text);font-weight:600;}
-.ob-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
-.ob-step-label{font-size:12px;color:var(--text3);}
+.ob-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:580px;max-width:100%;max-height:calc(100vh - 32px);overflow:hidden;display:flex;flex-direction:column;margin:auto;}
+.ob-header{padding:20px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;}
 .ob-close-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:2px 6px;border-radius:var(--radius-sm);}
 .ob-close-btn:hover{color:var(--text);background:var(--surface2);}
+.ob-body{padding:20px 24px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.ob-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.ob-tasks{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.ob-task{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .14s;position:relative;}
+.ob-task:hover{border-color:var(--accent2);background:var(--surface3);}
+.ob-task.done{border-color:rgba(0,212,160,.3);background:rgba(0,212,160,.05);}
+.ob-task.active-task{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(124,106,247,.15);}
+.ob-task-icon{font-size:22px;flex-shrink:0;width:30px;text-align:center;}
+.ob-task-body{flex:1;}
+.ob-task-title{font-weight:600;font-size:13px;margin-bottom:2px;}
+.ob-task-desc{font-size:11px;color:var(--text3);line-height:1.5;}
+.ob-task-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;transition:all .15s;}
+.ob-task.done .ob-task-check{background:var(--accent);border-color:var(--accent);color:#0d0f14;font-weight:700;}
+.ob-task-action{margin-top:10px;display:none;padding-top:8px;border-top:1px solid var(--border);}
+.ob-task.active-task .ob-task-action{display:block;}
+.ob-progress-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:14px;overflow:hidden;}
+.ob-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .4s ease;}
+/* ============ AUDIT LOG ============ */
+.audit-entry{display:flex;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;align-items:flex-start;}
+.audit-entry:last-child{border-bottom:none;}
+.audit-who{font-weight:600;color:var(--accent2);white-space:nowrap;flex-shrink:0;min-width:90px;}
+.audit-what{flex:1;color:var(--text2);line-height:1.5;}
+.audit-when{font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0;}
+.audit-type-badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-right:4px;text-transform:uppercase;letter-spacing:.4px;}
+.audit-create{background:rgba(0,212,160,.12);color:var(--accent);}
+.audit-edit{background:rgba(124,106,247,.12);color:var(--accent2);}
+.audit-delete{background:rgba(240,74,74,.12);color:var(--red);}
+.audit-status{background:rgba(74,159,240,.12);color:var(--blue);}
+/* ============ MULTI-USER ACCOUNTS ============ */
+.user-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;display:flex;align-items:center;gap:12px;margin-bottom:7px;}
+.user-avatar-circle{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.user-info{flex:1;}
+.user-name-label{font-weight:600;font-size:13px;}
+.user-role-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:2px;}
+.role-owner{background:rgba(240,165,0,.12);color:var(--yellow);}
+.role-dentist-badge{background:rgba(0,212,160,.12);color:var(--accent);}
+.role-receptionist-badge{background:rgba(124,106,247,.12);color:var(--accent2);}
+/* ============ CANCEL NOTIFICATION ============ */
+.cancel-msg-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap;margin:10px 0;max-height:160px;overflow-y:auto;}
+/* ============ BACKUP ============ */
+.backup-entry{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;}
+.backup-entry:last-child{border-bottom:none;}
+.backup-name{flex:1;font-weight:500;color:var(--text);}
+.backup-meta{font-size:10px;color:var(--text3);}
 .ob-spotlight{position:fixed;box-shadow:0 0 0 4000px rgba(0,0,0,.75);border-radius:10px;border:2px solid var(--accent);z-index:498;pointer-events:none;transition:all .35s cubic-bezier(.4,0,.2,1);display:none;}
 .ob-spotlight.show{display:block;}
 
@@ -568,6 +597,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div class="date-pill" id="date-pill">📅 Today</div>
       <div class="sync-pill" id="sync-pill" onclick="toggleOffline()" title="Click to simulate offline">🟢 Online</div>
       <span id="role-badge" class="pin-role-badge role-dentist" style="font-size:11px">👨‍⚕️ Dentist</span>
+      <button class="btn btn-ghost btn-sm" onclick="openUserMgmt()" title="User accounts" style="font-size:13px">👥</button>
+      <button class="btn btn-ghost btn-sm" onclick="openAuditLog()" title="Audit log" style="font-size:13px">📋</button>
       <button class="btn btn-ghost btn-sm" onclick="lockApp()" title="Lock / switch user" style="font-size:13px">🔒</button>
       <div style="position:relative">
         <button class="btn btn-ghost btn-sm" id="notif-bell" onclick="toggleNotifPanel()" style="font-size:15px;padding:5px 9px;position:relative" title="Notifications">
@@ -886,11 +917,24 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
         <div style="margin-top:10px;font-size:11px;color:var(--text3)">PINs are stored locally on this device only.</div>
       </div>
       <div class="s-card">
-        <div class="s-title">📴 Offline & Data</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px;">All data saved to browser localStorage — works fully offline. Export JSON backup regularly.</div>
-        <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export JSON Backup</button>
-        <div style="margin-top:8px;font-size:11px;color:var(--text3)">Last saved: <span id="last-saved">—</span></div>
-        <div style="margin-top:12px" id="data-summary"></div>
+        <div class="s-title">🗄 Backup & Recovery</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px">Auto daily snapshots + manual point-in-time backups. Restore any previous state.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn btn-primary btn-sm" onclick="openBackupManager()">🗄 Manage Backups</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Export JSON</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3)">Last saved: <span id="last-saved">—</span></div>
+        <div style="margin-top:8px" id="data-summary"></div>
+      </div>
+      <div class="s-card" style="grid-column:1 / -1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="s-title" style="margin:0">👥 User Accounts</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="openAuditLog()">📋 View Audit Log</button>
+            <button class="btn btn-primary btn-sm" onclick="openUserMgmt()">Manage Users</button>
+          </div>
+        </div>
+        <div id="settings-user-list"></div>
       </div>
     </div>
     <div style="margin-top:12px;text-align:right;"><button class="btn btn-primary" onclick="saveSettings()">Save All Settings</button></div>
@@ -1165,26 +1209,119 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
 <div class="modal-overlay" id="use-modal"><div class="modal" style="width:350px"><div class="modal-title">📤 Use Stock</div><div style="font-size:13px;color:var(--text2);margin-bottom:12px" id="use-lbl"></div><div class="field"><label>Qty Used</label><input type="number" id="use-qty" value="1" min="1"></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('use-modal')">Cancel</button><button class="btn btn-primary" onclick="confirmUse()">Confirm</button></div></div></div>
 <div class="modal-overlay" id="restock-modal"><div class="modal" style="width:350px"><div class="modal-title">📥 Restock</div><div style="font-size:13px;color:var(--text2);margin-bottom:12px" id="restock-lbl"></div><div class="field"><label>Qty to Add</label><input type="number" id="restock-qty" value="10" min="1"></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('restock-modal')">Cancel</button><button class="btn btn-primary" onclick="confirmRestock()">Add Stock</button></div></div></div>
 
-<!-- ONBOARDING TUTORIAL -->
+<!-- ONBOARDING SETUP WIZARD -->
 <div class="ob-overlay" id="ob-overlay">
   <div class="ob-card" id="ob-card">
     <div class="ob-header">
-      <div></div>
-      <button class="ob-close-btn" onclick="closeOnboarding()" title="Skip tutorial">✕</button>
-    </div>
-    <div class="ob-progress" id="ob-progress"></div>
-    <div class="ob-body" id="ob-body"></div>
-    <div class="ob-footer">
-      <div class="ob-step-label" id="ob-step-label">Step 1 of 7</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn btn-ghost btn-sm" id="ob-back" onclick="obStep(-1)" style="display:none">← Back</button>
-        <button class="btn btn-primary btn-sm" id="ob-next" onclick="obStep(1)">Next →</button>
+      <div>
+        <div style="font-family:var(--font-display);font-weight:800;font-size:17px;">🦷 DentaFlow Setup</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Complete these steps to get your clinic running</div>
       </div>
+      <button class="ob-close-btn" onclick="closeOnboarding()" title="Finish later">✕</button>
+    </div>
+    <div class="ob-body" id="ob-body">
+      <div class="ob-tasks" id="ob-tasks"></div>
+      <div class="ob-progress-bar"><div class="ob-progress-fill" id="ob-progress-fill" style="width:0%"></div></div>
+      <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:6px" id="ob-progress-label">0 of 4 steps complete</div>
+    </div>
+    <div class="ob-footer">
+      <div style="font-size:11px;color:var(--text3)">Click a step to expand · progress saved automatically</div>
+      <button class="btn btn-primary btn-sm" id="ob-finish-btn" onclick="closeOnboarding()">Finish Later</button>
     </div>
   </div>
 </div>
 <!-- SPOTLIGHT RING -->
 <div class="ob-spotlight" id="ob-spotlight"></div>
+
+<!-- CANCEL NOTIFICATION MODAL -->
+<div class="modal-overlay" id="cancel-notif-modal">
+  <div class="modal" style="width:480px">
+    <div class="modal-title">❌ Appointment Cancelled</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:6px">The appointment has been cancelled. Send the patient a notification:</div>
+    <div class="cancel-msg-box" id="cancel-msg-preview"></div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Copy this message and paste it into WhatsApp to notify the patient.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('cancel-notif-modal')">Skip</button>
+      <button class="btn btn-primary" id="cancel-copy-btn" onclick="copyCancelMsg()">📋 Copy for WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIT LOG MODAL -->
+<div class="modal-overlay" id="audit-modal">
+  <div class="modal" style="width:620px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="modal-title" style="margin-bottom:0">📋 Audit Log</div>
+      <div style="display:flex;gap:6px">
+        <select id="audit-filter-role" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="renderAuditLog()">
+          <option value="">All users</option>
+        </select>
+        <select id="audit-filter-type" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="renderAuditLog()">
+          <option value="">All actions</option>
+          <option value="create">Created</option>
+          <option value="edit">Edited</option>
+          <option value="delete">Deleted</option>
+          <option value="status">Status change</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('audit-modal')">✕</button>
+      </div>
+    </div>
+    <div id="audit-log-list" style="max-height:460px;overflow-y:auto;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)"></div>
+    <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:11px;color:var(--text3)" id="audit-count">—</div>
+      <button class="btn btn-danger btn-sm" onclick="clearAuditLog()">Clear Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- USER MANAGEMENT MODAL -->
+<div class="modal-overlay" id="user-mgmt-modal">
+  <div class="modal" style="width:500px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="modal-title" style="margin-bottom:0">👥 User Accounts</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('user-mgmt-modal')">✕</button>
+    </div>
+    <div id="user-list"></div>
+    <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">
+      <div style="font-family:var(--font-display);font-weight:700;font-size:12px;margin-bottom:10px;color:var(--accent)">+ Add New User</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="field" style="margin:0"><label>Full Name</label><input type="text" id="new-user-name" placeholder="e.g. Dr. Emeka Obi"></div>
+        <div class="field" style="margin:0"><label>Role</label>
+          <select id="new-user-role" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
+            <option value="dentist">Dentist</option>
+            <option value="receptionist">Receptionist</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="field" style="margin:0"><label>4-Digit PIN</label><input type="password" id="new-user-pin" maxlength="4" placeholder="••••" style="letter-spacing:6px;font-size:18px;"></div>
+        <div class="field" style="margin:0"><label>Confirm PIN</label><input type="password" id="new-user-pin2" maxlength="4" placeholder="••••" style="letter-spacing:6px;font-size:18px;"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addUser()">Add User</button>
+    </div>
+  </div>
+</div>
+
+<!-- BACKUP MANAGER MODAL -->
+<div class="modal-overlay" id="backup-modal">
+  <div class="modal" style="width:500px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="modal-title" style="margin-bottom:0">🗄 Backup & Recovery</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('backup-modal')">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+      DentaFlow auto-saves a daily snapshot. You can also create named backups and restore any point in time.
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="createNamedBackup()">📸 Save Snapshot Now</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportData()">⬇ Download JSON</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">📂 Import JSON<input type="file" accept=".json" style="display:none" onchange="importDataFile(this)"></label>
+    </div>
+    <div style="font-family:var(--font-display);font-weight:700;font-size:12px;color:var(--text3);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px">Saved Snapshots</div>
+    <div id="backup-list" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);max-height:300px;overflow-y:auto"></div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text3)">Up to 10 snapshots stored · oldest auto-deleted</div>
+  </div>
+</div>
 <!-- HELP BUTTON (persistent) -->
 <button id="how-to-btn" onclick="startOnboarding()" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:20px;padding:7px 16px;font-size:12px;font-family:var(--font-sans);cursor:pointer;z-index:50;display:flex;align-items:center;gap:6px;transition:all .12s;box-shadow:0 4px 16px rgba(0,0,0,.3);" onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
   💡 <span>How to use DentaFlow</span>
@@ -1503,9 +1640,33 @@ function markAttended(id){
   // Auto-create invoice
   const inv={id:`R${receiptC}`,apptId:a.id,patientId:a.patientId,date:a.date,treatment:a.treatment,amount:a.fee||0,payType:a.payType,hmoId:a.hmoId||'',copay:0,paid:a.payType!=='hmo',receiptNum:`RCP-${receiptC}`};
   invoices.push(inv);receiptC++;
+  auditLog('status',`Marked attended: ${pt?pt.name:'?'} — ${a.treatment} on ${fmtDate(a.date)} · Receipt ${inv.receiptNum}`);
   persist();renderAppts();renderDash();showToast('✓ Attended — receipt created');runNotifChecks();
 }
-function cancelAppt(id){if(!confirm('Cancel this appointment?'))return;appointments.find(x=>x.id===id).status='cancelled';persist();renderAppts();renderDash();}
+function cancelAppt(id){
+  const a=appointments.find(x=>x.id===id);if(!a)return;
+  const pt=getPt(a.patientId);
+  const confirmMsg=pt?`Cancel appointment for ${pt.name} on ${fmtDate(a.date)} at ${fmtTime(a.time)}?`:'Cancel this appointment?';
+  if(!confirm(confirmMsg))return;
+  a.status='cancelled';
+  auditLog('status',`Cancelled appointment for ${pt?pt.name:'?'} on ${fmtDate(a.date)} at ${fmtTime(a.time)} (${a.treatment})`);
+  persist();renderAppts();renderDash();
+  // Show cancellation notification modal
+  if(pt){
+    const msg=`Hello ${pt.name.split(' ')[0]} 👋\n\nThis is *${S.clinicName}*.\n\nWe regret to inform you that your appointment scheduled for *${fmtDate(a.date)} at ${fmtTime(a.time)}* for *${a.treatment}* has been *cancelled*.\n\nWe apologise for the inconvenience. Please call *${S.phone}* to reschedule at your earliest convenience.\n\nThank you,\n${S.dentistName}`;
+    document.getElementById('cancel-msg-preview').textContent=msg;
+    document.getElementById('cancel-copy-btn').dataset.msg=msg;
+    document.getElementById('cancel-notif-modal').classList.add('open');
+  }
+}
+function copyCancelMsg(){
+  const msg=document.getElementById('cancel-copy-btn').dataset.msg||'';
+  navigator.clipboard.writeText(msg).then(()=>{
+    document.getElementById('cancel-copy-btn').textContent='✓ Copied!';
+    setTimeout(()=>{document.getElementById('cancel-copy-btn').textContent='📋 Copy for WhatsApp';},2000);
+    showToast('✓ Cancellation message copied');
+  });
+}
 
 // ==================== BOOKING ====================
 function openBooking(prefillTime,prefillChair){
@@ -1557,7 +1718,10 @@ function saveBooking(){
     const npt={id:`P${String(pidC).padStart(3,'0')}`,name:n,phone:ph,age:document.getElementById('bk-age').value||'—',gender:'—',payType:document.getElementById('bk-new-paytype').value,hmoId:document.getElementById('bk-new-paytype').value==='hmo'?document.getElementById('bk-new-hmo').value:'',nextVisit:'',odonto_notes:'',visits:[]};
     patients.push(npt);pidC++;pid=npt.id;
   }else pid=ps;
-  appointments.push({id:`A${String(aidC).padStart(3,'0')}`,patientId:pid,date:d,time:t,chair:c,treatment:tr,payType,hmoId,fee,status:'upcoming',notes:nt});
+  const newAppt={id:`A${String(aidC).padStart(3,'0')}`,patientId:pid,date:d,time:t,chair:c,treatment:tr,payType,hmoId,fee,status:'upcoming',notes:nt};
+  appointments.push(newAppt);
+  const bkPt=getPt(pid);
+  auditLog('create',`Booked appointment for ${bkPt?bkPt.name:'New patient'} — ${tr} on ${fmtDate(d)} at ${fmtTime(t)} (${c})`);
   aidC++;closeModal('booking-modal');persist();renderDash();showToast('✓ Appointment booked!');runNotifChecks();
 }
 
@@ -1610,7 +1774,7 @@ function saveNewPt(){
     nextVisit:document.getElementById('ap-next').value,
     odonto_notes:'',visits:[],medHistory
   });
-  pidC++;closeModal('add-pt-modal');persist();renderPatients();showToast('✓ Patient registered!');
+  pidC++;closeModal('add-pt-modal');auditLog('create','Registered new patient: '+n+' ('+phone+')');persist();renderPatients();showToast('✓ Patient registered!');
 }
 function openPtDetail(id){
   selPtForDetail=id;const p=getPt(id);if(!p)return;
@@ -2222,6 +2386,7 @@ function renderSettings(){
   document.getElementById('s-open').value=S.openTime;document.getElementById('s-close').value=S.closeTime;document.getElementById('s-slot').value=S.slotDuration;document.getElementById('s-chairs').value=S.numChairs;
   renderChairNameFields();
   const ls=localStorage.getItem('df3_saved');document.getElementById('last-saved').textContent=ls||'Not saved yet';
+  try { renderSettingsUserList(); } catch(e) {}
   document.getElementById('data-summary').innerHTML=`<div style="font-size:12px;color:var(--text2);line-height:2">👥 ${patients.length} patients · 📅 ${appointments.length} appointments<br>🧾 ${invoices.length} invoices · 🏥 ${hmoProviders.length} HMO providers<br>🔬 ${labJobs.length} lab jobs · 📦 ${inventory.length} inventory items</div>`;
 }
 function renderChairNameFields(){
@@ -2520,184 +2685,535 @@ function startNotifScheduler() {
 // ==================== MOBILE SIDEBAR ====================
 // (handled by unified toggleSidebar above)
 
-// ==================== ONBOARDING TUTORIAL ====================
-var obCurrentStep = 0;
-var OB_STEPS = [
+// ==================== AUDIT LOG ====================
+var auditLog_data = [];
+function auditLog(type, what) {
+  try {
+    var stored = localStorage.getItem('df3_audit');
+    if (stored) auditLog_data = JSON.parse(stored);
+  } catch(e) {}
+  var entry = {
+    id: Date.now(),
+    type: type,      // 'create' | 'edit' | 'delete' | 'status'
+    who: currentRole === 'dentist' ? (S.dentistName || 'Dentist') : 'Receptionist',
+    what: what,
+    when: new Date().toLocaleString('en-NG')
+  };
+  auditLog_data.unshift(entry);
+  if (auditLog_data.length > 500) auditLog_data = auditLog_data.slice(0, 500);
+  try { localStorage.setItem('df3_audit', JSON.stringify(auditLog_data)); } catch(e) {}
+}
+function loadAuditLog() {
+  try {
+    var stored = localStorage.getItem('df3_audit');
+    if (stored) auditLog_data = JSON.parse(stored);
+  } catch(e) {}
+}
+function openAuditLog() {
+  loadAuditLog();
+  // Populate role filter
+  var roles = [...new Set(auditLog_data.map(e => e.who))];
+  var roleFilter = document.getElementById('audit-filter-role');
+  if (roleFilter) {
+    roleFilter.innerHTML = '<option value="">All users</option>' + roles.map(r => `<option value="${r}">${r}</option>`).join('');
+  }
+  renderAuditLog();
+  document.getElementById('audit-modal').classList.add('open');
+}
+function renderAuditLog() {
+  loadAuditLog();
+  var roleF = document.getElementById('audit-filter-role')?.value || '';
+  var typeF = document.getElementById('audit-filter-type')?.value || '';
+  var filtered = auditLog_data.filter(e => (!roleF || e.who === roleF) && (!typeF || e.type === typeF));
+  var el = document.getElementById('audit-log-list');
+  var countEl = document.getElementById('audit-count');
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:24px"><div class="empty-icon">📋</div><div>No audit entries yet</div></div>';
+    if (countEl) countEl.textContent = '0 entries';
+    return;
+  }
+  el.innerHTML = filtered.map(e => {
+    var tc = e.type === 'create' ? 'audit-create' : e.type === 'edit' ? 'audit-edit' : e.type === 'delete' ? 'audit-delete' : 'audit-status';
+    return `<div class="audit-entry">
+      <div class="audit-who">${e.who}</div>
+      <div class="audit-what"><span class="audit-type-badge ${tc}">${e.type}</span>${e.what}</div>
+      <div class="audit-when">${e.when}</div>
+    </div>`;
+  }).join('');
+  if (countEl) countEl.textContent = `${filtered.length} of ${auditLog_data.length} entries`;
+}
+function clearAuditLog() {
+  if (!confirm('Clear all audit log entries? This cannot be undone.')) return;
+  auditLog_data = [];
+  try { localStorage.removeItem('df3_audit'); } catch(e) {}
+  renderAuditLog();
+  showToast('Audit log cleared');
+}
+
+// ==================== MULTI-USER ACCOUNTS ====================
+// Users stored as array: {id, name, role:'owner'|'dentist'|'receptionist', pin, color}
+var accountUsers = [];
+function loadUsers() {
+  try {
+    var stored = localStorage.getItem('df3_users');
+    if (stored) { accountUsers = JSON.parse(stored); return; }
+  } catch(e) {}
+  // Default seed from existing PIN system
+  var pins = getPINs();
+  accountUsers = [
+    {id:'U001', name: S.dentistName || 'Dr. Adaeze Okafor', role:'owner', pin: pins.dentist || '1234', color:'#00d4a0'},
+    {id:'U002', name:'Receptionist', role:'receptionist', pin: pins.receptionist || '0000', color:'#7c6af7'}
+  ];
+  saveUsers();
+}
+function saveUsers() {
+  try { localStorage.setItem('df3_users', JSON.stringify(accountUsers)); } catch(e) {}
+}
+function openUserMgmt() {
+  loadUsers();
+  renderUserList();
+  renderSettingsUserList();
+  document.getElementById('user-mgmt-modal').classList.add('open');
+}
+function renderUserList() {
+  var el = document.getElementById('user-list');
+  if (!el) return;
+  if (!accountUsers.length) { el.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:12px">No users</div>'; return; }
+  el.innerHTML = accountUsers.map(u => {
+    var roleCls = u.role === 'owner' ? 'role-owner' : u.role === 'dentist' ? 'role-dentist-badge' : 'role-receptionist-badge';
+    var roleLabel = u.role === 'owner' ? '👑 Owner / Dentist' : u.role === 'dentist' ? '👨‍⚕️ Dentist' : '🧑‍💼 Receptionist';
+    var canDelete = accountUsers.length > 1 && u.role !== 'owner';
+    return `<div class="user-card">
+      <div class="user-avatar-circle" style="background:${u.color}22;color:${u.color}">${u.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
+      <div class="user-info">
+        <div class="user-name-label">${u.name}</div>
+        <div><span class="user-role-badge ${roleCls}">${roleLabel}</span></div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-ghost btn-sm" onclick="resetUserPin('${u.id}')" title="Reset PIN">🔑</button>
+        ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">✕</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderSettingsUserList() {
+  var el = document.getElementById('settings-user-list');
+  if (!el) return;
+  loadUsers();
+  el.innerHTML = accountUsers.map(u => {
+    var roleCls = u.role === 'owner' ? 'role-owner' : u.role === 'dentist' ? 'role-dentist-badge' : 'role-receptionist-badge';
+    var roleLabel = u.role === 'owner' ? '👑 Owner' : u.role === 'dentist' ? '👨‍⚕️ Dentist' : '🧑‍💼 Receptionist';
+    return `<div style="display:inline-flex;align-items:center;gap:7px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;margin:0 6px 6px 0">
+      <div style="width:26px;height:26px;border-radius:50%;background:${u.color}22;color:${u.color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${u.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
+      <div>
+        <div style="font-size:12px;font-weight:600">${u.name}</div>
+        <span class="user-role-badge ${roleCls}" style="font-size:9px">${roleLabel}</span>
+      </div>
+    </div>`;
+  }).join('') + `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="openUserMgmt()">Manage →</button></div>`;
+}
+function addUser() {
+  var name = document.getElementById('new-user-name').value.trim();
+  var role = document.getElementById('new-user-role').value;
+  var pin = document.getElementById('new-user-pin').value;
+  var pin2 = document.getElementById('new-user-pin2').value;
+  if (!name) { showToast('⚠ Name required'); return; }
+  if (!/^\d{4}$/.test(pin)) { showToast('⚠ PIN must be 4 digits'); return; }
+  if (pin !== pin2) { showToast('⚠ PINs do not match'); return; }
+  var colors = ['#00d4a0','#7c6af7','#f0a500','#4a9ff0','#f04a4a','#00b8d9'];
+  var newUser = {id:'U'+Date.now(), name, role, pin, color: colors[accountUsers.length % colors.length]};
+  accountUsers.push(newUser);
+  saveUsers();
+  auditLog('create', `Added user account: ${name} (${role})`);
+  document.getElementById('new-user-name').value = '';
+  document.getElementById('new-user-pin').value = '';
+  document.getElementById('new-user-pin2').value = '';
+  renderUserList();
+  showToast(`✓ ${name} added`);
+}
+function deleteUser(id) {
+  var u = accountUsers.find(x => x.id === id);
+  if (!u || !confirm(`Remove user "${u.name}"?`)) return;
+  auditLog('delete', `Removed user account: ${u.name} (${u.role})`);
+  accountUsers = accountUsers.filter(x => x.id !== id);
+  saveUsers();
+  renderUserList();
+  showToast('User removed');
+}
+function resetUserPin(id) {
+  var u = accountUsers.find(x => x.id === id);
+  if (!u) return;
+  var np = prompt(`New 4-digit PIN for ${u.name}:`);
+  if (!np) return;
+  if (!/^\d{4}$/.test(np)) { showToast('⚠ PIN must be 4 digits'); return; }
+  u.pin = np;
+  saveUsers();
+  auditLog('edit', `Reset PIN for user: ${u.name}`);
+  showToast(`✓ PIN updated for ${u.name}`);
+}
+// Override getPINs to use unified user accounts
+function getPINs() {
+  loadUsers();
+  var owner = accountUsers.find(u => u.role === 'owner') || accountUsers.find(u => u.role === 'dentist');
+  var recept = accountUsers.find(u => u.role === 'receptionist');
+  return {
+    dentist: owner ? owner.pin : '1234',
+    receptionist: recept ? recept.pin : '0000'
+  };
+}
+// Enhance checkPIN to set currentUser name for audit log
+var currentUserName = '';
+var _origCheckPIN = null;
+function checkPINWithUserLookup() {
+  loadUsers();
+  var matchedUser = accountUsers.find(u => {
+    if (pinSelectedRole === 'dentist') return (u.role === 'owner' || u.role === 'dentist') && u.pin === pinEntry;
+    return u.role === 'receptionist' && u.pin === pinEntry;
+  });
+  if (matchedUser) currentUserName = matchedUser.name;
+  else currentUserName = pinSelectedRole === 'dentist' ? (S.dentistName || 'Dentist') : 'Receptionist';
+}
+
+// ==================== BACKUP & RECOVERY ====================
+var backupSnapshots = [];
+function loadBackups() {
+  try {
+    var stored = localStorage.getItem('df3_backups');
+    if (stored) backupSnapshots = JSON.parse(stored);
+  } catch(e) {}
+}
+function saveBackups() {
+  try { localStorage.setItem('df3_backups', JSON.stringify(backupSnapshots)); } catch(e) {}
+}
+function getFullSnapshot(label) {
+  return {
+    label: label,
+    timestamp: new Date().toISOString(),
+    displayTime: new Date().toLocaleString('en-NG'),
+    data: {
+      patients, appointments, inventory, odontograms, perioCharts,
+      settings: S, hmoProviders, invoices, labJobs, feeSchedule, receiptC,
+      users: accountUsers
+    }
+  };
+}
+function createNamedBackup() {
+  var label = prompt('Name this backup (optional):', `Manual – ${new Date().toLocaleDateString('en-NG')}`);
+  if (label === null) return; // cancelled
+  if (!label.trim()) label = `Manual – ${new Date().toLocaleDateString('en-NG')}`;
+  loadBackups();
+  backupSnapshots.unshift(getFullSnapshot(label.trim()));
+  if (backupSnapshots.length > 10) backupSnapshots = backupSnapshots.slice(0, 10);
+  saveBackups();
+  auditLog('create', `Created backup snapshot: "${label}"`);
+  renderBackupList();
+  showToast('✓ Backup snapshot saved');
+}
+function autoDailyBackup() {
+  try {
+    var lastKey = localStorage.getItem('df3_last_auto_backup');
+    var today = new Date().toISOString().split('T')[0];
+    if (lastKey === today) return; // already backed up today
+    loadBackups();
+    var label = `Auto – ${new Date().toLocaleDateString('en-NG')}`;
+    // Remove any previous auto backup for today
+    backupSnapshots = backupSnapshots.filter(b => !b.label.startsWith('Auto – ') || b.label !== label);
+    backupSnapshots.unshift(getFullSnapshot(label));
+    if (backupSnapshots.length > 10) backupSnapshots = backupSnapshots.slice(0, 10);
+    saveBackups();
+    localStorage.setItem('df3_last_auto_backup', today);
+  } catch(e) {}
+}
+function openBackupManager() {
+  loadBackups();
+  renderBackupList();
+  document.getElementById('backup-modal').classList.add('open');
+}
+function renderBackupList() {
+  loadBackups();
+  var el = document.getElementById('backup-list');
+  if (!el) return;
+  if (!backupSnapshots.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px"><div>No snapshots yet</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Click "Save Snapshot Now" to create one</div></div>';
+    return;
+  }
+  el.innerHTML = backupSnapshots.map((b, i) => {
+    var pts = b.data && b.data.patients ? b.data.patients.length : '?';
+    var apts = b.data && b.data.appointments ? b.data.appointments.length : '?';
+    return `<div class="backup-entry">
+      <div>
+        <div class="backup-name">${b.label}</div>
+        <div class="backup-meta">${b.displayTime} &nbsp;·&nbsp; ${pts} patients, ${apts} appointments</div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-ghost btn-sm" onclick="downloadBackup(${i})">⬇</button>
+        <button class="btn btn-warn btn-sm" onclick="restoreBackup(${i})">Restore</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteBackup(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function downloadBackup(i) {
+  loadBackups();
+  var b = backupSnapshots[i];
+  if (!b) return;
+  var blob = new Blob([JSON.stringify(b.data, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = `dentaflow-backup-${b.label.replace(/[^a-z0-9]/gi,'_')}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function restoreBackup(i) {
+  loadBackups();
+  var b = backupSnapshots[i];
+  if (!b || !b.data) return;
+  if (!confirm(`Restore to "${b.label}" from ${b.displayTime}?\n\nThis will REPLACE all current data. A backup of your current state will be saved first.`)) return;
+  // Auto-save current state before restoring
+  backupSnapshots.unshift(getFullSnapshot(`Pre-restore – ${new Date().toLocaleDateString('en-NG')}`));
+  if (backupSnapshots.length > 10) backupSnapshots = backupSnapshots.slice(0, 10);
+  saveBackups();
+  // Restore
+  var d = b.data;
+  if (d.patients) patients = d.patients;
+  if (d.appointments) appointments = d.appointments;
+  if (d.inventory) inventory = d.inventory;
+  if (d.odontograms) odontograms = d.odontograms;
+  if (d.perioCharts) perioCharts = d.perioCharts;
+  if (d.settings) S = d.settings;
+  if (d.hmoProviders) hmoProviders = d.hmoProviders;
+  if (d.invoices) invoices = d.invoices;
+  if (d.labJobs) labJobs = d.labJobs;
+  if (d.feeSchedule) feeSchedule = d.feeSchedule;
+  if (d.receiptC) receiptC = d.receiptC;
+  if (d.users) { accountUsers = d.users; saveUsers(); }
+  auditLog('edit', `Restored data from backup: "${b.label}"`);
+  persist();
+  closeModal('backup-modal');
+  renderDash();
+  renderSettings();
+  showToast(`✓ Restored from "${b.label}"`);
+}
+function deleteBackup(i) {
+  loadBackups();
+  var b = backupSnapshots[i];
+  if (!b || !confirm(`Delete backup "${b.label}"?`)) return;
+  backupSnapshots.splice(i, 1);
+  saveBackups();
+  renderBackupList();
+  showToast('Backup deleted');
+}
+function importDataFile(input) {
+  var file = input.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var d = JSON.parse(e.target.result);
+      if (!d.patients && !d.appointments) { showToast('⚠ Invalid backup file'); return; }
+      if (!confirm('Import this backup? Current data will be replaced.')) return;
+      backupSnapshots.unshift(getFullSnapshot('Pre-import backup'));
+      if (backupSnapshots.length > 10) backupSnapshots = backupSnapshots.slice(0, 10);
+      saveBackups();
+      if (d.patients) patients = d.patients;
+      if (d.appointments) appointments = d.appointments;
+      if (d.inventory) inventory = d.inventory;
+      if (d.settings) S = d.settings;
+      if (d.hmoProviders) hmoProviders = d.hmoProviders;
+      if (d.invoices) invoices = d.invoices;
+      if (d.feeSchedule) feeSchedule = d.feeSchedule;
+      if (d.receiptC) receiptC = d.receiptC;
+      auditLog('edit', `Imported data from file: ${file.name}`);
+      persist(); renderDash(); renderSettings();
+      closeModal('backup-modal');
+      showToast('✓ Data imported successfully');
+    } catch(err) { showToast('⚠ Could not parse backup file'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ==================== ONBOARDING SETUP WIZARD ====================
+var obCompletedTasks = {};
+var OB_TASKS = [
   {
-    icon: '🦷',
-    title: 'Welcome to DentaFlow!',
-    desc: 'Your complete dental clinic management system — built for Nigerian private clinics. This 2-minute tour covers everything you need to get running.',
-    features: [
-      { icon: '📅', text: '<strong>Appointments</strong> — Book patients across multiple chairs, auto-fill fees, prevent double-bookings.' },
-      { icon: '🧾', text: '<strong>Invoices & Receipts</strong> — Every attended visit auto-generates a receipt you can print or share on WhatsApp.' },
-      { icon: '🏥', text: '<strong>HMO / Insurance</strong> — Tag patients by HMO provider, track claims, export CSV for submission.' },
-      { icon: '🔔', text: '<strong>Automated Notifications</strong> — Reminders, recall alerts, low stock, lab overdue — all fire automatically.' },
-    ],
-    spotlight: null
+    id: 'hmo',
+    icon: '🏥',
+    title: 'Add your HMO providers',
+    desc: 'Add the insurance companies your clinic accepts (Hygeia, Avon, Reliance, etc.)',
+    checkFn: function() { return hmoProviders.length > 0; },
+    actionHTML: function() {
+      return `<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Your current HMO providers:</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${hmoProviders.map(h=>`<span style="background:rgba(124,106,247,.1);border:1px solid rgba(124,106,247,.2);color:var(--accent2);border-radius:10px;padding:2px 10px;font-size:11px;font-weight:600">${h.name}</span>`).join('') || '<span style="color:var(--text3);font-size:11px">None yet</span>'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+          <input type="text" id="ob-hmo-name" placeholder="Provider name" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;font-size:12px;color:var(--text);font-family:var(--font-sans);outline:none;grid-column:1/3">
+          <input type="text" id="ob-hmo-plan" placeholder="Plan type" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;font-size:12px;color:var(--text);font-family:var(--font-sans);outline:none;">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="obAddHMO()">+ Add Provider</button>
+        <div style="margin-top:6px;font-size:11px;color:var(--text3)">Or go to <a href="javascript:void(0)" onclick="closeOnboarding();go('settings')" style="color:var(--accent)">Settings → HMO Providers</a> to manage all providers.</div>`;
+    }
   },
   {
-    icon: '⚙️',
-    title: 'Step 1: Set up your clinic',
-    desc: 'Before anything else, tell DentaFlow about your clinic. Go to <strong>Settings</strong> to configure your name, working hours, number of chairs, and HMO providers.',
-    features: [
-      { icon: '🪑', text: '<strong>Chairs</strong> — Set 1 to 4 chairs and name each one (e.g. "Dr. Okafor\'s Chair"). Each appointment gets assigned to a specific chair.' },
-      { icon: '🕐', text: '<strong>Working Hours & Slot Duration</strong> — Set your open/close time and whether you see patients every 30, 45, or 60 minutes.' },
-      { icon: '🏥', text: '<strong>HMO Providers</strong> — Add your HMO partners (Hygeia, Avon, Reliance etc.) here. They\'ll appear on patient cards and invoices.' },
-    ],
-    spotlight: 'settings',
-    cta: "go('settings')"
+    id: 'chairs',
+    icon: '🪑',
+    title: 'Set up your chairs',
+    desc: 'Configure how many treatment chairs your clinic has and name each one',
+    checkFn: function() { return S.chairNames && S.chairNames[0] !== 'Chair 1' || S.numChairs > 1; },
+    actionHTML: function() {
+      var chairInputs = Array.from({length: S.numChairs || 2}, (_,i) => 
+        `<input type="text" id="ob-chair-${i}" value="${(S.chairNames||[])[i]||'Chair '+(i+1)}" placeholder="Chair ${i+1} name" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;font-size:12px;color:var(--text);font-family:var(--font-sans);outline:none;width:100%">`
+      ).join('');
+      return `<div style="margin-bottom:8px">
+          <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:5px">Number of chairs</label>
+          <select id="ob-num-chairs" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;font-size:12px;color:var(--text);font-family:var(--font-sans);outline:none;" onchange="obUpdateChairFields()">
+            <option value="1" ${S.numChairs===1?'selected':''}>1 Chair</option>
+            <option value="2" ${(S.numChairs||2)===2?'selected':''}>2 Chairs</option>
+            <option value="3" ${S.numChairs===3?'selected':''}>3 Chairs</option>
+            <option value="4" ${S.numChairs===4?'selected':''}>4 Chairs</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px" id="ob-chair-names">${chairInputs}</div>
+        <button class="btn btn-primary btn-sm" onclick="obSaveChairs()">Save Chairs</button>`;
+    }
   },
   {
-    icon: '👥',
-    title: 'Step 2: Register your patients',
-    desc: 'Add patients from the <strong>Patients</strong> page. Each patient card stores their contact details, payment type (Cash / HMO / Transfer), visit history, and next recommended date.',
-    features: [
-      { icon: '💳', text: '<strong>Pay Type</strong> — Mark a patient as HMO and link them to a provider. This auto-fills on every booking and invoice.' },
-      { icon: '🔔', text: '<strong>Recall date</strong> — Set a "Next Recommended Visit" date. When it passes without a rebooked appointment, the patient appears in your <strong>Recall List</strong> automatically.' },
-      { icon: '🦷', text: '<strong>Clinical charts</strong> — Each patient has their own Odontogram and Periodontal chart accessible from their detail card.' },
-    ],
-    spotlight: 'patients',
-    cta: "go('patients')"
+    id: 'patient',
+    icon: '👤',
+    title: 'Register your first patient',
+    desc: 'Add at least one patient to your records to test the full workflow',
+    checkFn: function() { return patients.length > 0; },
+    actionHTML: function() {
+      if (patients.length > 0) {
+        return `<div style="font-size:12px;color:var(--accent);font-weight:600">✓ You have ${patients.length} patient(s) registered!</div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="closeOnboarding();go('patients')">View Patients →</button>`;
+      }
+      return `<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Register your first patient to get started:</div>
+        <button class="btn btn-primary btn-sm" onclick="closeOnboarding();openAddPt()">+ Register Patient Now</button>
+        <div style="margin-top:6px;font-size:11px;color:var(--text3)">Or go to <a href="javascript:void(0)" onclick="closeOnboarding();go('patients')" style="color:var(--accent)">Patients</a> page to add patients.</div>`;
+    }
   },
   {
+    id: 'booking',
     icon: '📅',
-    title: 'Step 3: Book appointments',
-    desc: 'Click <strong>+ Book Patient</strong> (top right) or tap any empty slot on the Dashboard. The booking form auto-fills the treatment fee from your fee schedule.',
-    features: [
-      { icon: '🪑', text: '<strong>Chair assignment</strong> — Every booking is tied to a chair. The dashboard lets you filter the schedule by chair.' },
-      { icon: '⚠️', text: '<strong>Double-booking protection</strong> — If you try to book the same chair + time + date, a red warning appears before you confirm.' },
-      { icon: '💰', text: '<strong>Auto-fees</strong> — Select a treatment and the fee auto-populates from your fee schedule. Edit it on the spot if needed.' },
-    ],
-    spotlight: 'appointments',
-    cta: "go('appointments')"
-  },
-  {
-    icon: '🧾',
-    title: 'Step 4: Invoices & receipts',
-    desc: 'Mark any appointment as <strong>Attended (✓)</strong> and a receipt is automatically created. HMO visits are flagged as "Claim Pending" until you mark them claimed.',
-    features: [
-      { icon: '🖨️', text: '<strong>Print or PDF</strong> — Open any receipt and click "Print / Save PDF" to give the patient a copy.' },
-      { icon: '📲', text: '<strong>WhatsApp receipt</strong> — Click "Copy for WhatsApp" to get a formatted text receipt you can paste into the patient\'s chat.' },
-      { icon: '📊', text: '<strong>Revenue dashboard</strong> — All attended visits roll up into the Revenue page — broken down by treatment, cash vs HMO, and period.' },
-    ],
-    spotlight: 'invoices',
-    cta: "go('invoices')"
-  },
-  {
-    icon: '💬',
-    title: 'Step 5: Reminders & recall',
-    desc: 'DentaFlow handles patient communication prep automatically. You just copy and paste.',
-    features: [
-      { icon: '💬', text: '<strong>Reminders</strong> — Tomorrow\'s patients get a personalised WhatsApp message pre-written. One tap to copy it, one paste to send.' },
-      { icon: '🔔', text: '<strong>Recall List</strong> — Patients whose recommended visit date has passed appear here with a ready-to-send recall message.' },
-      { icon: '🔔', text: '<strong>Notifications panel</strong> — The bell icon (top right) shows automated alerts: upcoming appointments, low stock, overdue lab jobs. Browser push notifications fire even when the tab is in the background.' },
-    ],
-    spotlight: 'reminders',
-    cta: "go('reminders')"
-  },
-  {
-    icon: '📴',
-    title: 'Works fully offline',
-    desc: 'DentaFlow saves everything to your browser — no internet needed to work. Your data is always there.',
-    features: [
-      { icon: '💾', text: '<strong>Auto-save</strong> — Every action (booking, attending, restocking) saves instantly to localStorage on this device.' },
-      { icon: '📴', text: '<strong>Offline mode</strong> — The sync badge in the topbar shows your connection status. When offline, all changes queue and sync when internet returns.' },
-      { icon: '⬇️', text: '<strong>Backup</strong> — Go to Settings → Export JSON to download a full backup of all your data. Import it on any device to restore.' },
-    ],
-    spotlight: null
+    title: 'Make your first booking',
+    desc: 'Book an appointment to complete the setup and understand the scheduling workflow',
+    checkFn: function() { return appointments.length > 0; },
+    actionHTML: function() {
+      if (appointments.length > 0) {
+        return `<div style="font-size:12px;color:var(--accent);font-weight:600">✓ You have ${appointments.length} appointment(s) booked!</div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="closeOnboarding();go('appointments')">View Appointments →</button>`;
+      }
+      return `<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Book an appointment to complete setup:</div>
+        <button class="btn btn-primary btn-sm" onclick="closeOnboarding();openBooking()">+ Book Appointment Now</button>`;
+    }
   }
 ];
 
+var obActiveTask = null;
+
 function startOnboarding() {
-  obCurrentStep = 0;
+  obActiveTask = null;
   document.getElementById('ob-overlay').classList.add('show');
-  renderObStep();
+  renderObWizard();
 }
 
 function closeOnboarding() {
   document.getElementById('ob-overlay').classList.remove('show');
-  hideSpotlight();
-  try { localStorage.setItem('df3_onboarded', '1'); } catch(e) {}
+  var allDone = OB_TASKS.every(t => t.checkFn());
+  try { 
+    localStorage.setItem('df3_onboarded', allDone ? 'complete' : 'partial'); 
+    localStorage.setItem('df3_ob_partial_ts', Date.now());
+  } catch(e) {}
 }
 
-function obStep(dir) {
-  // If step had a CTA, navigate there first
-  const step = OB_STEPS[obCurrentStep];
-  if (dir === 1 && step.cta) { try { eval(step.cta); } catch(e) {} }
-  obCurrentStep = Math.max(0, Math.min(OB_STEPS.length - 1, obCurrentStep + dir));
-  renderObStep();
-}
-
-function renderObStep() {
-  const step = OB_STEPS[obCurrentStep];
-  const total = OB_STEPS.length;
-  const isLast = obCurrentStep === total - 1;
-
-  // Progress dots
-  document.getElementById('ob-progress').innerHTML = OB_STEPS.map((_, i) =>
-    `<div class="ob-step-dot ${i < obCurrentStep ? 'done' : i === obCurrentStep ? 'active' : ''}"></div>`
-  ).join('');
-
-  // Body
-  document.getElementById('ob-body').innerHTML = `
-    <span class="ob-icon">${step.icon}</span>
-    <div class="ob-title">${step.title}</div>
-    <div class="ob-desc">${step.desc}</div>
-    <div class="ob-features">
-      ${step.features.map(f => `
-        <div class="ob-feat">
-          <div class="ob-feat-icon">${f.icon}</div>
-          <div class="ob-feat-text">${f.text}</div>
-        </div>`).join('')}
+function renderObWizard() {
+  var el = document.getElementById('ob-tasks');
+  if (!el) return;
+  var completedCount = OB_TASKS.filter(t => t.checkFn()).length;
+  var pct = Math.round(completedCount / OB_TASKS.length * 100);
+  
+  el.innerHTML = OB_TASKS.map(t => {
+    var done = t.checkFn();
+    var isActive = obActiveTask === t.id;
+    return `<div class="ob-task ${done?'done':''} ${isActive?'active-task':''}" onclick="obToggleTask('${t.id}')">
+      <div class="ob-task-icon">${t.icon}</div>
+      <div class="ob-task-body">
+        <div class="ob-task-title" style="${done?'text-decoration:line-through;opacity:.6':''}">${t.title}</div>
+        <div class="ob-task-desc">${t.desc}</div>
+        ${isActive ? `<div class="ob-task-action" onclick="event.stopPropagation()">${t.actionHTML()}</div>` : ''}
+      </div>
+      <div class="ob-task-check">${done?'✓':''}</div>
     </div>`;
-
-  // Footer
-  document.getElementById('ob-step-label').textContent = `Step ${obCurrentStep + 1} of ${total}`;
-  document.getElementById('ob-back').style.display = obCurrentStep > 0 ? 'inline-flex' : 'none';
-  const nextBtn = document.getElementById('ob-next');
-  nextBtn.textContent = isLast ? '✓ Get Started' : 'Next →';
-  if (isLast) {
-    nextBtn.onclick = closeOnboarding;
-  } else {
-    nextBtn.onclick = () => obStep(1);
+  }).join('');
+  
+  var fillEl = document.getElementById('ob-progress-fill');
+  var labelEl = document.getElementById('ob-progress-label');
+  if (fillEl) fillEl.style.width = pct + '%';
+  if (labelEl) labelEl.textContent = `${completedCount} of ${OB_TASKS.length} steps complete`;
+  
+  var finishBtn = document.getElementById('ob-finish-btn');
+  if (finishBtn) {
+    if (completedCount === OB_TASKS.length) {
+      finishBtn.textContent = '🎉 All Done!';
+      finishBtn.className = 'btn btn-primary btn-sm';
+    } else {
+      finishBtn.textContent = 'Finish Later';
+      finishBtn.className = 'btn btn-ghost btn-sm';
+    }
   }
-
-  // Spotlight
-  if (step.spotlight) {
-    showSpotlight(step.spotlight);
-  } else {
-    hideSpotlight();
-  }
 }
 
-function showSpotlight(page) {
-  // Highlight the corresponding nav item
-  const navItems = document.querySelectorAll('.nav-item');
-  let target = null;
-  navItems.forEach(n => { if (n.getAttribute('data-label') && n.getAttribute('data-label').toLowerCase().includes(page)) target = n; });
-  if (!target) return;
-  const rect = target.getBoundingClientRect();
-  const sp = document.getElementById('ob-spotlight');
-  sp.style.top = (rect.top - 4) + 'px';
-  sp.style.left = (rect.left - 4) + 'px';
-  sp.style.width = (rect.width + 8) + 'px';
-  sp.style.height = (rect.height + 8) + 'px';
-  sp.classList.add('show');
+function obToggleTask(id) {
+  obActiveTask = obActiveTask === id ? null : id;
+  renderObWizard();
 }
 
-function hideSpotlight() {
-  document.getElementById('ob-spotlight').classList.remove('show');
+function obAddHMO() {
+  var name = (document.getElementById('ob-hmo-name')?.value || '').trim();
+  var plan = (document.getElementById('ob-hmo-plan')?.value || '').trim() || 'Capitation';
+  if (!name) { showToast('⚠ Enter provider name'); return; }
+  if (hmoProviders.find(h => h.name.toLowerCase() === name.toLowerCase())) { showToast('⚠ Already added'); return; }
+  var newH = {id:'H'+String(hmoProviders.length+1).padStart(3,'0'), name, plan, capitation:0, status:'active'};
+  hmoProviders.push(newH);
+  auditLog('create', `Added HMO provider: ${name}`);
+  persist(); populateHMOSelects(); renderObWizard();
+  showToast(`✓ ${name} added`);
 }
 
-// Auto-show onboarding for first-time users
+function obUpdateChairFields() {
+  var n = parseInt(document.getElementById('ob-num-chairs')?.value || 2);
+  var container = document.getElementById('ob-chair-names');
+  if (!container) return;
+  container.innerHTML = Array.from({length:n},(_,i) => 
+    `<input type="text" id="ob-chair-${i}" value="${(S.chairNames||[])[i]||'Chair '+(i+1)}" placeholder="Chair ${i+1} name" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;font-size:12px;color:var(--text);font-family:var(--font-sans);outline:none;width:100%">`
+  ).join('');
+}
+
+function obSaveChairs() {
+  var n = parseInt(document.getElementById('ob-num-chairs')?.value || 2);
+  var names = Array.from({length:n},(_,i)=>(document.getElementById(`ob-chair-${i}`)?.value||`Chair ${i+1}`).trim());
+  S.numChairs = n; S.chairNames = names;
+  auditLog('edit', `Configured ${n} chairs: ${names.join(', ')}`);
+  persist(); renderObWizard(); renderSettings();
+  showToast('✓ Chairs saved');
+}
+
 function maybeShowOnboarding() {
   try {
-    if (!localStorage.getItem('df3_onboarded')) {
+    var status = localStorage.getItem('df3_onboarded');
+    if (!status) {
       setTimeout(startOnboarding, 800);
+    } else if (status === 'partial') {
+      // Re-show if not all tasks done and last partial was > 1 day ago
+      var ts = parseInt(localStorage.getItem('df3_ob_partial_ts') || 0);
+      var dayAgo = Date.now() - 86400000;
+      if (ts < dayAgo && !OB_TASKS.every(t => t.checkFn())) {
+        setTimeout(startOnboarding, 800);
+      }
     }
   } catch(e) {}
 }
 
+// ==================== PIN LOCK SYSTEM ====================
 
 // ==================== PIN LOCK SYSTEM ====================
 var currentRole = 'dentist'; // 'dentist' | 'receptionist'
@@ -2962,6 +3478,9 @@ function restoreSidebarState() {
 // ==================== INIT ====================
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
 loadStorage();
+loadAuditLog();
+loadUsers();
+autoDailyBackup();
 // Sync counters to actual data so nothing ever collides after data import
 if(patients.length) pidC = Math.max(pidC, ...patients.map(p=>parseInt(p.id.slice(1))||0)) + 1;
 if(appointments.length) aidC = Math.max(aidC, ...appointments.map(a=>parseInt(a.id.slice(1))||0)) + 1;
