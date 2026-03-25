@@ -620,6 +620,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
             <div style="font-family:var(--font-display);font-weight:700;font-size:14px">🔔 Notifications</div>
             <div style="display:flex;gap:6px">
               <button class="btn btn-ghost btn-sm" onclick="markAllRead()" style="font-size:11px">Mark all read</button>
+              <button class="btn btn-ghost btn-sm" onclick="dismissAllNotifs()" style="font-size:11px">Dismiss all</button>
               <button class="btn btn-ghost btn-sm" onclick="toggleNotifPanel()">✕</button>
             </div>
           </div>
@@ -660,7 +661,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       </div>
       <div class="util-card" style="margin:0;min-width:0">
         <div class="util-head"><div class="util-title">Pay Type Mix</div></div>
-        <div style="position:relative;height:140px"><canvas id="chart-dash-paymix"></canvas></div>
+        <div style="position:relative;height:110px"><canvas id="chart-dash-paymix"></canvas></div>
       </div>
     </div>
     <div class="util-card">
@@ -797,7 +798,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       </div>
       <div class="util-card" style="margin:0;min-width:0">
         <div class="util-head"><div class="util-title">Cash vs HMO Split</div></div>
-        <div style="position:relative;height:140px"><canvas id="chart-rev-split"></canvas></div>
+        <div style="position:relative;height:110px"><canvas id="chart-rev-split"></canvas></div>
       </div>
     </div>
     <div class="sec-head"><div class="sec-title">Revenue by Treatment</div></div>
@@ -826,7 +827,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       </div>
       <div class="util-card" style="margin:0;min-width:0">
         <div class="util-head"><div class="util-title">Claim Status Breakdown</div></div>
-        <div style="position:relative;height:140px"><canvas id="chart-hmo-claim-status"></canvas></div>
+        <div style="position:relative;height:110px"><canvas id="chart-hmo-claim-status"></canvas></div>
       </div>
     </div>
     <div class="sec-head"><div class="sec-title">HMO Claims Detail</div>
@@ -2666,6 +2667,12 @@ function markAllRead() {
   renderNotifList();
 }
 
+function dismissAllNotifs() {
+  notifications = [];
+  updateNotifBadge();
+  renderNotifList();
+}
+
 function dismissNotif(id) {
   notifications = notifications.filter(n => n.id !== id);
   updateNotifBadge();
@@ -2677,6 +2684,58 @@ function markRead(id) {
   if (n) n.read = true;
   updateNotifBadge();
   renderNotifList();
+}
+
+function fireNotifAction(id) {
+  const n = notifications.find(x => x.id === id);
+  if (!n) return;
+  n.read = true;
+  // Execute the action then close panel
+  if (n.action) {
+    try { eval(n.action); } catch(e) {}
+    toggleNotifPanel();
+  }
+  updateNotifBadge();
+  renderNotifList();
+}
+
+function renderNotifList() {
+  const el = document.getElementById('notif-list');
+  if (!el) return;
+  if (!notifications.length) {
+    el.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">
+      <div style="font-size:28px;margin-bottom:8px">✅</div>
+      All clear — no notifications
+    </div>`;
+    return;
+  }
+  el.innerHTML = notifications.map(n => {
+    const icon = NOTIF_ICONS[n.type] || '💡';
+    const col = NOTIF_COLORS[n.type] || 'var(--accent)';
+    const hasAction = !!n.action;
+    const bg = n.read ? 'transparent' : 'rgba(255,255,255,.04)';
+    const borderCol = n.read ? 'transparent' : col;
+    const textCol = n.read ? 'var(--text2)' : 'var(--text)';
+    const cursor = hasAction ? 'cursor:pointer;' : '';
+    const clickFn = hasAction ? `fireNotifAction(${n.id})` : `markRead(${n.id})`;
+    const actionLabel = n.actionLabel || 'View';
+    const actionHint = hasAction ? `<div style="margin-top:5px;font-size:11px;color:${col};font-weight:600">&#x2192; ${actionLabel}</div>` : '';
+    return `<div
+      style="display:flex;gap:10px;padding:11px 12px;border-radius:var(--radius-sm);background:${bg};border-left:3px solid ${borderCol};margin-bottom:4px;transition:background .12s;${cursor}"
+      onclick="${clickFn}"
+      onmouseenter="this.style.background='rgba(255,255,255,.06)'" onmouseleave="this.style.background='${bg}'">
+      <div style="font-size:18px;flex-shrink:0;margin-top:1px">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;color:${textCol};margin-bottom:2px">${n.title}</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.5">${n.body}</div>
+        ${actionHint}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <div style="font-size:10px;color:var(--text3);white-space:nowrap">${timeAgo(n.time)}</div>
+        <button onclick="event.stopPropagation();dismissNotif(${n.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:4px;line-height:1" title="Dismiss">&#x2715;</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 const NOTIF_ICONS = {
@@ -2702,34 +2761,6 @@ function timeAgo(iso) {
   if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
   return `${Math.floor(diff/86400)}d ago`;
-}
-
-function renderNotifList() {
-  const el = document.getElementById('notif-list');
-  if (!el) return;
-  if (!notifications.length) {
-    el.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text3);font-size:13px">
-      <div style="font-size:28px;margin-bottom:8px">✅</div>
-      All clear — no notifications
-    </div>`;
-    return;
-  }
-  el.innerHTML = notifications.map(n => {
-    const icon = NOTIF_ICONS[n.type] || '💡';
-    const col = NOTIF_COLORS[n.type] || 'var(--accent)';
-    return `<div style="display:flex;gap:10px;padding:11px 12px;border-radius:var(--radius-sm);background:${n.read?'transparent':'rgba(255,255,255,.03)'};border-left:3px solid ${n.read?'transparent':col};margin-bottom:4px;transition:background .12s" onmouseenter="markRead(${n.id})">
-      <div style="font-size:18px;flex-shrink:0;margin-top:1px">${icon}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;color:${n.read?'var(--text2)':'var(--text)'};margin-bottom:2px">${n.title}</div>
-        <div style="font-size:12px;color:var(--text3);line-height:1.5">${n.body}</div>
-        ${n.action ? `<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:11px" onclick="${n.action};toggleNotifPanel()">${n.actionLabel||'View'}</button>` : ''}
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-        <div style="font-size:10px;color:var(--text3)">${timeAgo(n.time)}</div>
-        <button onclick="dismissNotif(${n.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:2px 4px">✕</button>
-      </div>
-    </div>`;
-  }).join('');
 }
 
 // ---- AUTOMATED CHECKS ----
@@ -3738,12 +3769,12 @@ function drawDoughnutChart(canvas, labels, data, colors) {
   const cc = getChartColors();
   _chartInstances[canvas.id] = new window.Chart(canvas, {
     type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: cc.surface, borderWidth: 3 }] },
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: cc.surface, borderWidth: 2 }] },
     options: {
       responsive: true, maintainAspectRatio: true,
-      cutout: '62%',
+      cutout: '68%',
       plugins: {
-        legend: { position: 'bottom', labels: { color: cc.text, font: { size: 11 }, padding: 10, boxWidth: 12 } }
+        legend: { position: 'bottom', labels: { color: cc.text, font: { size: 9 }, padding: 6, boxWidth: 9 } }
       }
     }
   });
