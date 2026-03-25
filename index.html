@@ -91,7 +91,7 @@ body{font-family:var(--font-sans);background:var(--bg);color:var(--text);height:
 .btn-sm{padding:4px 9px;font-size:11px;}
 
 /* PAGES */
-.page{display:none;padding:20px 26px;min-width:0;}
+.page{display:none;padding:20px 26px;min-width:0;overflow-x:hidden;}
 .page.active{display:block;}
 
 /* CARDS & GRIDS */
@@ -357,10 +357,14 @@ td{padding:9px 12px;font-size:13px;}
 /* Staff mode — hide financial nav items for receptionist */
 body.receptionist-mode .nav-item[data-page="invoices"],
 body.receptionist-mode .nav-item[data-page="hmo"],
+body.receptionist-mode .nav-item[data-page="hmo-revenue"],
 body.receptionist-mode .nav-item[data-page="revenue"]{display:none;}
 body.receptionist-mode #page-invoices,
 body.receptionist-mode #page-hmo,
+body.receptionist-mode #page-hmo-revenue,
 body.receptionist-mode #page-revenue{display:none !important;}
+/* Owner = full access, like dentist but also manages users/settings */
+body.owner-mode .nav-item{display:flex !important;}
 /* Hard-hide money elements in receptionist mode — JS backstop */
 body.receptionist-mode #s-rev-card,
 body.receptionist-mode #s-hmo-card,
@@ -437,6 +441,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
   .rev-row{grid-template-columns:1fr 1fr;}
   .settings-grid{grid-template-columns:1fr;}
   .inv-stats-row{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .dash-charts-grid,[style*="grid-template-columns:2fr 1fr"],[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important;}
 }
 
 /* Mobile — sidebar becomes off-canvas drawer */
@@ -517,9 +522,10 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
   <div class="pin-logo">🦷 DentaFlow</div>
   <div class="pin-sub">Enter your PIN to continue</div>
   <div class="pin-card">
-    <div class="pin-role-tabs">
-      <button class="pin-role-tab active" id="pin-tab-dentist" onclick="selectPinRole('dentist')">👨‍⚕️ Dentist</button>
-      <button class="pin-role-tab" id="pin-tab-receptionist" onclick="selectPinRole('receptionist')">🧑‍💼 Receptionist</button>
+    <div class="pin-role-tabs" style="flex-wrap:wrap">
+      <button class="pin-role-tab active" id="pin-tab-owner" onclick="selectPinRole('owner')" style="flex:1;min-width:80px">👑 Owner</button>
+      <button class="pin-role-tab" id="pin-tab-dentist" onclick="selectPinRole('dentist')" style="flex:1;min-width:80px">👨‍⚕️ Dentist</button>
+      <button class="pin-role-tab" id="pin-tab-receptionist" onclick="selectPinRole('receptionist')" style="flex:1;min-width:80px">🧑‍💼 Recept.</button>
     </div>
     <div class="pin-dots" id="pin-dots">
       <div class="pin-dot" id="pd0"></div>
@@ -541,7 +547,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <button class="pin-key" onclick="pinPress('0')">0</button>
       <button class="pin-key del" onclick="pinDel()">⌫</button>
     </div>
-    <div class="pin-hint" id="pin-hint">Default dentist PIN: <strong>1234</strong> · receptionist: <strong>0000</strong></div>
+    <div class="pin-hint" id="pin-hint">Owner: <strong>9999</strong> · Dentist: <strong>1234</strong> · Recept: <strong>0000</strong></div>
   </div>
 </div>
 
@@ -568,7 +574,8 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div class="nav-sec">Financial</div>
     <button class="nav-item" data-label="Invoices" data-page="invoices" onclick="go('invoices')"><span class="nav-icon">🧾</span><span class="nav-label"> Invoices</span></button>
     <button class="nav-item" data-label="HMO / Insurance" data-page="hmo" onclick="go('hmo')"><span class="nav-icon">🏥</span><span class="nav-label"> HMO / Insurance</span></button>
-    <button class="nav-item" data-label="Revenue" data-page="revenue" onclick="go('revenue')"><span class="nav-icon">💰</span><span class="nav-label"> Revenue</span></button>
+    <button class="nav-item" data-label="HMO Revenue" data-page="hmo-revenue" onclick="go('hmo-revenue')"><span class="nav-icon">💳</span><span class="nav-label"> HMO Revenue</span></button>
+    <button class="nav-item" data-label="Revenue" data-page="revenue" onclick="go('revenue')"><span class="nav-icon">💰</span><span class="nav-label"> Revenue & Fees</span></button>
     <div class="nav-sec">Clinical</div>
     <button class="nav-item" data-label="Odontogram" onclick="go('odontogram')"><span class="nav-icon">🦷</span><span class="nav-label"> Odontogram</span></button>
     <button class="nav-item" data-label="Perio Charting" onclick="go('perio')"><span class="nav-icon">📐</span><span class="nav-label"> Perio Charting</span></button>
@@ -642,6 +649,16 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <div class="rev-card"><div class="rev-label">HMO Claims Due</div><div class="rev-val" id="d-hmo-due" style="color:var(--accent2)">₦0</div><div class="rev-sub">pending submission</div></div>
     </div>
 
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:16px" class="dash-charts-grid">
+      <div class="util-card" style="margin:0;min-width:0">
+        <div class="util-head"><div class="util-title">This Week's Appointments</div></div>
+        <div style="position:relative;height:140px"><canvas id="chart-dash-week"></canvas></div>
+      </div>
+      <div class="util-card" style="margin:0;min-width:0">
+        <div class="util-head"><div class="util-title">Pay Type Mix</div></div>
+        <div style="position:relative;height:140px"><canvas id="chart-dash-paymix"></canvas></div>
+      </div>
+    </div>
     <div class="util-card">
       <div class="util-head">
         <div>
@@ -769,6 +786,16 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <button class="f-btn" onclick="filterRev('all',this)">All Time</button>
     </div>
     <div class="rev-row" id="rev-summary-cards"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <div class="util-card" style="margin:0;min-width:0">
+        <div class="util-head"><div class="util-title">Revenue Trend (Last 30 Days)</div></div>
+        <div style="position:relative;height:180px"><canvas id="chart-rev-trend"></canvas></div>
+      </div>
+      <div class="util-card" style="margin:0;min-width:0">
+        <div class="util-head"><div class="util-title">Cash vs HMO Split</div></div>
+        <div style="position:relative;height:180px"><canvas id="chart-rev-split"></canvas></div>
+      </div>
+    </div>
     <div class="sec-head"><div class="sec-title">Revenue by Treatment</div></div>
     <div class="tbl-wrap" style="margin-bottom:18px;">
       <table><thead><tr><th>Treatment</th><th>Visits</th><th>Total Revenue (₦)</th><th>HMO Portion (₦)</th><th>Cash Portion (₦)</th></tr></thead>
@@ -778,6 +805,33 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <button class="btn btn-primary btn-sm" onclick="saveFees()">Save Fees</button>
     </div>
     <div class="fee-grid" id="fee-grid"></div>
+  </div>
+
+  <!-- ============ HMO REVENUE ============ -->
+  <div class="page" id="page-hmo-revenue">
+    <div class="filter-row" style="margin-bottom:14px">
+      <button class="f-btn active" onclick="filterHmoRev('month',this)">This Month</button>
+      <button class="f-btn" onclick="filterHmoRev('week',this)">This Week</button>
+      <button class="f-btn" onclick="filterHmoRev('all',this)">All Time</button>
+    </div>
+    <div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="hmor-stat-cards"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <div class="util-card" style="margin:0;min-width:0">
+        <div class="util-head"><div class="util-title">Revenue by HMO Provider</div></div>
+        <div style="position:relative;height:200px"><canvas id="chart-hmo-by-provider"></canvas></div>
+      </div>
+      <div class="util-card" style="margin:0;min-width:0">
+        <div class="util-head"><div class="util-title">Claim Status Breakdown</div></div>
+        <div style="position:relative;height:200px"><canvas id="chart-hmo-claim-status"></canvas></div>
+      </div>
+    </div>
+    <div class="sec-head"><div class="sec-title">HMO Claims Detail</div>
+      <button class="btn btn-primary btn-sm" onclick="exportHMOClaims()">⬇ Export CSV</button>
+    </div>
+    <div class="tbl-wrap">
+      <table><thead><tr><th>Date</th><th>Patient</th><th>HMO Provider</th><th>Treatment</th><th>Claim Value</th><th>Copay</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="hmor-tbody"></tbody></table>
+    </div>
   </div>
 
   <!-- ============ ODONTOGRAM ============ -->
@@ -1288,8 +1342,9 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
         <div class="field" style="margin:0"><label>Full Name</label><input type="text" id="new-user-name" placeholder="e.g. Dr. Emeka Obi"></div>
         <div class="field" style="margin:0"><label>Role</label>
           <select id="new-user-role" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--font-sans);outline:none;">
-            <option value="dentist">Dentist</option>
-            <option value="receptionist">Receptionist</option>
+            <option value="owner">👑 Owner</option>
+            <option value="dentist">👨‍⚕️ Dentist</option>
+            <option value="receptionist">🧑‍💼 Receptionist</option>
           </select>
         </div>
       </div>
@@ -1498,13 +1553,15 @@ window.addEventListener('online',()=>{isOffline=false;updateOfflineUI();showToas
 window.addEventListener('offline',()=>{isOffline=true;updateOfflineUI();showToast('📴 Offline — saving locally');});
 
 // ==================== NAV ====================
-var PAGE_MAP={dashboard:'Dashboard',appointments:'Appointments',patients:'Patients',reminders:'Reminders',recall:'Recall List',invoices:'Invoices',hmo:'HMO / Insurance',revenue:'Revenue & Fees',odontogram:'Odontogram',perio:'Perio Charting',inventory:'Inventory',lab:'Lab Work',settings:'Settings'};
+var PAGE_MAP={dashboard:'Dashboard',appointments:'Appointments',patients:'Patients',reminders:'Reminders',recall:'Recall List',invoices:'Invoices',hmo:'HMO / Insurance','hmo-revenue':'HMO Revenue',revenue:'Revenue & Fees',odontogram:'Odontogram',perio:'Perio Charting',inventory:'Inventory',lab:'Lab Work',settings:'Settings'};
 // Pages the receptionist is NOT allowed to see
-var DENTIST_ONLY_PAGES = ['invoices','hmo','revenue'];
+var DENTIST_ONLY_PAGES = ['invoices','hmo','hmo-revenue','revenue'];
+var OWNER_PAGES = ['settings']; // owner-only pages (excluded from dentist mode too)
 
 function isAllowed(page){
-  if(currentRole === 'dentist') return true;
-  return !DENTIST_ONLY_PAGES.includes(page);
+  if(currentRole === 'owner') return true; // owner sees everything
+  if(currentRole === 'dentist') return !OWNER_PAGES.includes(page);
+  return !DENTIST_ONLY_PAGES.includes(page) && !OWNER_PAGES.includes(page);
 }
 
 function go(page){
@@ -1518,7 +1575,7 @@ function go(page){
   document.getElementById(`page-${page}`).classList.add('active');
   document.getElementById('page-title').textContent=PAGE_MAP[page]||page;
   document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim().includes(PAGE_MAP[page]?.split(' ')[0]))n.classList.add('active');});
-  const fn={dashboard:renderDash,appointments:renderAppts,patients:renderPatients,reminders:renderReminders,recall:renderRecall,invoices:renderInvoices,hmo:renderHMO,revenue:renderRevenue,odontogram:renderOdontoPage,perio:renderPerioPage,inventory:renderInventory,lab:renderLab,settings:renderSettings};
+  const fn={dashboard:renderDash,appointments:renderAppts,patients:renderPatients,reminders:renderReminders,recall:renderRecall,invoices:renderInvoices,hmo:renderHMO,'hmo-revenue':renderHmoRevenue,revenue:renderRevenue,odontogram:renderOdontoPage,perio:renderPerioPage,inventory:renderInventory,lab:renderLab,settings:renderSettings};
   if(fn[page])fn[page]();
 }
 
@@ -1598,6 +1655,30 @@ function renderDash(){
     });
   });
   updateOfflineUI();
+  // Dashboard charts
+  setTimeout(() => { drawDashWeekChart(); drawDashPayMixChart(); }, 50);
+}
+function drawDashWeekChart() {
+  const canvas = document.getElementById('chart-dash-week');
+  if (!canvas) return;
+  const labels=[], data=[];
+  for (let i=6;i>=0;i--) {
+    const d=dOff(-i);
+    const dn=new Date(d+'T12:00:00');
+    labels.push(dn.toLocaleDateString('en-NG',{weekday:'short'}));
+    data.push(appointments.filter(a=>a.date===d&&a.status!=='cancelled').length);
+  }
+  drawBarChart(canvas, labels, data, ['#00d4a0'], 'Appointments');
+}
+function drawDashPayMixChart() {
+  const canvas = document.getElementById('chart-dash-paymix');
+  if (!canvas) return;
+  const mStart = thisMonthStart();
+  const attended = appointments.filter(a=>a.status==='attended'&&a.date>=mStart);
+  const cash = attended.filter(a=>a.payType==='cash').length;
+  const transfer = attended.filter(a=>a.payType==='transfer').length;
+  const hmo = attended.filter(a=>a.payType==='hmo').length;
+  drawDoughnutChart(canvas, ['Cash','Transfer','HMO'], [cash,transfer,hmo], ['#00d4a0','#4a9ff0','#7c6af7']);
 }
 function setDashChair(c){activeDashChair=c;renderDash();}
 function getChairColor(chair){const colors=['#00d4a0','#7c6af7','#f0a500','#4a9ff0'];const i=getChairs().indexOf(chair);return colors[i%colors.length]||'#00d4a0';}
@@ -2187,6 +2268,77 @@ We look forward to seeing you again.`;
   navigator.clipboard.writeText(txt).then(()=>showToast('✓ Receipt copied for WhatsApp!'));
 }
 
+// ==================== HMO REVENUE ====================
+var hmoRevFilter = 'month';
+function filterHmoRev(f, el) {
+  hmoRevFilter = f;
+  document.querySelectorAll('#page-hmo-revenue .f-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderHmoRevenue();
+}
+function renderHmoRevenue() {
+  const startDate = hmoRevFilter==='month'?thisMonthStart():hmoRevFilter==='week'?thisWeekStart():'2000-01-01';
+  const hmoAppts = appointments.filter(a => a.payType==='hmo' && a.status==='attended' && a.date>=startDate);
+  const totalHmo = hmoAppts.reduce((s,a) => s+(a.fee||0), 0);
+  const pending = invoices.filter(i => i.payType==='hmo' && !i.paid && i.date>=startDate).reduce((s,i) => s+(i.amount||0), 0);
+  const claimed = invoices.filter(i => i.payType==='hmo' && i.paid && i.date>=startDate).reduce((s,i) => s+(i.amount||0), 0);
+  const providers = hmoProviders.length;
+
+  document.getElementById('hmor-stat-cards').innerHTML = [
+    {l:'Total HMO Revenue',v:fmtMoney(totalHmo),c:'c-purple'},
+    {l:'Claims Submitted',v:fmtMoney(claimed),c:'c-green'},
+    {l:'Claims Pending',v:fmtMoney(pending),c:'c-yellow'},
+    {l:'HMO Visits',v:hmoAppts.length,c:'c-blue'}
+  ].map(s=>`<div class="stat-card ${s.c}"><div class="stat-label">${s.l}</div><div class="stat-val">${s.v}</div></div>`).join('');
+
+  // By-provider table
+  const tbody = document.getElementById('hmor-tbody');
+  const hmoVisits = hmoAppts.sort((a,b)=>b.date.localeCompare(a.date));
+  tbody.innerHTML = hmoVisits.length ? hmoVisits.map(a => {
+    const pt=getPt(a.patientId), hmo=getHMO(a.hmoId), inv=invoices.find(i=>i.apptId===a.id);
+    return `<tr>
+      <td style="font-size:11px">${fmtDate(a.date)}</td>
+      <td>${pt?pt.name:'—'}</td>
+      <td><span style="color:var(--accent2);font-weight:600">${hmo?hmo.name:'—'}</span></td>
+      <td>${a.treatment}</td>
+      <td style="font-family:var(--font-display);font-weight:700;color:var(--accent)">${fmtMoney(a.fee)}</td>
+      <td style="color:var(--text3)">${fmtMoney(a.copay||0)}</td>
+      <td><span class="pill ${inv&&inv.paid?'pill-att':'pill-pending'}">${inv&&inv.paid?'Claimed':'Pending'}</span></td>
+      <td>${inv&&!inv.paid?`<button class="btn btn-ghost btn-sm" onclick="markHmoClaimed('${inv.id}')">Mark Claimed</button>`:''}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3)">No HMO visits in this period</td></tr>`;
+
+  // Charts
+  drawHmoProviderChart(startDate);
+  drawHmoClaimStatusChart(startDate);
+}
+function markHmoClaimed(invId) {
+  const inv = invoices.find(i=>i.id===invId);
+  if (!inv) return;
+  inv.paid = true;
+  auditLog('edit', `Marked HMO claim as paid: ${inv.receiptNum} — ${fmtMoney(inv.amount)}`);
+  persist(); renderHmoRevenue(); showToast('✓ HMO claim marked as paid');
+}
+function drawHmoProviderChart(startDate) {
+  const canvas = document.getElementById('chart-hmo-by-provider');
+  if (!canvas) return;
+  const byProvider = {};
+  hmoProviders.forEach(h => { byProvider[h.name] = 0; });
+  appointments.filter(a=>a.payType==='hmo'&&a.status==='attended'&&a.date>=startDate).forEach(a => {
+    const h = getHMO(a.hmoId);
+    if (h) byProvider[h.name] = (byProvider[h.name]||0) + (a.fee||0);
+  });
+  const labels = Object.keys(byProvider), data = Object.values(byProvider);
+  drawBarChart(canvas, labels, data, ['#7c6af7','#00d4a0','#f0a500','#4a9ff0','#f04a4a'], 'HMO Revenue (₦)');
+}
+function drawHmoClaimStatusChart(startDate) {
+  const canvas = document.getElementById('chart-hmo-claim-status');
+  if (!canvas) return;
+  const pending = invoices.filter(i=>i.payType==='hmo'&&!i.paid&&i.date>=startDate).length;
+  const claimed = invoices.filter(i=>i.payType==='hmo'&&i.paid&&i.date>=startDate).length;
+  drawDoughnutChart(canvas, ['Claimed','Pending'], [claimed,pending], ['#00d4a0','#f0a500']);
+}
+
 // ==================== HMO ====================
 function renderHMO(){
   const mStart=thisMonthStart(),td=today();
@@ -2255,6 +2407,34 @@ function renderRevenue(){
   document.getElementById('rev-by-treatment').innerHTML=sorted.length?sorted.map(([t,v])=>`<tr><td><strong>${t}</strong></td><td style="color:var(--text3)">${v.visits}</td><td style="font-family:var(--font-display);font-weight:700;color:var(--accent)">${fmtMoney(v.total)}</td><td style="color:var(--accent2)">${fmtMoney(v.hmo)}</td><td style="color:var(--accent)">${fmtMoney(v.cash)}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">No attended appointments in this period</td></tr>`;
   // Fee schedule
   document.getElementById('fee-grid').innerHTML=Object.entries(feeSchedule).map(([t,p])=>`<div class="fee-card"><span class="fee-name">${t}</span><input class="fee-input" type="number" id="fee-${t.replace(/\s+/g,'-').replace(/\//g,'')}" value="${p}" placeholder="0"></div>`).join('');
+  // Charts
+  setTimeout(() => {
+    drawRevTrendChart(startDate);
+    drawRevSplitChart(startDate);
+  }, 50);
+}
+function drawRevTrendChart(startDate) {
+  const canvas = document.getElementById('chart-rev-trend');
+  if (!canvas) return;
+  // Last 30 days grouped by day
+  const days = 30;
+  const labels = [], data = [];
+  for (let i=days-1; i>=0; i--) {
+    const d = dOff(-i);
+    labels.push(d.slice(5)); // MM-DD
+    const dayRev = appointments.filter(a=>a.date===d&&a.status==='attended').reduce((s,a)=>s+(a.fee||0),0);
+    data.push(dayRev);
+  }
+  drawLineChart(canvas, labels, data, '#00d4a0', 'Daily Revenue (₦)');
+}
+function drawRevSplitChart(startDate) {
+  const canvas = document.getElementById('chart-rev-split');
+  if (!canvas) return;
+  const attended = appointments.filter(a=>a.status==='attended'&&a.date>=startDate);
+  const cash = attended.filter(a=>a.payType==='cash').reduce((s,a)=>s+(a.fee||0),0);
+  const transfer = attended.filter(a=>a.payType==='transfer').reduce((s,a)=>s+(a.fee||0),0);
+  const hmo = attended.filter(a=>a.payType==='hmo').reduce((s,a)=>s+(a.fee||0),0);
+  drawDoughnutChart(canvas, ['Cash','Transfer','HMO'], [cash,transfer,hmo], ['#00d4a0','#4a9ff0','#7c6af7']);
 }
 function saveFees(){
   Object.keys(feeSchedule).forEach(t=>{const el=document.getElementById(`fee-${t.replace(/\s+/g,'-').replace(/\//g,'')}`);if(el)feeSchedule[t]=parseFloat(el.value)||0;});
@@ -2593,7 +2773,7 @@ function runNotifChecks() {
           'appointment_soon',
           `⏰ Coming up in ${diff} min: ${pt ? pt.name : '?'}`,
           `${a.treatment} · ${a.chair} at ${fmtTime(a.time)}`,
-          "go('appointments')",
+          `go('appointments');setTimeout(()=>highlightAppt('${a.id}'),300)`,
           'View Schedule',
           true
         );
@@ -2629,8 +2809,8 @@ function runNotifChecks() {
         'low_stock',
         item.qty === 0 ? `OUT OF STOCK: ${item.name}` : `Low stock: ${item.name}`,
         `Only ${item.qty} ${item.unit} remaining (min: ${item.minQty})`,
-        "go('inventory')",
-        'View Inventory',
+        `go('inventory');setTimeout(()=>highlightInvItem('${item.id}'),300)`,
+        'View Item',
         item.qty === 0
       );
     }
@@ -2648,8 +2828,8 @@ function runNotifChecks() {
         'lab_overdue',
         `Lab job overdue: ${l.treatment}`,
         `${pt ? pt.name : '?'} — ${l.labName} · ${daysLate} day${daysLate !== 1 ? 's' : ''} late`,
-        "go('lab')",
-        'View Lab Jobs',
+        `go('lab');setTimeout(()=>highlightLabJob('${l.id}'),300)`,
+        'View Lab Job',
         true
       );
     }
@@ -2695,7 +2875,7 @@ function auditLog(type, what) {
   var entry = {
     id: Date.now(),
     type: type,      // 'create' | 'edit' | 'delete' | 'status'
-    who: currentRole === 'dentist' ? (S.dentistName || 'Dentist') : 'Receptionist',
+    who: currentUserName || (currentRole === 'owner' ? 'Owner' : currentRole === 'dentist' ? (S.dentistName||'Dentist') : 'Receptionist'),
     what: what,
     when: new Date().toLocaleString('en-NG')
   };
@@ -2758,11 +2938,11 @@ function loadUsers() {
     var stored = localStorage.getItem('df3_users');
     if (stored) { accountUsers = JSON.parse(stored); return; }
   } catch(e) {}
-  // Default seed from existing PIN system
-  var pins = getPINs();
+  // Default seed — 3 roles
   accountUsers = [
-    {id:'U001', name: S.dentistName || 'Dr. Adaeze Okafor', role:'owner', pin: pins.dentist || '1234', color:'#00d4a0'},
-    {id:'U002', name:'Receptionist', role:'receptionist', pin: pins.receptionist || '0000', color:'#7c6af7'}
+    {id:'U001', name: S.dentistName || 'Dr. Adaeze Okafor', role:'owner', pin:'9999', color:'#f0a500'},
+    {id:'U002', name: S.dentistName || 'Dr. Adaeze Okafor', role:'dentist', pin:'1234', color:'#00d4a0'},
+    {id:'U003', name:'Receptionist', role:'receptionist', pin:'0000', color:'#7c6af7'}
   ];
   saveUsers();
 }
@@ -2781,7 +2961,7 @@ function renderUserList() {
   if (!accountUsers.length) { el.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:12px">No users</div>'; return; }
   el.innerHTML = accountUsers.map(u => {
     var roleCls = u.role === 'owner' ? 'role-owner' : u.role === 'dentist' ? 'role-dentist-badge' : 'role-receptionist-badge';
-    var roleLabel = u.role === 'owner' ? '👑 Owner / Dentist' : u.role === 'dentist' ? '👨‍⚕️ Dentist' : '🧑‍💼 Receptionist';
+    var roleLabel = u.role === 'owner' ? '👑 Owner' : u.role === 'dentist' ? '👨‍⚕️ Dentist' : '🧑‍💼 Receptionist';
     var canDelete = accountUsers.length > 1 && u.role !== 'owner';
     return `<div class="user-card">
       <div class="user-avatar-circle" style="background:${u.color}22;color:${u.color}">${u.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>
@@ -3216,15 +3396,23 @@ function maybeShowOnboarding() {
 // ==================== PIN LOCK SYSTEM ====================
 
 // ==================== PIN LOCK SYSTEM ====================
-var currentRole = 'dentist'; // 'dentist' | 'receptionist'
+var currentRole = 'owner'; // 'owner' | 'dentist' | 'receptionist'
+var currentUserName = '';
 var pinEntry = '';
 var pinSelectedRole = 'dentist';
 var PIN_DEFAULTS = { dentist: '1234', receptionist: '0000' };
 
+var PIN_DEFAULTS_3 = { owner: '9999', dentist: '1234', receptionist: '0000' };
 function getPINs() {
-  try {
-    return JSON.parse(localStorage.getItem('df3_pins') || 'null') || PIN_DEFAULTS;
-  } catch(e) { return PIN_DEFAULTS; }
+  loadUsers();
+  var owner = accountUsers.find(u => u.role === 'owner');
+  var dentist = accountUsers.find(u => u.role === 'dentist');
+  var recept = accountUsers.find(u => u.role === 'receptionist');
+  return {
+    owner: owner ? owner.pin : '9999',
+    dentist: dentist ? dentist.pin : '1234',
+    receptionist: recept ? recept.pin : '0000'
+  };
 }
 function savePINs() {
   const dp = document.getElementById('s-dentist-pin').value.trim();
@@ -3242,11 +3430,12 @@ function selectPinRole(role) {
   pinSelectedRole = role;
   pinEntry = '';
   updatePinDots();
-  document.getElementById('pin-tab-dentist').classList.toggle('active', role === 'dentist');
-  document.getElementById('pin-tab-receptionist').classList.toggle('active', role === 'receptionist');
-  document.getElementById('pin-hint').innerHTML = role === 'dentist'
-    ? 'Default dentist PIN: <strong>1234</strong>'
-    : 'Default receptionist PIN: <strong>0000</strong>';
+  ['owner','dentist','receptionist'].forEach(r => {
+    const t = document.getElementById('pin-tab-'+r);
+    if(t) t.classList.toggle('active', r === role);
+  });
+  const hints = {owner:'Owner PIN: <strong>9999</strong>', dentist:'Default dentist PIN: <strong>1234</strong>', receptionist:'Default receptionist PIN: <strong>0000</strong>'};
+  document.getElementById('pin-hint').innerHTML = hints[role] || hints.dentist;
 }
 function pinPress(digit) {
   if (pinEntry.length >= 4) return;
@@ -3269,25 +3458,39 @@ function checkPIN() {
   const correct = pins[pinSelectedRole];
   if (pinEntry === correct) {
     currentRole = pinSelectedRole;
+    // Set currentUserName for audit log
+    loadUsers();
+    const matchedUser = accountUsers.find(u => {
+      if (pinSelectedRole === 'owner') return u.role === 'owner' && u.pin === pinEntry;
+      if (pinSelectedRole === 'dentist') return u.role === 'dentist' && u.pin === pinEntry;
+      return u.role === 'receptionist' && u.pin === pinEntry;
+    });
+    currentUserName = matchedUser ? matchedUser.name : (pinSelectedRole === 'owner' ? 'Owner' : pinSelectedRole === 'dentist' ? (S.dentistName||'Dentist') : 'Receptionist');
     applyRoleMode();
     document.getElementById('pin-screen').classList.add('hidden');
-    showToast(`✓ Welcome${currentRole === 'dentist' ? ', Doctor' : ' back'}!`);
+    const greet = currentRole==='owner'?', Boss':currentRole==='dentist'?', Doctor':' back';
+    showToast(`✓ Welcome${greet}!`);
+    auditLog('status', `Logged in as ${currentUserName} (${currentRole})`);
   } else {
     updatePinDots(true);
     document.getElementById('pin-hint').innerHTML = '<span style="color:var(--red)">Wrong PIN — try again</span>';
-    setTimeout(() => { pinEntry = ''; updatePinDots(); document.getElementById('pin-hint').innerHTML = pinSelectedRole === 'dentist' ? 'Default dentist PIN: <strong>1234</strong>' : 'Default receptionist PIN: <strong>0000</strong>'; }, 900);
+    const hints = {owner:'Owner PIN: <strong>9999</strong>', dentist:'Default dentist PIN: <strong>1234</strong>', receptionist:'Default receptionist PIN: <strong>0000</strong>'};
+    setTimeout(() => { pinEntry = ''; updatePinDots(); document.getElementById('pin-hint').innerHTML = hints[pinSelectedRole]||hints.dentist; }, 900);
   }
 }
 function applyRoleMode() {
   const isReceptionist = currentRole === 'receptionist';
+  const isOwner = currentRole === 'owner';
   const badge = document.getElementById('role-badge');
 
+  document.body.classList.remove('receptionist-mode','dentist-mode','owner-mode');
   if (isReceptionist) {
     document.body.classList.add('receptionist-mode');
-    document.body.classList.remove('dentist-mode');
     if (badge) { badge.className = 'pin-role-badge role-receptionist'; badge.textContent = '🧑‍💼 Receptionist'; }
+  } else if (isOwner) {
+    document.body.classList.add('owner-mode');
+    if (badge) { badge.className = 'pin-role-badge role-owner'; badge.textContent = '👑 Owner'; }
   } else {
-    document.body.classList.remove('receptionist-mode');
     document.body.classList.add('dentist-mode');
     if (badge) { badge.className = 'pin-role-badge role-dentist'; badge.textContent = '👨‍⚕️ Dentist'; }
   }
@@ -3312,14 +3515,14 @@ function applyRoleMode() {
     const pageId = activePage.id.replace('page-', '');
     const fn = {dashboard:renderDash, appointments:renderAppts, patients:renderPatients,
                 reminders:renderReminders, recall:renderRecall, invoices:renderInvoices,
-                hmo:renderHMO, revenue:renderRevenue, odontogram:renderOdontoPage,
+                hmo:renderHMO, 'hmo-revenue':renderHmoRevenue, revenue:renderRevenue, odontogram:renderOdontoPage,
                 perio:renderPerioPage, inventory:renderInventory, lab:renderLab, settings:renderSettings};
     if (fn[pageId]) fn[pageId]();
   }
 }
 function lockApp() {
   pinEntry = '';
-  selectPinRole('dentist');
+  selectPinRole('owner');
   updatePinDots();
   document.getElementById('pin-screen').classList.remove('hidden');
 }
@@ -3475,6 +3678,108 @@ function restoreSidebarState() {
   } catch(e) {}
 }
 
+// ==================== CHART HELPERS (vanilla canvas) ====================
+function getChartColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    text: s.getPropertyValue('--text3').trim() || '#555d7a',
+    border: s.getPropertyValue('--border').trim() || '#2a2f45',
+    surface: s.getPropertyValue('--surface2').trim() || '#1c2030',
+  };
+}
+var _chartInstances = {};
+function destroyChart(id) {
+  if (_chartInstances[id]) { try { _chartInstances[id].destroy(); } catch(e){} delete _chartInstances[id]; }
+}
+
+function drawBarChart(canvas, labels, data, colors, label) {
+  destroyChart(canvas.id);
+  if (!window.Chart) return;
+  const cc = getChartColors();
+  const barColors = data.map((_,i) => Array.isArray(colors)?colors[i%colors.length]:colors);
+  _chartInstances[canvas.id] = new window.Chart(canvas, {
+    type: 'bar',
+    data: { labels, datasets: [{ label, data, backgroundColor: barColors, borderRadius: 5, borderSkipped: false }] },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: cc.border }, ticks: { color: cc.text, font: { size: 10 } } },
+        y: { grid: { color: cc.border }, ticks: { color: cc.text, font: { size: 10 }, callback: v => v >= 1000 ? '₦'+Math.round(v/1000)+'k' : v } }
+      }
+    }
+  });
+}
+function drawLineChart(canvas, labels, data, color, label) {
+  destroyChart(canvas.id);
+  if (!window.Chart) return;
+  const cc = getChartColors();
+  _chartInstances[canvas.id] = new window.Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color+'22', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2 }] },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: cc.border }, ticks: { color: cc.text, font: { size: 9 }, maxTicksLimit: 10 } },
+        y: { grid: { color: cc.border }, ticks: { color: cc.text, font: { size: 10 }, callback: v => v >= 1000 ? '₦'+Math.round(v/1000)+'k' : v } }
+      }
+    }
+  });
+}
+function drawDoughnutChart(canvas, labels, data, colors) {
+  destroyChart(canvas.id);
+  if (!window.Chart) return;
+  const cc = getChartColors();
+  _chartInstances[canvas.id] = new window.Chart(canvas, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: cc.surface, borderWidth: 3 }] },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      cutout: '62%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: cc.text, font: { size: 11 }, padding: 10, boxWidth: 12 } }
+      }
+    }
+  });
+}
+
+// ==================== HIGHLIGHT HELPERS ====================
+function highlightAppt(id) {
+  // Find row in appointments table and flash it
+  const rows = document.querySelectorAll('#page-appointments tbody tr');
+  rows.forEach(r => {
+    if (r.innerHTML.includes(id)) {
+      r.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      r.style.transition = 'background .3s';
+      r.style.background = 'rgba(0,212,160,.18)';
+      setTimeout(() => { r.style.background = ''; }, 2000);
+    }
+  });
+}
+function highlightInvItem(id) {
+  const rows = document.querySelectorAll('#inv-tbody-main tr');
+  rows.forEach(r => {
+    if (r.innerHTML.includes(id)) {
+      r.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      r.style.transition = 'background .3s';
+      r.style.background = 'rgba(240,165,0,.18)';
+      setTimeout(() => { r.style.background = ''; }, 2000);
+    }
+  });
+}
+function highlightLabJob(id) {
+  const rows = document.querySelectorAll('#lab-tbody tr');
+  rows.forEach(r => {
+    if (r.innerHTML.includes(id)) {
+      r.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      r.style.transition = 'background .3s';
+      r.style.background = 'rgba(74,159,240,.18)';
+      setTimeout(() => { r.style.background = ''; }, 2000);
+    }
+  });
+}
+
 // ==================== INIT ====================
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
 loadStorage();
@@ -3501,5 +3806,6 @@ maybeShowOnboarding();
 // Show PIN screen on first load (skip if already set to bypass for demo — remove this line in production)
 // lockApp(); // Uncomment to enforce PIN on every load
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </body>
 </html>
