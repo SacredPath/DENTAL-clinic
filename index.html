@@ -20,6 +20,10 @@
   :root:not([data-theme="dark"]){--bg:#f0f2f7;--surface:#ffffff;--surface2:#f5f6fa;--surface3:#eceef5;--border:#d8dbe8;--accent:#00a87e;--accent2:#6254e0;--yellow:#c47f00;--red:#d63030;--blue:#2e7fd6;--text:#1a1d2e;--text2:#4a506a;--text3:#8890aa;--topbar-bg:rgba(240,242,247,.95);}
 }
 
+/* Hide owner-only nav from dentist and receptionist */
+body.dentist-mode .owner-only,
+body.receptionist-mode .owner-only { display: none !important; }
+
 /* THEME TOGGLE BUTTON */
 .theme-toggle{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:14px;line-height:1;color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:5px;}
 .theme-toggle:hover{background:var(--surface3);color:var(--text);}
@@ -582,7 +586,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div class="nav-sec">Operations</div>
     <button class="nav-item" data-label="Inventory" onclick="go('inventory')"><span class="nav-icon">📦</span><span class="nav-label"> Inventory</span></button>
     <button class="nav-item" data-label="Lab Work" onclick="go('lab')"><span class="nav-icon">🔬</span><span class="nav-label"> Lab Work</span></button>
-    <button class="nav-item" data-label="Settings" onclick="go('settings')"><span class="nav-icon">⚙️</span><span class="nav-label"> Settings</span></button>
+    <button class="nav-item owner-only" data-label="Settings" onclick="go('settings')"><span class="nav-icon">⚙️</span><span class="nav-label"> Settings</span></button>
   </nav>
   <div class="sidebar-foot">
     <div class="clinic-badge">
@@ -689,7 +693,7 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
       <button class="f-btn" onclick="filterA('attended',this)">Attended</button>
       <button class="f-btn" onclick="filterA('cancelled',this)">Cancelled</button>
       <div style="flex:1"></div>
-      <button class="btn btn-ghost btn-sm" onclick="go('settings')" style="font-size:11px">⚙ Chairs</button>
+      <button class="btn btn-ghost btn-sm owner-only" onclick="go('settings')" style="font-size:11px">⚙ Chairs</button>
       <button class="btn btn-primary btn-sm" onclick="openBooking()">+ Book</button>
     </div>
     <div class="tbl-wrap">
@@ -789,11 +793,11 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
       <div class="util-card" style="margin:0;min-width:0">
         <div class="util-head"><div class="util-title">Revenue Trend (Last 30 Days)</div></div>
-        <div style="position:relative;height:180px"><canvas id="chart-rev-trend"></canvas></div>
+        <div style="position:relative;height:140px"><canvas id="chart-rev-trend"></canvas></div>
       </div>
       <div class="util-card" style="margin:0;min-width:0">
         <div class="util-head"><div class="util-title">Cash vs HMO Split</div></div>
-        <div style="position:relative;height:180px"><canvas id="chart-rev-split"></canvas></div>
+        <div style="position:relative;height:140px"><canvas id="chart-rev-split"></canvas></div>
       </div>
     </div>
     <div class="sec-head"><div class="sec-title">Revenue by Treatment</div></div>
@@ -818,11 +822,11 @@ body.receptionist-mode #pd-inv-tab-btn{display:none !important;}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
       <div class="util-card" style="margin:0;min-width:0">
         <div class="util-head"><div class="util-title">Revenue by HMO Provider</div></div>
-        <div style="position:relative;height:200px"><canvas id="chart-hmo-by-provider"></canvas></div>
+        <div style="position:relative;height:140px"><canvas id="chart-hmo-by-provider"></canvas></div>
       </div>
       <div class="util-card" style="margin:0;min-width:0">
         <div class="util-head"><div class="util-title">Claim Status Breakdown</div></div>
-        <div style="position:relative;height:200px"><canvas id="chart-hmo-claim-status"></canvas></div>
+        <div style="position:relative;height:140px"><canvas id="chart-hmo-claim-status"></canvas></div>
       </div>
     </div>
     <div class="sec-head"><div class="sec-title">HMO Claims Detail</div>
@@ -1556,18 +1560,18 @@ window.addEventListener('offline',()=>{isOffline=true;updateOfflineUI();showToas
 var PAGE_MAP={dashboard:'Dashboard',appointments:'Appointments',patients:'Patients',reminders:'Reminders',recall:'Recall List',invoices:'Invoices',hmo:'HMO / Insurance','hmo-revenue':'HMO Revenue',revenue:'Revenue & Fees',odontogram:'Odontogram',perio:'Perio Charting',inventory:'Inventory',lab:'Lab Work',settings:'Settings'};
 // Pages the receptionist is NOT allowed to see
 var DENTIST_ONLY_PAGES = ['invoices','hmo','hmo-revenue','revenue'];
-var OWNER_PAGES = ['settings']; // owner-only pages (excluded from dentist mode too)
+var OWNER_PAGES = ['settings']; // owner-only pages (excluded from dentist AND receptionist)
 
 function isAllowed(page){
   if(currentRole === 'owner') return true; // owner sees everything
-  if(currentRole === 'dentist') return !OWNER_PAGES.includes(page);
+  if(currentRole === 'dentist') return !OWNER_PAGES.includes(page); // dentist cannot see settings
   return !DENTIST_ONLY_PAGES.includes(page) && !OWNER_PAGES.includes(page);
 }
 
 function go(page){
   // Hard block — redirect to dashboard with a message if not allowed
   if(!isAllowed(page)){
-    showToast('🔒 Dentist access only — please log in as Dentist');
+    showToast('🔒 Owner access only — please log in as Owner');
     page = 'dashboard';
   }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -3504,7 +3508,8 @@ function applyRoleMode() {
   if (invTab) invTab.style.display = isReceptionist ? 'none' : '';
 
   // If on a restricted page, bounce to dashboard
-  if (isReceptionist && DENTIST_ONLY_PAGES.some(p => document.getElementById(`page-${p}`)?.classList.contains('active'))) {
+  const activePg = document.querySelector('.page.active')?.id?.replace('page-','');
+  if (activePg && !isAllowed(activePg)) {
     go('dashboard');
     return; // go() calls renderDash already
   }
